@@ -11,6 +11,7 @@ max_leaf_size = 10  # Maximum leaf size constraint
 phyllochron = 7  # Example phyllochron in days
 
 
+## Data from crop model ()
 
 # Define functions for plant height and LAI temporal evolution (beta functions)
 def height_function(t):
