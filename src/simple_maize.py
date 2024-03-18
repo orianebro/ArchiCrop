@@ -8,11 +8,11 @@ from plant_design import get_form_factor, blade_dimension, \
     stem_dimension, load_leaf_db
 from fitting import fit3
 
-def maize_leaves_path():
-    import os
-    import openalea.cereals
-    data_dir = os.path.dirname(openalea.cereals.__file__)
-    return os.path.join(data_dir, 'leaves_simple.db')
+# def maize_leaves_path():
+#     import os
+#     import openalea.cereals
+#     data_dir = os.path.dirname(openalea.cereals.__file__)
+#     return os.path.join(data_dir, 'leaves_simple.db')
 
 
 def bell_shaped_dist(plant_area=1, nb_phy=15, rmax=.7, skew=0.15):
@@ -148,10 +148,11 @@ def simple_maize(plant_area=10000, plant_height=200, pseudostem_height=20,
     numpy.random.seed(seed)
     ranks = range(1, phytomer + 1)
     ntop = max(ranks) - numpy.array(ranks) + 1
-    if leaves is None:
-        path = maize_leaves_path()
-        db = load_leaf_db(path)
-        leaves = {rank: db.get(str(rank), db['10'])[0] for rank in ranks}
+    # if leaves is None:
+    #     path = maize_leaves_path()
+    #     db = load_leaf_db(path)
+    #     leaves = {rank: db.get(str(rank), db['10'])[0] for rank in ranks}
+    # leaves = {rank: (x,y,s,r) for rank in ranks}
 
     phytomer = int(phytomer)
 
