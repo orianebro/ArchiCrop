@@ -36,6 +36,10 @@ leaf_lengths = numpy.sqrt(numpy.array(leaf_areas) / 0.1 / ff)
 insertion_heights = numpy.cumsum(geometric_dist(height=200))
 leaf_shapes = [a_leaf for l in leaf_lengths]
 leaf_azimuths = leaf_azimuth(size=len(leaf_lengths), phyllotactic_angle=180, phyllotactic_deviation=15, plant_orientation=0, spiral=False)
+shoot, g = build_shoot(stem_radius=stem_radius, insertion_heights=insertion_heights, leaf_lengths=leaf_lengths, leaf_areas=leaf_areas,
+                leaf_shapes=leaf_shapes, leaf_azimuths=leaf_azimuths)
+scene, nump = build_scene(g)
+display_scene(scene)
 
 
 # some realistic values for a wheat plant
