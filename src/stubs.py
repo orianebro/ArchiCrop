@@ -34,7 +34,34 @@ def leaf_and_internode_appearance(cum_thermal_time, phyllochron, max_nb_of_phyto
 
 
 
-def internode_elongation(internodes):
+def internode_elongation(internode):
+        r"""
+
+        Parameters
+        ----------
+        internode : list or array
+            Sequence of internodes of the growing plant.
+
+        Returns
+        -------
+        internode : list or array
+            Sequence of internodes of the growing plant.
+        """
+
+        # in internodes --> growing internodes (bool growing ?)
+        # split delta plant height among growing internodes 
+
+        # def plant_height(t):
+        #     return 300 / (1 + np.exp(-0.1*(t-100/2)))
+
+        # only one internode growing at a time
+        # internodes[-1] += plant_height(t)-plant_height(t-1) # or internodes[i] = plant_height(t)
+
+        return internode
+
+
+
+def leaf_elongation(leaf):
         r"""Triggers the appearance of a new leaf on internode N and of internode N+1, according to the phyllochron.
 
         Parameters
@@ -57,31 +84,4 @@ def internode_elongation(internodes):
         # only one internode growing at a time
         # internodes[-1] += plant_height(t)-plant_height(t-1) # or internodes[i] = plant_height(t)
 
-        return internodes
-
-
-
-def internode_elongation(internodes, ):
-        r"""Triggers the appearance of a new leaf on internode N and of internode N+1, according to the phyllochron.
-
-        Parameters
-        ----------
-        internodes : list or array
-            Sequence of internodes of the growing plant.
-
-        Returns
-        -------
-        internodes : list or array
-            Sequence of internodes of the growing plant.
-        """
-
-        # in internodes --> growing internodes (bool growing ?)
-        # split delta plant height among growing internodes 
-
-        # def plant_height(t):
-        #     return 300 / (1 + np.exp(-0.1*(t-100/2)))
-
-        # only one internode growing at a time
-        # internodes[-1] += plant_height(t)-plant_height(t-1) # or internodes[i] = plant_height(t)
-
-        return internodes
+        return leaf

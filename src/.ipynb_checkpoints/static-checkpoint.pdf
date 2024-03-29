@@ -121,7 +121,7 @@
     {
      "data": {
       "application/vnd.jupyter.widget-view+json": {
-       "model_id": "539a055d6d60448f8ddf71fee86fc2d5",
+       "model_id": "06695219697947c7bd0e6e40f40db8d3",
        "version_major": 2,
        "version_minor": 0
       },
@@ -203,9 +203,9 @@
     {
      "data": {
       "text/plain": [
-       "array([   3.62948197,  117.14725371, -117.57921521,   -9.59290249,\n",
-       "        117.24486705, -114.86275447,   10.12143519,  119.59711719,\n",
-       "       -129.92428568,  -12.11472714])"
+       "array([  -8.11458041,  122.53444465, -123.77071999,  -11.38951162,\n",
+       "        117.75711456, -126.50515462,    1.35835129,  115.69278017,\n",
+       "       -113.25860258,  -14.24066559])"
       ]
      },
      "execution_count": 5,
@@ -476,7 +476,7 @@
     {
      "data": {
       "application/vnd.jupyter.widget-view+json": {
-       "model_id": "5aaa718b0ece4e8fa80658d7f7fe6b7f",
+       "model_id": "b9183d5254694a55998ab90f60813549",
        "version_major": 2,
        "version_minor": 0
       },
@@ -547,7 +547,7 @@
     {
      "data": {
       "application/vnd.jupyter.widget-view+json": {
-       "model_id": "5c74672e77ae48109495c27470587227",
+       "model_id": "6f84e22a1f4d4508af3c6dafc8bd6ae3",
        "version_major": 2,
        "version_minor": 0
       },
@@ -655,7 +655,7 @@
     {
      "data": {
       "application/vnd.jupyter.widget-view+json": {
-       "model_id": "a4c4afbb4ad0451c9929b5fafb4336ff",
+       "model_id": "b656308846c441b0bf1fbec038ee7db2",
        "version_major": 2,
        "version_minor": 0
       },
@@ -755,7 +755,7 @@
     {
      "data": {
       "application/vnd.jupyter.widget-view+json": {
-       "model_id": "4d6d7c0a875e4551b9f1d44b17dad811",
+       "model_id": "4edf45df6b0f4fa6a0c89e01f9257226",
        "version_major": 2,
        "version_minor": 0
       },
@@ -848,7 +848,7 @@
     {
      "data": {
       "application/vnd.jupyter.widget-view+json": {
-       "model_id": "107fb833d3f44321836a8ddc2d01d6c8",
+       "model_id": "c0fcf6f2767b4e7e827e28b303c722cc",
        "version_major": 2,
        "version_minor": 0
       },
