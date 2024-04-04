@@ -5,6 +5,8 @@ import numpy as np
 def leaf_and_internode_appearance(cum_thermal_time, phyllochron, max_nb_of_phytomers, leaves, internodes):
         r"""Triggers the appearance of a new leaf on internode N and of internode N+1, according to the phyllochron.
 
+        
+
         Parameters
         ----------
         cum_thermal_time : float
