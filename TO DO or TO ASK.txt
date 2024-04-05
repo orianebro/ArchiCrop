@@ -1,2 +1,0 @@
-how to add properties to an already-existing MTG ? ex: bool growing for LeafElement and StemElement 
-how to modify properties in an already-existing MTG ?
