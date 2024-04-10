@@ -1,0 +1,25 @@
+project:
+  type: book
+
+book:
+  title: "PhD_Oriane"
+  author: "Oriane Braud"
+  date: "10/04/2024"
+  chapters:
+    - index.qmd
+    - intro.qmd
+    - summary.qmd
+    - structural_cereal_model.ipynb
+    - dynamic_model.ipynb
+    - references.qmd
+
+bibliography: references.bib
+
+format:
+  html:
+    theme: cosmo
+  pdf:
+    documentclass: scrreprt
+
+
+

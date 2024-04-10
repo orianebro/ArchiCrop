@@ -76,7 +76,7 @@ def leaf_shape_perez(insertion_angle=50, scurv=0.5, curvature=50, nb_segment = 1
     dx = numpy.array([0] + (coef_l * numpy.sin(angle_simu)).tolist())[:-1]
     dy = numpy.array([0] + (coef_l * numpy.cos(angle_simu)).tolist())[:-1]
     x, y = numpy.cumsum(dx), numpy.cumsum(dy)
-    length = numpy.sum(numpy.sqrt(dx**2 + dy**2))
+    length = numpy.sum(numpy.sqrt(dx**2 + dy**2)) 
     return x / length, y / length
 
 
