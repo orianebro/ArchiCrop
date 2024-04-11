@@ -1,5 +1,6 @@
 {
   "index.qmd": {
+<<<<<<< Updated upstream
     "index.html": "c2deaf05"
   },
   "intro.qmd": {
@@ -16,5 +17,26 @@
   },
   "references.qmd": {
     "references.html": "3059bfdb"
+=======
+    "index.html": "06613061"
+  },
+  "intro.qmd": {
+    "intro.html": "ea3c744d"
+  },
+  "summary.qmd": {
+    "summary.html": "50e2a8e4"
+  },
+  "references.qmd": {
+    "references.html": "46073ebc"
+  },
+  "static.ipynb": {
+    "static.html": "92c0243e"
+  },
+  "structural_cereal_model.ipynb": {
+    "structural_cereal_model.html": "25b10812"
+  },
+  "dynamic_model.ipynb": {
+    "dynamic_model.html": "a86988b4"
+>>>>>>> Stashed changes
   }
 }

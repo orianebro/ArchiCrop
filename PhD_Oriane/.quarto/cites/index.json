@@ -1,1 +1,5 @@
+<<<<<<< Updated upstream
 {"intro.qmd":["knuth84"],"index.qmd":["knuth84"],"references.qmd":[],"structural_cereal_model.ipynb":[],"dynamic_model.ipynb":[],"summary.qmd":[]}
+=======
+{"intro.qmd":["knuth84"],"summary.qmd":[],"static.ipynb":[],"structural_cereal_model.ipynb":[],"index.qmd":["knuth84"],"dynamic_model.ipynb":[],"references.qmd":[]}
+>>>>>>> Stashed changes
