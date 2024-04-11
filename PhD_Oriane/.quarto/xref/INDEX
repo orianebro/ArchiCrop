@@ -1,0 +1,20 @@
+{
+  "index.qmd": {
+    "index.html": "c2deaf05"
+  },
+  "intro.qmd": {
+    "intro.html": "f0bf3d15"
+  },
+  "summary.qmd": {
+    "summary.html": "d9671436"
+  },
+  "structural_cereal_model.ipynb": {
+    "structural_cereal_model.html": "3bc04c42"
+  },
+  "dynamic_model.ipynb": {
+    "dynamic_model.html": "7e19bb62"
+  },
+  "references.qmd": {
+    "references.html": "3059bfdb"
+  }
+}
