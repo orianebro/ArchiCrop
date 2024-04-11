@@ -244,7 +244,7 @@
     "href": "structural_cereal_model.html#next-steps",
     "title": "Structural cereal model",
     "section": "3.10 Next steps:",
-    "text": "3.10 Next steps:\n\nAdapt for different species (parameters for cereals, some functions for legumes)",
+    "text": "3.10 Next steps:\n\nConfigure Caribu to simulate the same light as in STICS\nAdapt for different species (parameters for cereals, some functions for legumes)",
     "crumbs": [
       "<span class='chapter-number'>3</span>  <span class='chapter-title'>Structural cereal model</span>"
     ]
@@ -252,21 +252,21 @@
   {
     "objectID": "dynamic_model.html",
     "href": "dynamic_model.html",
-    "title": "4  Dynamic cereal model",
+    "title": "Dynamic model",
     "section": "",
     "text": "4.1 Next steps",
     "crumbs": [
-      "<span class='chapter-number'>4</span>  <span class='chapter-title'>Dynamic cereal model</span>"
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>Dynamic model</span>"
     ]
   },
   {
     "objectID": "dynamic_model.html#next-steps",
     "href": "dynamic_model.html#next-steps",
-    "title": "4  Dynamic cereal model",
+    "title": "Dynamic model",
     "section": "",
     "text": "appearance and elongation of phytomers (internodes and leaves)\nConstrains from crop model",
     "crumbs": [
-      "<span class='chapter-number'>4</span>  <span class='chapter-title'>Dynamic cereal model</span>"
+      "<span class='chapter-number'>4</span>  <span class='chapter-title'>Dynamic model</span>"
     ]
   }
 ]
