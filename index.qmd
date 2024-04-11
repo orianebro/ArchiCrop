@@ -1,5 +1,6 @@
 # Preface {.unnumbered}
 
-This is a Quarto book.
-
-To learn more about Quarto books visit <https://quarto.org/docs/books>.
+This book keeps track of the work made during the PhD of Oriane Braud, 
+entitled "Multiscale hybrid modeling framework for intercrops: the best of plant and crop models".
+This PhD is carried out from November 2023 to 2026 at CIRAD (UMRs AGAP and AMAP), as part of European project IntercropValuES, 
+and is supervised by Myriam Adam, Marc Jaeger, Christophe Pradal, Remi Vezy and Thomas Arsouze. 
