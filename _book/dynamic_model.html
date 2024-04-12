@@ -217,7 +217,7 @@ window.Quarto = {
    
   <ul>
   <li><a href="#conceptual-diagram" id="toc-conceptual-diagram" class="nav-link active" data-scroll-target="#conceptual-diagram"><span class="header-section-number">4.1</span> Conceptual diagram</a></li>
-  <li><a href="#time-dependant-parametrization-of-leaf-area" id="toc-time-dependant-parametrization-of-leaf-area" class="nav-link" data-scroll-target="#time-dependant-parametrization-of-leaf-area"><span class="header-section-number">4.2</span> Time-dependant parametrization of leaf area</a></li>
+  <li><a href="#time-dependent-parametrization-of-leaf-area" id="toc-time-dependent-parametrization-of-leaf-area" class="nav-link" data-scroll-target="#time-dependent-parametrization-of-leaf-area"><span class="header-section-number">4.2</span> Time-dependent parametrization of leaf area</a></li>
   <li><a href="#apparition-and-growth-of-phytomers-stem-and-leaf" id="toc-apparition-and-growth-of-phytomers-stem-and-leaf" class="nav-link" data-scroll-target="#apparition-and-growth-of-phytomers-stem-and-leaf"><span class="header-section-number">4.3</span> Apparition and growth of phytomers (stem and leaf)</a></li>
   <li><a href="#modifying-the-mtg-of-a-growing-plant" id="toc-modifying-the-mtg-of-a-growing-plant" class="nav-link" data-scroll-target="#modifying-the-mtg-of-a-growing-plant"><span class="header-section-number">4.4</span> Modifying the MTG of a growing plant</a></li>
   <li><a href="#next-steps" id="toc-next-steps" class="nav-link" data-scroll-target="#next-steps"><span class="header-section-number">4.5</span> Next steps</a></li>
@@ -267,8 +267,8 @@ window.Quarto = {
 <p>Leaf senescence is constrained by crop model, as it has a direct influence on LAI (green LAI vs.&nbsp;yellow LAI ?).</p>
 <p>The branching pattern is set (Tillers (Zhu et al., 2015)).</p>
 </section>
-<section id="time-dependant-parametrization-of-leaf-area" class="level2" data-number="4.2">
-<h2 data-number="4.2" class="anchored" data-anchor-id="time-dependant-parametrization-of-leaf-area"><span class="header-section-number">4.2</span> Time-dependant parametrization of leaf area</h2>
+<section id="time-dependent-parametrization-of-leaf-area" class="level2" data-number="4.2">
+<h2 data-number="4.2" class="anchored" data-anchor-id="time-dependent-parametrization-of-leaf-area"><span class="header-section-number">4.2</span> Time-dependent parametrization of leaf area</h2>
 <p><span class="math display">\[ \mathcal{A_normalized} = 2 * |\int_{0}^{1} \mathcal{C}(s(u))ds(u)| \]</span> <span class="math display">\[ \mathcal{A} = \mathcal{A_scaled} = 2 * w * |\int_{0}^{L} \mathcal{C}(\frac{s(u)}{L})d\frac{s(u)}{L}| \]</span> <span class="math display">\[ \frac{d\mathcal{A}}{dt} = 2 * w * |\int_{ds(t)/L} \mathcal{C}(\frac{s(u)}{L})d\frac{s(u)}{L}| \]</span></p>
 <ul>
 <li><span class="math inline">\(\mathcal{A}\)</span> : final leaf area (or surface), in <span class="math inline">\(cm^2\)</span></li>
