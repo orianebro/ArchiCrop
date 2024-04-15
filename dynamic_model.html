@@ -271,11 +271,11 @@ window.Quarto = {
 <h2 data-number="4.2" class="anchored" data-anchor-id="time-dependent-parametrization-of-leaf-area"><span class="header-section-number">4.2</span> Time-dependent parametrization of leaf area</h2>
 <p><span class="math display">\[ \mathcal{A_normalized} = 2 * |\int_{0}^{1} \mathcal{C}(s(u))ds(u)| \]</span> <span class="math display">\[ \mathcal{A} = \mathcal{A_scaled} = 2 * w * |\int_{0}^{L} \mathcal{C}(\frac{s(u)}{L})d\frac{s(u)}{L}| \]</span> <span class="math display">\[ \frac{d\mathcal{A}}{dt} = 2 * w * |\int_{ds(t)/L} \mathcal{C}(\frac{s(u)}{L})d\frac{s(u)}{L}| \]</span></p>
 <ul>
-<li><span class="math inline">\(\mathcal{A}\)</span> : final leaf area (or surface), in <span class="math inline">\(cm^2\)</span></li>
+<li><span class="math inline">\(\mathcal{A}\)</span> : final leaf area (or surface), in <span class="math inline">\(cm^2\)</span> (given by crop model)</li>
 <li><span class="math inline">\(\frac{d\mathcal{A}}{dt}\)</span> : gain in area, in <span class="math inline">\(cm^2\)</span>, for a given leaf for a given time step <span class="math inline">\(dt\)</span> (given by crop model)<br>
 </li>
-<li><span class="math inline">\(\mathcal{C}\)</span> : curve of the evolution of the leaf width along the leaf, <strong>from tip to base</strong></li>
-<li><span class="math inline">\(s(t)\)</span> : curvilinear abscissa of the midrib, in <span class="math inline">\(cm\)</span>, as a function of thermal time <span class="math inline">\(t\)</span>, such that: $ ds(t) = $</li>
+<li><span class="math inline">\(\mathcal{C}\)</span> : curve of the evolution of the leaf width along the leaf, <strong>from tip to base</strong> (literature/expert knowledge/observation)</li>
+<li><span class="math inline">\(s(t)\)</span> : curvilinear abscissa of the midrib, in <span class="math inline">\(cm\)</span>, as a function of thermal time <span class="math inline">\(t\)</span>, such that: $ ds(t) = $ (computed from leaf curvature)</li>
 <li><span class="math inline">\(w\)</span> : final maximal width of the leaf, in <span class="math inline">\(cm\)</span> (to fix/vary within a reasonable range)</li>
 <li><span class="math inline">\(L\)</span> : final length of the leaf, in <span class="math inline">\(cm\)</span> (to fix/vary within a reasonable range)</li>
 <li><span class="math inline">\(t\)</span> : thermal time, in <span class="math inline">\(^oC.day\)</span></li>
@@ -295,20 +295,21 @@ The phyllochron (i.e.&nbsp;leaf emergence rate, in <span class="math inline">\(l
 The time for a leaf to grow is roughly between 1.5 and 2 phyllochrons.<br>
 We consider a linear (rough approximation of beta function) growth for the leaf.</p>
 <ul>
-<li><span class="math inline">\(\phi\)</span> : phyllochron, in <span class="math inline">\(^oC.day.leaf^{-1}\)</span></li>
+<li><span class="math inline">\(\phi\)</span> : phyllochron, in <span class="math inline">\(^oC.day.leaf^{-1}\)</span> (literature)</li>
 <li>cur_len_int : current length of growing internodes</li>
 <li>fin_len_int : final length of internodes, in <span class="math inline">\(cm\)</span> (literature, bell shaped model too ?)</li>
-<li>cur_len_leaf = <span class="math inline">\([s_{g}(t)]\)</span> : current length of growing leaves</li>
+<li>height : plant height, in <span class="math inline">\(cm\)</span> (given by crop model)</li>
+<li><span class="math inline">\([s(t)]\)</span> : current length of growing leaves, in <span class="math inline">\(cm\)</span> (computed before)</li>
 <li>fin_len_leaf : final length of leaves, in <span class="math inline">\(cm\)</span> (bell shaped model)</li>
-<li>time for leaf to grow, as <span class="math inline">\(x * \phi\)</span>, in <span class="math inline">\(^oC.day\)</span> (literature, cf Clerget et al., 2008, etc)</li>
-<li></li>
+<li>leaf expansion duration, as <span class="math inline">\(x * \phi\)</span>, in <span class="math inline">\(^oC.day\)</span> (literature, cf Clerget et al., 2008, etc)</li>
 </ul>
-<p>Cf Fournier et al, 2005</p>
+<p>Cf Fournier et al, 2005; Stewart and Dwyer, 1993; Skinner and Nelson, 1995</p>
+<p>From crop model:</p>
 </section>
 <section id="modifying-the-mtg-of-a-growing-plant" class="level2" data-number="4.4">
 <h2 data-number="4.4" class="anchored" data-anchor-id="modifying-the-mtg-of-a-growing-plant"><span class="header-section-number">4.4</span> Modifying the MTG of a growing plant</h2>
 <p>In progress …</p>
-<div id="cell-13" class="cell" data-execution_count="1">
+<div id="cell-14" class="cell" data-execution_count="1">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> mtg_turtle_time(g, symbols, time, update_visitor<span class="op">=</span><span class="va">None</span> ):</span>
@@ -490,7 +491,7 @@ We consider a linear (rough approximation of beta function) growth for the leaf.
 <span id="cb1-177"><a href="#cb1-177" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> g</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
-<div id="cell-14" class="cell" data-execution_count="2">
+<div id="cell-15" class="cell" data-execution_count="2">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> thermal_time(g, phyllochron<span class="op">=</span><span class="fl">110.</span>, leaf_duration<span class="op">=</span><span class="fl">1.6</span>, stem_duration<span class="op">=</span><span class="fl">1.6</span>, leaf_falling_rate <span class="op">=</span> <span class="dv">10</span>):</span>
@@ -541,6 +542,12 @@ We consider a linear (rough approximation of beta function) growth for the leaf.
 <p>At each thermal time step, the turtle visits each element and adds a value to a time series for each (almost) properties of the MTG.</p>
 <p><strong>OR</strong></p>
 <p>At each thermal time step, the MTG is replicated and the growing elements ar modified, and new elements are added if needed.</p>
+<div id="cell-17" class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>g</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
 </section>
 <section id="next-steps" class="level2" data-number="4.5">
 <h2 data-number="4.5" class="anchored" data-anchor-id="next-steps"><span class="header-section-number">4.5</span> Next steps</h2>
