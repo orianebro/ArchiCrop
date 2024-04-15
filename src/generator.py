@@ -211,6 +211,7 @@ def cereals(json=None,
 
     g = MTG()
     vid_node = g.add_component(g.root, label='plant', edge_type='/')
+    first = True
     for i, row in dim.iterrows():
         internode = {'label': 'StemElement',
                      'length': row['L_internode'],
@@ -219,7 +220,11 @@ def cereals(json=None,
                      'diameter_top': row['W_internode'],
                      'azimuth': row['leaf_azimuth']}
 
-        vid_node = g.add_child(vid_node, edge_type='<', **internode)
+        if first :
+            vid_node = g.add_component(vid_node, edge_type='/', **internode)
+            first=False
+        else:
+            vid_node = g.add_child(vid_node, edge_type='<', **internode)
 
         blade = {'label': 'LeafElement',
                  'shape': leaves[row['ntop']],
