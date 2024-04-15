@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.553">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Oriane Braud">
+
+<title>PhD Oriane - 4&nbsp; Dynamic model</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./references.html" rel="next">
+<link href="./structural_cereal_model.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./dynamic_model.html"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Dynamic model</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">PhD Oriane</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./abstract.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Abstract</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Introduction</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./structural_cereal_model.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Structural cereal model</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./dynamic_model.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Dynamic model</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#conceptual-diagram" id="toc-conceptual-diagram" class="nav-link active" data-scroll-target="#conceptual-diagram"><span class="header-section-number">4.1</span> Conceptual diagram</a></li>
+  <li><a href="#time-dependent-parametrization-of-leaf-area" id="toc-time-dependent-parametrization-of-leaf-area" class="nav-link" data-scroll-target="#time-dependent-parametrization-of-leaf-area"><span class="header-section-number">4.2</span> Time-dependent parametrization of leaf area</a></li>
+  <li><a href="#apparition-and-growth-of-phytomers-stem-and-leaf" id="toc-apparition-and-growth-of-phytomers-stem-and-leaf" class="nav-link" data-scroll-target="#apparition-and-growth-of-phytomers-stem-and-leaf"><span class="header-section-number">4.3</span> Apparition and growth of phytomers (stem and leaf)</a></li>
+  <li><a href="#modifying-the-mtg-of-a-growing-plant" id="toc-modifying-the-mtg-of-a-growing-plant" class="nav-link" data-scroll-target="#modifying-the-mtg-of-a-growing-plant"><span class="header-section-number">4.4</span> Modifying the MTG of a growing plant</a></li>
+  <li><a href="#next-steps" id="toc-next-steps" class="nav-link" data-scroll-target="#next-steps"><span class="header-section-number">4.5</span> Next steps</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Dynamic model</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Oriane Braud </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="conceptual-diagram" class="level2" data-number="4.1">
+<h2 data-number="4.1" class="anchored" data-anchor-id="conceptual-diagram"><span class="header-section-number">4.1</span> Conceptual diagram</h2>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="shoot_FSPM_conceptual_diagram_alone.jpg" title="Conceptual diagram" class="img-fluid figure-img"></p>
+<figcaption>Conceptual diagram of shoot FSPM (not final version, some errors)</figcaption>
+</figure>
+</div>
+<p>The main stem grows according to the crop model’s plant height. At the end of the growth of an internode, a leaf appears. The appearance of a leaf is triggered by fixed phyllochron (different for tillers?).</p>
+<p>Cf Fournier et al, 2005 for leaf elongation</p>
+<p>The angle of the leaf with its axis is leaf-age dependent. The leaf blade curvature depends on the angle with the axis and the leaf length.</p>
+<p>The reproductive organs appear from a given thermal time, when the leaves have stopped growing.</p>
+<p>Leaf senescence is constrained by crop model, as it has a direct influence on LAI (green LAI vs.&nbsp;yellow LAI ?).</p>
+<p>The branching pattern is set (Tillers (Zhu et al., 2015)).</p>
+</section>
+<section id="time-dependent-parametrization-of-leaf-area" class="level2" data-number="4.2">
+<h2 data-number="4.2" class="anchored" data-anchor-id="time-dependent-parametrization-of-leaf-area"><span class="header-section-number">4.2</span> Time-dependent parametrization of leaf area</h2>
+<p><span class="math display">\[ \mathcal{A_normalized} = 2 * |\int_{0}^{1} \mathcal{C}(s(u))ds(u)| \]</span> <span class="math display">\[ \mathcal{A} = \mathcal{A_scaled} = 2 * w * |\int_{0}^{L} \mathcal{C}(\frac{s(u)}{L})d\frac{s(u)}{L}| \]</span> <span class="math display">\[ \frac{d\mathcal{A}}{dt} = 2 * w * |\int_{ds(t)/L} \mathcal{C}(\frac{s(u)}{L})d\frac{s(u)}{L}| \]</span></p>
+<ul>
+<li><span class="math inline">\(\mathcal{A}\)</span> : final leaf area (or surface), in <span class="math inline">\(cm^2\)</span></li>
+<li><span class="math inline">\(\frac{d\mathcal{A}}{dt}\)</span> : gain in area, in <span class="math inline">\(cm^2\)</span>, for a given leaf for a given time step <span class="math inline">\(dt\)</span> (given by crop model)<br>
+</li>
+<li><span class="math inline">\(\mathcal{C}\)</span> : curve of the evolution of the leaf width along the leaf, <strong>from tip to base</strong></li>
+<li><span class="math inline">\(s(t)\)</span> : curvilinear abscissa of the midrib, in <span class="math inline">\(cm\)</span>, as a function of thermal time <span class="math inline">\(t\)</span>, such that: $ ds(t) = $</li>
+<li><span class="math inline">\(w\)</span> : final maximal width of the leaf, in <span class="math inline">\(cm\)</span> (to fix/vary within a reasonable range)</li>
+<li><span class="math inline">\(L\)</span> : final length of the leaf, in <span class="math inline">\(cm\)</span> (to fix/vary within a reasonable range)</li>
+<li><span class="math inline">\(t\)</span> : thermal time, in <span class="math inline">\(^oC.day\)</span></li>
+</ul>
+<p>The objective is to find, for each growing leaf, at each time step, and for a given leaf area provided to the leaf <span class="math inline">\(\frac{d\mathcal{A}}{dt}\)</span>, how much length <span class="math inline">\(ds(t)\)</span> is added to the leaf.</p>
+<p><span class="math display">\[ \frac{d\mathcal{A}}{dt} = 2w |\int_{s(t-1)/L}^{s(t)/L} \mathcal{C}(\frac{s(u)}{L})d\frac{s(u)}{L}| \]</span></p>
+<p>According to the Fundamental Theorem of Calculus, <span class="math inline">\(\mathcal{C}\)</span> being at least <span class="math inline">\(C^0\)</span> on <span class="math inline">\([0,L]\)</span>, <span class="math inline">\(F\)</span> being the antiderivative of <span class="math inline">\(\mathcal{C}\)</span>, we can write:</p>
+<p><span class="math display">\[ \frac{d\mathcal{A}}{dt} = 2w (|F(\frac{s(t)}{L}) - F(\frac{s(t-1)}{L})|) \]</span></p>
+<p><span class="math display">\[ F(\frac{s(t)}{L}) = |\frac{1}{2w} \frac{d\mathcal{A}}{dt} + F(\frac{s(t-1)}{L})| \]</span></p>
+<p>Knowing the other variables, we know have to determine <span class="math inline">\(s(t)\)</span> at thermal time <span class="math inline">\(t\)</span>.</p>
+</section>
+<section id="apparition-and-growth-of-phytomers-stem-and-leaf" class="level2" data-number="4.3">
+<h2 data-number="4.3" class="anchored" data-anchor-id="apparition-and-growth-of-phytomers-stem-and-leaf"><span class="header-section-number">4.3</span> Apparition and growth of phytomers (stem and leaf)</h2>
+<p>The height of the plant/canopy (here we consider the height of the main stem) is given by the crop model.<br>
+The plastochron (i.e.&nbsp;leaf initiation rate, in <span class="math inline">\(leaf^{-1}\)</span>) is the time interval between two successive leaves produced at the SAM.<br>
+The phyllochron (i.e.&nbsp;leaf emergence rate, in <span class="math inline">\(leaf^{-1}\)</span>) is the time interval between two successive leaves emerging from the top of the former leaf sheath.<br>
+The time for a leaf to grow is roughly between 1.5 and 2 phyllochrons.<br>
+We consider a linear (rough approximation of beta function) growth for the leaf.</p>
+<ul>
+<li><span class="math inline">\(\phi\)</span> : phyllochron, in <span class="math inline">\(^oC.day.leaf^{-1}\)</span></li>
+<li>cur_len_int : current length of growing internodes</li>
+<li>fin_len_int : final length of internodes, in <span class="math inline">\(cm\)</span> (literature, bell shaped model too ?)</li>
+<li>cur_len_leaf = <span class="math inline">\([s_{g}(t)]\)</span> : current length of growing leaves</li>
+<li>fin_len_leaf : final length of leaves, in <span class="math inline">\(cm\)</span> (bell shaped model)</li>
+<li>time for leaf to grow, as <span class="math inline">\(x * \phi\)</span>, in <span class="math inline">\(^oC.day\)</span> (literature, cf Clerget et al., 2008, etc)</li>
+<li></li>
+</ul>
+<p>Cf Fournier et al, 2005</p>
+</section>
+<section id="modifying-the-mtg-of-a-growing-plant" class="level2" data-number="4.4">
+<h2 data-number="4.4" class="anchored" data-anchor-id="modifying-the-mtg-of-a-growing-plant"><span class="header-section-number">4.4</span> Modifying the MTG of a growing plant</h2>
+<p>In progress …</p>
+<div id="cell-13" class="cell" data-execution_count="1">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> mtg_turtle_time(g, symbols, time, update_visitor<span class="op">=</span><span class="va">None</span> ):</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">''' Compute the geometry on each node of the MTG using Turtle geometry. </span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co">    </span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co">    Update_visitor is a function called on each node in a pre order (parent before children).</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co">    This function allow to update the parameters and state variables of the vertices.</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co">    </span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co">    :Example:</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co">        &gt;&gt;&gt; def grow(node, time):</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co">                </span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co">    '''</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    g.properties()[<span class="st">'geometry'</span>] <span class="op">=</span> {}</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    g.properties()[<span class="st">'_plant_translation'</span>] <span class="op">=</span> {}</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    max_scale <span class="op">=</span> g.max_scale()</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> compute_element(n, symbols, time):</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>        leaf <span class="op">=</span> symbols.get(<span class="st">'LeafElement'</span>)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>        stem <span class="op">=</span> symbols.get(<span class="st">'StemElement'</span>)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>        leaf_rank <span class="op">=</span> <span class="bu">int</span>(n.<span class="bu">complex</span>().index())</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>        optical_species <span class="op">=</span> <span class="bu">int</span>(n.po)</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>        metamer <span class="op">=</span> n.<span class="bu">complex</span>()</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Length computation</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> update_visitor:</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>            length <span class="op">=</span> n.length</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>            final_length <span class="op">=</span> metamer.final_length</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>            final_length <span class="op">=</span> n.final_length</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>            <span class="cf">try</span> :</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>                length <span class="op">=</span> final_length <span class="op">*</span> (time <span class="op">-</span> metamer.start_tt) <span class="op">/</span> (metamer.end_tt <span class="op">-</span> metamer.start_tt) <span class="cf">if</span> metamer.end_tt <span class="kw">and</span> time <span class="op">&lt;</span> metamer.end_tt <span class="cf">else</span> n.length</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>            <span class="cf">except</span>:</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>                length <span class="op">=</span> n.length</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> update_visitor <span class="kw">and</span>  n.label.startswith(<span class="st">'L'</span>):</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> metamer.final_length <span class="kw">is</span> <span class="va">None</span>:</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>                metamer.final_length <span class="op">=</span> n.final_length</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>                metamer.length <span class="op">=</span> n.length</span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>            length <span class="op">=</span> metamer.length</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>            prev_length <span class="op">=</span> metamer.final_length <span class="op">*</span> (n.start_tt <span class="op">-</span> metamer.start_tt) <span class="op">/</span> (metamer.end_tt <span class="op">-</span>metamer.start_tt)</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>            s_base <span class="op">=</span> (metamer.length <span class="op">-</span> prev_length <span class="op">-</span> n.length) <span class="op">/</span> metamer.length</span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>            s_base <span class="op">=</span> n.srb</span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>        s_top <span class="op">=</span> n.srt</span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>        seed <span class="op">=</span> n.LcIndex</span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>        <span class="co">#leaf inclination</span></span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> update_visitor <span class="kw">and</span>  n.label.startswith(<span class="st">'L'</span>):</span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>            linc <span class="op">=</span> metamer.insertion_angle</span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>            linc <span class="op">=</span> n.Linc</span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>        element <span class="op">=</span> {} </span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> n.label.startswith(<span class="st">'L'</span>):</span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>            radius_max <span class="op">=</span> n.Lw</span>
+<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a>            element <span class="op">=</span> leaf(optical_species, </span>
+<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a>                        final_length, </span>
+<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>                        length, </span>
+<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a>                        radius_max, </span>
+<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a>                        s_base, </span>
+<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a>                        s_top, </span>
+<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a>                        leaf_rank, seed, linc) </span>
+<span id="cb1-66"><a href="#cb1-66" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
+<span id="cb1-67"><a href="#cb1-67" aria-hidden="true" tabindex="-1"></a>            diameter_base <span class="op">=</span> n.parent().diam <span class="cf">if</span> (n.parent() <span class="kw">and</span> n.parent().diam <span class="op">&gt;</span> <span class="fl">0.</span>) <span class="cf">else</span> n.diam</span>
+<span id="cb1-68"><a href="#cb1-68" aria-hidden="true" tabindex="-1"></a>            diameter_top <span class="op">=</span> n.diam</span>
+<span id="cb1-69"><a href="#cb1-69" aria-hidden="true" tabindex="-1"></a>            element <span class="op">=</span> stem( optical_species, length, diameter_base, diameter_top)</span>
+<span id="cb1-70"><a href="#cb1-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-71"><a href="#cb1-71" aria-hidden="true" tabindex="-1"></a>        can_label <span class="op">=</span>  element.get(<span class="st">'label'</span>)</span>
+<span id="cb1-72"><a href="#cb1-72" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> can_label:</span>
+<span id="cb1-73"><a href="#cb1-73" aria-hidden="true" tabindex="-1"></a>            can_label.elt_id <span class="op">=</span> leaf_rank</span>
+<span id="cb1-74"><a href="#cb1-74" aria-hidden="true" tabindex="-1"></a>            plant_node <span class="op">=</span> n.complex_at_scale(scale<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb1-75"><a href="#cb1-75" aria-hidden="true" tabindex="-1"></a>            can_label.plant_id <span class="op">=</span> plant_node.index()</span>
+<span id="cb1-76"><a href="#cb1-76" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb1-77"><a href="#cb1-77" aria-hidden="true" tabindex="-1"></a>        geom <span class="op">=</span> element.get(<span class="st">'geometry'</span>)</span>
+<span id="cb1-78"><a href="#cb1-78" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb1-79"><a href="#cb1-79" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> geom, can_label</span>
+<span id="cb1-80"><a href="#cb1-80" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-81"><a href="#cb1-81" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> adel_visitor(g, v, turtle, time):</span>
+<span id="cb1-82"><a href="#cb1-82" aria-hidden="true" tabindex="-1"></a>        <span class="co"># 1. retriev the node</span></span>
+<span id="cb1-83"><a href="#cb1-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-84"><a href="#cb1-84" aria-hidden="true" tabindex="-1"></a>        n <span class="op">=</span> g.node(v)</span>
+<span id="cb1-85"><a href="#cb1-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-86"><a href="#cb1-86" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Update visitor to compute or modified the node parameters</span></span>
+<span id="cb1-87"><a href="#cb1-87" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> update_visitor <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
+<span id="cb1-88"><a href="#cb1-88" aria-hidden="true" tabindex="-1"></a>            update_visitor(n, time)</span>
+<span id="cb1-89"><a href="#cb1-89" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-90"><a href="#cb1-90" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="st">'Leaf'</span> <span class="kw">in</span> n.label:</span>
+<span id="cb1-91"><a href="#cb1-91" aria-hidden="true" tabindex="-1"></a>                metamer <span class="op">=</span> n.<span class="bu">complex</span>()</span>
+<span id="cb1-92"><a href="#cb1-92" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> (n.start_tt <span class="op">&lt;=</span> time <span class="op">&lt;</span> n.end_tt) <span class="kw">or</span> ((time <span class="op">&gt;=</span> metamer.end_tt) <span class="kw">and</span> n.edge_type()<span class="op">==</span><span class="st">'+'</span>):</span>
+<span id="cb1-93"><a href="#cb1-93" aria-hidden="true" tabindex="-1"></a>                    angle <span class="op">=</span> <span class="bu">float</span>(metamer.Laz) <span class="cf">if</span> metamer.Laz <span class="cf">else</span> <span class="fl">0.</span></span>
+<span id="cb1-94"><a href="#cb1-94" aria-hidden="true" tabindex="-1"></a>                    turtle.rollL(angle)</span>
+<span id="cb1-95"><a href="#cb1-95" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
+<span id="cb1-96"><a href="#cb1-96" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="st">'Leaf'</span> <span class="kw">in</span> n.label:</span>
+<span id="cb1-97"><a href="#cb1-97" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> n.edge_type()<span class="op">==</span><span class="st">'+'</span>:</span>
+<span id="cb1-98"><a href="#cb1-98" aria-hidden="true" tabindex="-1"></a>                    angle <span class="op">=</span> <span class="bu">float</span>(n.Laz) <span class="cf">if</span> n.Laz <span class="cf">else</span> <span class="fl">0.</span></span>
+<span id="cb1-99"><a href="#cb1-99" aria-hidden="true" tabindex="-1"></a>                    turtle.rollL(angle)</span>
+<span id="cb1-100"><a href="#cb1-100" aria-hidden="true" tabindex="-1"></a>            <span class="cf">else</span>:</span>
+<span id="cb1-101"><a href="#cb1-101" aria-hidden="true" tabindex="-1"></a>                angle <span class="op">=</span> <span class="bu">float</span>(n.Laz) <span class="cf">if</span> n.Laz <span class="cf">else</span> <span class="fl">0.</span></span>
+<span id="cb1-102"><a href="#cb1-102" aria-hidden="true" tabindex="-1"></a>                turtle.rollL(angle)</span>
+<span id="cb1-103"><a href="#cb1-103" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb1-104"><a href="#cb1-104" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> g.edge_type(v) <span class="op">==</span> <span class="st">'+'</span>:</span>
+<span id="cb1-105"><a href="#cb1-105" aria-hidden="true" tabindex="-1"></a>            angle <span class="op">=</span> n.Ginc <span class="kw">or</span> n.Einc</span>
+<span id="cb1-106"><a href="#cb1-106" aria-hidden="true" tabindex="-1"></a>            angle <span class="op">=</span> <span class="bu">float</span>(angle) <span class="cf">if</span> angle <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="cf">else</span> <span class="fl">0.</span></span>
+<span id="cb1-107"><a href="#cb1-107" aria-hidden="true" tabindex="-1"></a>            <span class="co">#angle = n.inclination</span></span>
+<span id="cb1-108"><a href="#cb1-108" aria-hidden="true" tabindex="-1"></a>            <span class="co">#angle = float(angle) if angle is not None else 0.</span></span>
+<span id="cb1-109"><a href="#cb1-109" aria-hidden="true" tabindex="-1"></a>            turtle.up(angle)</span>
+<span id="cb1-110"><a href="#cb1-110" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-111"><a href="#cb1-111" aria-hidden="true" tabindex="-1"></a>        <span class="co"># 2. Compute the geometric symbol</span></span>
+<span id="cb1-112"><a href="#cb1-112" aria-hidden="true" tabindex="-1"></a>        mesh, can_label <span class="op">=</span> compute_element(n, symbols, time)</span>
+<span id="cb1-113"><a href="#cb1-113" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> mesh:</span>
+<span id="cb1-114"><a href="#cb1-114" aria-hidden="true" tabindex="-1"></a>            n.geometry <span class="op">=</span> transform(turtle, mesh)</span>
+<span id="cb1-115"><a href="#cb1-115" aria-hidden="true" tabindex="-1"></a>            n.can_label <span class="op">=</span> can_label</span>
+<span id="cb1-116"><a href="#cb1-116" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-117"><a href="#cb1-117" aria-hidden="true" tabindex="-1"></a>        <span class="co"># 3. Update the turtle</span></span>
+<span id="cb1-118"><a href="#cb1-118" aria-hidden="true" tabindex="-1"></a>        turtle.setId(v)</span>
+<span id="cb1-119"><a href="#cb1-119" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-120"><a href="#cb1-120" aria-hidden="true" tabindex="-1"></a>        m <span class="op">=</span> n.<span class="bu">complex</span>()</span>
+<span id="cb1-121"><a href="#cb1-121" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> update_visitor:</span>
+<span id="cb1-122"><a href="#cb1-122" aria-hidden="true" tabindex="-1"></a>            length <span class="op">=</span> n.length</span>
+<span id="cb1-123"><a href="#cb1-123" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
+<span id="cb1-124"><a href="#cb1-124" aria-hidden="true" tabindex="-1"></a>            <span class="cf">try</span>:</span>
+<span id="cb1-125"><a href="#cb1-125" aria-hidden="true" tabindex="-1"></a>                length <span class="op">=</span> n.length <span class="op">*</span> (time <span class="op">-</span> m.start_tt) <span class="op">/</span> (m.end_tt <span class="op">-</span> m.start_tt) <span class="cf">if</span> time <span class="op">&lt;</span> m.end_tt <span class="cf">else</span> n.length</span>
+<span id="cb1-126"><a href="#cb1-126" aria-hidden="true" tabindex="-1"></a>            <span class="cf">except</span>:</span>
+<span id="cb1-127"><a href="#cb1-127" aria-hidden="true" tabindex="-1"></a>                length <span class="op">=</span> n.length</span>
+<span id="cb1-128"><a href="#cb1-128" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (<span class="st">'Leaf'</span> <span class="kw">not</span> <span class="kw">in</span> n.label) <span class="kw">and</span> (length <span class="op">&gt;</span> <span class="fl">0.</span>):</span>
+<span id="cb1-129"><a href="#cb1-129" aria-hidden="true" tabindex="-1"></a>            turtle.F(length)</span>
+<span id="cb1-130"><a href="#cb1-130" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Get the azimuth angle</span></span>
+<span id="cb1-131"><a href="#cb1-131" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb1-132"><a href="#cb1-132" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-133"><a href="#cb1-133" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> traverse_with_turtle_time(g, vid, time, visitor<span class="op">=</span>adel_visitor):</span>
+<span id="cb1-134"><a href="#cb1-134" aria-hidden="true" tabindex="-1"></a>        turtle <span class="op">=</span> PglTurtle()</span>
+<span id="cb1-135"><a href="#cb1-135" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> push_turtle(v):</span>
+<span id="cb1-136"><a href="#cb1-136" aria-hidden="true" tabindex="-1"></a>            n <span class="op">=</span> g.node(v)</span>
+<span id="cb1-137"><a href="#cb1-137" aria-hidden="true" tabindex="-1"></a>            <span class="co">#if 'Leaf' in n.label:</span></span>
+<span id="cb1-138"><a href="#cb1-138" aria-hidden="true" tabindex="-1"></a>                <span class="co">#    return False</span></span>
+<span id="cb1-139"><a href="#cb1-139" aria-hidden="true" tabindex="-1"></a>            <span class="cf">try</span>:</span>
+<span id="cb1-140"><a href="#cb1-140" aria-hidden="true" tabindex="-1"></a>                start_tt <span class="op">=</span> n.<span class="bu">complex</span>().start_tt</span>
+<span id="cb1-141"><a href="#cb1-141" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> start_tt <span class="op">&gt;</span> time:</span>
+<span id="cb1-142"><a href="#cb1-142" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">return</span> <span class="va">False</span></span>
+<span id="cb1-143"><a href="#cb1-143" aria-hidden="true" tabindex="-1"></a>            <span class="cf">except</span>: </span>
+<span id="cb1-144"><a href="#cb1-144" aria-hidden="true" tabindex="-1"></a>                <span class="cf">pass</span></span>
+<span id="cb1-145"><a href="#cb1-145" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> g.edge_type(v) <span class="op">==</span> <span class="st">'+'</span>:</span>
+<span id="cb1-146"><a href="#cb1-146" aria-hidden="true" tabindex="-1"></a>                turtle.push()</span>
+<span id="cb1-147"><a href="#cb1-147" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="va">True</span></span>
+<span id="cb1-148"><a href="#cb1-148" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-149"><a href="#cb1-149" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> pop_turtle(v):</span>
+<span id="cb1-150"><a href="#cb1-150" aria-hidden="true" tabindex="-1"></a>            n <span class="op">=</span> g.node(v)</span>
+<span id="cb1-151"><a href="#cb1-151" aria-hidden="true" tabindex="-1"></a>            <span class="cf">try</span>:</span>
+<span id="cb1-152"><a href="#cb1-152" aria-hidden="true" tabindex="-1"></a>                start_tt <span class="op">=</span> n.<span class="bu">complex</span>().start_tt</span>
+<span id="cb1-153"><a href="#cb1-153" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> start_tt <span class="op">&gt;</span> time:</span>
+<span id="cb1-154"><a href="#cb1-154" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">return</span> <span class="va">False</span></span>
+<span id="cb1-155"><a href="#cb1-155" aria-hidden="true" tabindex="-1"></a>            <span class="cf">except</span>: </span>
+<span id="cb1-156"><a href="#cb1-156" aria-hidden="true" tabindex="-1"></a>                <span class="cf">pass</span></span>
+<span id="cb1-157"><a href="#cb1-157" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> g.edge_type(v) <span class="op">==</span> <span class="st">'+'</span>:</span>
+<span id="cb1-158"><a href="#cb1-158" aria-hidden="true" tabindex="-1"></a>                turtle.pop()</span>
+<span id="cb1-159"><a href="#cb1-159" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-160"><a href="#cb1-160" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> g.node(vid).<span class="bu">complex</span>().start_tt <span class="op">&lt;=</span> time:</span>
+<span id="cb1-161"><a href="#cb1-161" aria-hidden="true" tabindex="-1"></a>            visitor(g,vid,turtle,time)</span>
+<span id="cb1-162"><a href="#cb1-162" aria-hidden="true" tabindex="-1"></a>            <span class="co">#turtle.push()</span></span>
+<span id="cb1-163"><a href="#cb1-163" aria-hidden="true" tabindex="-1"></a>        plant_id <span class="op">=</span> g.complex_at_scale(vid, scale<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb1-164"><a href="#cb1-164" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> v <span class="kw">in</span> pre_order2_with_filter(g, vid, <span class="va">None</span>, push_turtle, pop_turtle):</span>
+<span id="cb1-165"><a href="#cb1-165" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> v <span class="op">==</span> vid: <span class="cf">continue</span></span>
+<span id="cb1-166"><a href="#cb1-166" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Done for the leaves</span></span>
+<span id="cb1-167"><a href="#cb1-167" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> g.node(v).<span class="bu">complex</span>().start_tt <span class="op">&gt;</span> time:</span>
+<span id="cb1-168"><a href="#cb1-168" aria-hidden="true" tabindex="-1"></a>                <span class="bu">print</span>(<span class="st">'Do not consider '</span>, v, time)</span>
+<span id="cb1-169"><a href="#cb1-169" aria-hidden="true" tabindex="-1"></a>                <span class="cf">continue</span></span>
+<span id="cb1-170"><a href="#cb1-170" aria-hidden="true" tabindex="-1"></a>            visitor(g,v,turtle,time)</span>
+<span id="cb1-171"><a href="#cb1-171" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-172"><a href="#cb1-172" aria-hidden="true" tabindex="-1"></a>        scene <span class="op">=</span> turtle.getScene()</span>
+<span id="cb1-173"><a href="#cb1-173" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> g</span>
+<span id="cb1-174"><a href="#cb1-174" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-175"><a href="#cb1-175" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> plant_id <span class="kw">in</span> g.component_roots_at_scale_iter(g.root, scale<span class="op">=</span>max_scale):</span>
+<span id="cb1-176"><a href="#cb1-176" aria-hidden="true" tabindex="-1"></a>        g <span class="op">=</span> traverse_with_turtle_time(g, plant_id, time)</span>
+<span id="cb1-177"><a href="#cb1-177" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> g</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div id="cell-14" class="cell" data-execution_count="2">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> thermal_time(g, phyllochron<span class="op">=</span><span class="fl">110.</span>, leaf_duration<span class="op">=</span><span class="fl">1.6</span>, stem_duration<span class="op">=</span><span class="fl">1.6</span>, leaf_falling_rate <span class="op">=</span> <span class="dv">10</span>):</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Add dynamic properties on the mtg to simulate developpement</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co">    leaf_duration is the phyllochronic time for a leaf to develop from tip appearance to collar appearance</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co">    stem_duration is the phyllochronic time for a stem to develop</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co">    falling_rate (degrees / phyllochron) is the rate at which leaves fall after colar appearance</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    plants <span class="op">=</span> g.vertices(scale<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    metamer_scale <span class="op">=</span> g.max_scale()<span class="op">-</span><span class="dv">1</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> plant <span class="kw">in</span> plants:</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>        tt <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>        v <span class="op">=</span> <span class="bu">next</span>(g.component_roots_at_scale_iter(plant, scale<span class="op">=</span>metamer_scale))</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> metamer <span class="kw">in</span> pre_order2(g, v):</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>            end_leaf <span class="op">=</span> tt <span class="op">+</span> phyllochron<span class="op">*</span>leaf_duration</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>            nm <span class="op">=</span> g.node(metamer)</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>            nm.start_tt <span class="op">=</span> tt</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>            nm.end_tt <span class="op">=</span> end_leaf</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>            nm.frate <span class="op">=</span> leaf_falling_rate <span class="op">/</span> phyllochron</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>            sectors <span class="op">=</span> [node <span class="cf">for</span> node <span class="kw">in</span> nm.components() <span class="cf">if</span> <span class="st">'Leaf'</span> <span class="kw">in</span> node.label]</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>            stems <span class="op">=</span> [node <span class="cf">for</span> node <span class="kw">in</span> nm.components() <span class="cf">if</span> <span class="st">'Stem'</span> <span class="kw">in</span> node.label]</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>            nb_stems <span class="op">=</span> <span class="bu">len</span>(stems)</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>            stem_tt <span class="op">=</span> end_leaf</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>            dtt <span class="op">=</span> phyllochron<span class="op">*</span>stem_duration <span class="op">/</span> nb_stems</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> stem <span class="kw">in</span> stems:</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>                stem.start_tt <span class="op">=</span> stem_tt</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>                stem.end_tt <span class="op">=</span> stem_tt<span class="op">+</span>dtt</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>                stem_tt <span class="op">+=</span> dtt</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>            nb_sectors <span class="op">=</span> <span class="bu">max</span>(<span class="dv">1</span>,<span class="bu">len</span>(sectors))</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>            sector_tt <span class="op">=</span> end_leaf</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>            dtt <span class="op">=</span> phyllochron<span class="op">*</span>leaf_duration<span class="op">/</span>nb_sectors </span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> sector <span class="kw">in</span> sectors:</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>                sector.start_tt <span class="op">=</span> sector_tt <span class="op">-</span> dtt</span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>                sector.end_tt <span class="op">=</span> sector_tt</span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>                sector_tt <span class="op">-=</span> dtt</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>            tt <span class="op">+=</span> phyllochron</span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> g</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>There are several ways to conceive the MTG for a growing plant.</p>
+<p>At each thermal time step, the turtle visits each element and adds a value to a time series for each (almost) properties of the MTG.</p>
+<p><strong>OR</strong></p>
+<p>At each thermal time step, the MTG is replicated and the growing elements ar modified, and new elements are added if needed.</p>
+</section>
+<section id="next-steps" class="level2" data-number="4.5">
+<h2 data-number="4.5" class="anchored" data-anchor-id="next-steps"><span class="header-section-number">4.5</span> Next steps</h2>
+<ul>
+<li>Constrains from crop model</li>
+<li>Bending dynamics of leaves and tillers</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./structural_cereal_model.html" class="pagination-link" aria-label="Structural cereal model">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Structural cereal model</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./references.html" class="pagination-link" aria-label="References">
+        <span class="nav-page-text">References</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
