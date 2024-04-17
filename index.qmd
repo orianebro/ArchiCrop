@@ -3,4 +3,9 @@
 This book keeps track of the work made during the PhD of Oriane Braud, 
 entitled "Multiscale hybrid modeling framework for intercrops: the best of plant and crop models".
 This PhD is carried out from November 2023 to 2026 at CIRAD (UMRs AGAP and AMAP), as part of European project IntercropValuES, 
-and is supervised by Myriam Adam, Marc Jaeger, Christophe Pradal, Remi Vezy and Thomas Arsouze. 
+and is supervised by Myriam Adam, Marc Jaeger, Christophe Pradal, Remi Vezy and Thomas Arsouze.  
+
+![logo IntercropValuES](images/logo_intercropvalues.png){: style="height:83px"}
+![logo CIRAD](images/logo_cirad.png){: style="height:83px"}
+![logo AGAP](images/logo_agap.png){: style="height:83px"}
+![logo AMAP](images/logo_amap.jpg){: style="height:83px"}

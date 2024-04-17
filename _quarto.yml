@@ -9,8 +9,12 @@ book:
     - index.qmd
     - abstract.qmd
     - intro.qmd
-    - structural_cereal_model.ipynb
-    - dynamic_model.ipynb
+    - part: year_1.qmd
+      chapters:
+      - structural_cereal_model.ipynb
+      - dynamic_model.ipynb
+    - part: year_2.qmd
+    - part: year_3.qmd
     - references.qmd
 
 bibliography: references.bib

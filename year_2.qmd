@@ -1,0 +1,38 @@
+# Second chapter : Analyzing accuracy of formalisms in crop model when adding root structural variability
+
+
+Analysis - root : Would considering root structure in an intercropping system be relevant for crop models ?  
+
+
+*Hypothesis: The error of crop models, when it comes to modeling intercrops, are mainly due to the average plant hypothesis 
+and the non-consideration of the plant root architecture.*  
+
+
+Create a dynamic root FSPM for all 4 plants (cf lit), that enables to constrain root growth with density=f(depth) from STICS, in STICS' 1D soil.   
+Implement well-known structural reactions to stresses.  
+*(january -> march 2025)*  
+
+
+Run simulations with both FSPM and STICS (stressless and stressed conditions : Vezy et al., 2023; Traore et al., 2022, 2023), 
+varying (define variations ranges) when possible: root structures, spatial arrangement (with all same plants or all different to separate effects), 
+env/stresses (N, water, light)  
+*(april -> june 2025)*  
+
+
+
+From outputs from my models and from STICS for given processes and given conditions:  
+Compare means and analyze variance of chosen output variables: water and N uptake, N fixing, etc.  
+Analyse uncertainty propagation in simulations; expected results: see which processes (integrated in root density) are 
+the most impacted by the uncertainty in STICS' root density.  
+Analyse sensitivity of some plant processes to structural variability (and spatial heterogeneity). 
+Expected results: spot parameters of interest to implement in STICS as a parameter or different equation.  
+*(july -> october 2025)*  
+
+
+Couple shoot and root models (when ?)
+
+
+Collaboration with post-doc from WUR, Jie Lu   
+
+
+

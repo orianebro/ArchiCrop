@@ -1,0 +1,16 @@
+# Third chapter: Improving STICS
+
+
+Modeling : How to model intercrops more accurately at crop scale, considering spatial issues when needed ?  
+
+*Hypothesis: New crop models formalisms created through a multiscale approach would enable a better accuracy of the crop models.*  
+
+Which formalisms would enable to translate spatial and structural considerations for chosen plant processes in a crop model ?  
+
+
+For each plant process targeted previously:  
+- Develop formalisms to implement in STICS, by any appropriate method.  
+- Run simulations and compare with simulations with previous version and with field data, to make sure new version of STICS fits data even better. (see with Mathilde de Freitas ?)  
+*(2026)*  
+
+ 
