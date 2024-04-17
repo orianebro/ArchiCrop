@@ -1,5 +1,5 @@
 from openalea.mtg.traversal import pre_order2, pre_order2_with_filter
-from geometry import CerealsVisitor, CerealsTurtle
+from geometry import CerealsVisitor, CerealsTurtle, CerealsContinuousVisitor
 
 
 
@@ -56,7 +56,7 @@ def mtg_turtle_time(g, time, update_visitor=None ):
 
     max_scale = g.max_scale()
 
-    cereal_visitor = CerealsVisitor(False)
+    cereal_visitor = CerealsContinuousVisitor(False)
 
     def traverse_with_turtle_time(g, vid, time, visitor=cereal_visitor):
         turtle = CerealsTurtle()
@@ -86,7 +86,7 @@ def mtg_turtle_time(g, time, update_visitor=None ):
                 turtle.pop()
 
         if g.node(vid).start_tt <= time:
-            visitor(g,vid,turtle)#,time)
+            visitor(g,vid,turtle,time)
             #turtle.push()
         plant_id = g.complex_at_scale(vid, scale=1)
         for v in pre_order2_with_filter(g, vid, None, push_turtle, pop_turtle):
@@ -95,7 +95,7 @@ def mtg_turtle_time(g, time, update_visitor=None ):
             if g.node(v).start_tt > time:
                 print('Do not consider ', v, time)
                 continue
-            visitor(g,v,turtle) #,time)
+            visitor(g,v,turtle,time)
 
         scene = turtle.getScene()
         return g
@@ -103,3 +103,5 @@ def mtg_turtle_time(g, time, update_visitor=None ):
     for plant_id in g.component_roots_at_scale_iter(g.root, scale=max_scale):
         g = traverse_with_turtle_time(g, plant_id, time)
     return g
+
+

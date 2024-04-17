@@ -5,7 +5,8 @@ entitled "Multiscale hybrid modeling framework for intercrops: the best of plant
 This PhD is carried out from November 2023 to 2026 at CIRAD (UMRs AGAP and AMAP), as part of European project IntercropValuES, 
 and is supervised by Myriam Adam, Marc Jaeger, Christophe Pradal, Remi Vezy and Thomas Arsouze.  
 
-![logo IntercropValuES](images/logo_intercropvalues.png){: style="height:83px"}
-![logo CIRAD](images/logo_cirad.png){: style="height:83px"}
-![logo AGAP](images/logo_agap.png){: style="height:83px"}
-![logo AMAP](images/logo_amap.jpg){: style="height:83px"}
+
+<img src="images/logo_intercropvalues.png" alt="logo IntercropValuES" width="70"/>
+<img src="images/logo-cirad.png" alt="logo CIRAD" width="70"/>
+<img src="images/logo_agap.png" alt="logo AGAP" width="70"/>
+<img src="images/logo_amap.jpg" alt="logo AMAP" width="70"/>
