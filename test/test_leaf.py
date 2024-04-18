@@ -21,9 +21,26 @@ Build parameters for a leaf
 
 3. Understand how to build a growing leaf for 0 to 1;
 """
+from archicrop.cereals_leaf import (
+    parametric_leaf,
+    leaf_mesh,
+)
 
 def leaf_shape():
-    """ return x, y, s, r values
-    """
+    """ return x, y, s, r values."""
+    return parametric_leaf()
+
+def simple_leaf(leaf, ratio=0.5):
+    total_length = 3
+    lw_ratio = 8.
+    
+    L_shape = total_length
+    Lw_shape = total_length / lw_ratio
+    length = total_length * ratio
+    s_base = 0
+    s_top = 1.
+
+    return leaf_mesh(leaf, L_shape,Lw_shape, length, s_base, s_top )
+
 
 
