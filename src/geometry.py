@@ -106,108 +106,6 @@ def arrange_leaf(leaf, stem_diameter=0, inclination=1, relative=True):
     return leaf
 
 
-def arrange_leaf_for_growth(leaf, stem_diameter=0, inclination=1, relative=True): # add stem height
-    """Arrange a leaf to be placed along a stem with a given inclination.
-
-    Args:
-        leaf: a x, y, s, r tuple describing leaf shape
-        stem_diameter: the diameter of the sem at the leaf insertion point
-        inclination: if relative=False, the leaf basal inclination (deg). A
-        multiplier to leaf basal inclination angle otherwise
-        relative: (bool) controls the meaning of inclination parameter
-
-    Returns:
-        a modified x, y, s, r tuple
-
-    """
-
-    x, y, s, r = list(map(numpy.array, leaf))
-
-    if relative and inclination == 1:
-        x1, y1 = x, y
-    else:
-        basal_inclination = pgl.angle((x[1] - x[0], y[1] - y[0]), (0, 1))
-
-        if relative:
-            angle = inclination * basal_inclination
-            angle = min(pi, angle)
-        else:
-            angle = radians(inclination)
-
-        rotation_angle = basal_inclination - angle
-
-        # rotation of the midrib
-        cos_a = cos(rotation_angle)
-        sin_a = sin(rotation_angle)
-
-        x1 = x[0] + cos_a * x - sin_a * y
-        y1 = y[0] + sin_a * x + cos_a * y
-    leaf = x1 + stem_diameter / 2., y1, s, r # consider stem height for y
-
-    return leaf
-
-
-def leaf_mesh_for_growth(leaf, L_shape=1, Lw_shape=1, length=1, s_base=0, s_top=1, flipx=False,
-              twist=0, volume=0, stem_diameter=0, inclination=1,
-              relative=True):
-    """Compute mesh for a leaf element along a scaled leaf shape
-
-    Args:
-        leaf: a x,y,s,r tuple describing leaf shape
-        L_shape: length of the shape
-        Lw_shape: width of the shape
-        length: the total visible length to be meshed
-        s_base: normalised position (on the shape) of the start of the element
-        s_top: normalised position (on the shape) of the end of the element
-        flipx: should leaf shape be flipped ?
-        twist:
-        volume: float value of the tickness of the leaf.
-              Default is 0. Else it indicates the relative depth of the leaf
-              along the midrib.
-        stem_diameter: the diameter of the sem at the leaf insertion point
-        inclination: if relative=False, the leaf basal inclination (deg). A
-        multiplier to leaf basal inclination angle otherwise
-        relative: (bool) controls the meaning of inclination parameter
-
-    Returns:
-        a PlanGl mesh representing the element
-    """
-    shape = arrange_leaf_for_growth(leaf, stem_diameter=float(stem_diameter) / L_shape,
-                         inclination=inclination, relative=relative)
-    # flip to position leaves along tiller emitted
-    if flipx:
-        # to position leaves along tiller emitted
-        shape = (-shape[0],) + shape[1:]
-
-    # x, y, s, r = list(map(numpy.array, shape))
-    # x = x[::-1]
-    # y = y[::-1]
-    # shape = x, y, s, r
-
-    mesh = fitting.mesh4(shape,
-                         L_shape,
-                         length,
-                         s_base,
-                         s_top,
-                         Lw_shape,
-                         twist=twist,
-                         volume=volume)
-
-    if mesh:
-        pts, ind = mesh
-        if len(ind) < 1:
-            mesh = None
-        else:
-            mesh = fitting.plantgl_shape(pts, ind)
-    else:
-        if length > 0:
-            print('ERROR No mesh', s_base, s_top, length)
-            pass
-        mesh = None
-
-    return mesh
-
-
 def leaf_mesh(leaf, L_shape=1, Lw_shape=1, length=1, s_base=0, s_top=1, flipx=False,
               twist=0, volume=0, stem_diameter=0, inclination=1,
               relative=True):
@@ -369,49 +267,7 @@ def compute_element(element_node, classic=False):
 
     return geom
 
-def compute_continuous_element(element_node, time, classic=False): # see maybe with *kwarg, **kwds, etc. for time
-    """ compute geometry of Adel base elements (LeafElement and StemElement)
-    element_node should be a mtg node proxy"""
-    n = element_node
-    geom = None
 
-    # for continuous growth
-    if n.start_tt <= time < n.end_tt:
-        len_growth_period = n.end_tt - n.start_tt
-        relative_time = time - n.start_tt
-        relative_growth = (time - n.start_tt) / (n.end_tt - n.start_tt)
-        n.length *= relative_growth
-        if n.visible_length is not None:
-            n.visible_length *= relative_growth
-        n.srb = 1 - relative_growth # see with srb and srt, how they are used in leaf_mesh
-        # if n.shape is not None:
-        #     n.shape[0] = n.shape[0][::-1]
-        #     n.shape[1] = n.shape[1][::-1]
-        # tuple --> immutable
-
-    if n.label.startswith('Leaf'):  # leaf element
-        if n.visible_length > 0.01:  # filter less than 0.1 mm leaves
-            if n.shape is not None and n.srb is not None:
-                geom = leaf_mesh_for_growth(n.shape,
-                                 n.shape_mature_length,
-                                 n.shape_max_width,
-                                 n.visible_length, n.srb, n.srt,
-                                 # flipx allows x-> -x to place the shape along
-                                 #  with the tiller positioned with
-                                 # turtle.down()
-                                 flipx=True,
-                                 stem_diameter=n.stem_diameter)
-            if n.lrolled > 0:
-                rolled = stem_mesh(n.lrolled, n.d_rolled, n.d_rolled,
-                                   classic)
-                if geom is None:
-                    geom = rolled
-                else:
-                    geom = addSets(rolled, geom, translate=(0, 0, n.lrolled))
-    elif n.label.startswith('Stem'):  # stem element
-        geom = stem_mesh(n.length, n.diameter_base, n.diameter_top, classic)
-
-    return geom
 
 
 class CerealsTurtle(pgl.PglTurtle):
@@ -488,6 +344,185 @@ class CerealsVisitor:
 
 
 
+
+def mtg_interpreter(g, classic=False):
+    """
+    Compute/update the geometry on each node of the MTG using Turtle geometry.
+    """
+    # BUG : sub_mtg mange le vertex plant => on perd la plante !
+    # plants = g.component_roots_at_scale(g.root, scale=1)
+    # nplants = g.nb_vertices(scale=1)
+    # gt = MTG()
+
+    # for plant in plants:
+    #   gplant = g.sub_mtg(plant)
+    turtle = CerealsTurtle()
+    visitor = CerealsVisitor(classic)
+
+    scene = TurtleFrame(g,
+                        visitor=visitor,
+                        turtle=turtle,
+                        gc=False,
+                        all_roots=True)
+
+    return g
+
+
+
+
+### For continuous growth #####
+
+def arrange_leaf_for_growth(leaf, stem_diameter=0, inclination=1, relative=True): # add stem height
+    """Arrange a leaf to be placed along a stem with a given inclination.
+
+    Args:
+        leaf: a x, y, s, r tuple describing leaf shape
+        stem_diameter: the diameter of the sem at the leaf insertion point
+        inclination: if relative=False, the leaf basal inclination (deg). A
+        multiplier to leaf basal inclination angle otherwise
+        relative: (bool) controls the meaning of inclination parameter
+
+    Returns:
+        a modified x, y, s, r tuple
+
+    """
+
+    x, y, s, r = list(map(numpy.array, leaf))
+
+    if relative and inclination == 1:
+        x1, y1 = x, y
+    else:
+        basal_inclination = pgl.angle((x[1] - x[0], y[1] - y[0]), (0, 1))
+
+        if relative:
+            angle = inclination * basal_inclination
+            angle = min(pi, angle)
+        else:
+            angle = radians(inclination)
+
+        rotation_angle = basal_inclination - angle
+
+        # rotation of the midrib
+        cos_a = cos(rotation_angle)
+        sin_a = sin(rotation_angle)
+
+        x1 = x[0] + cos_a * x - sin_a * y
+        y1 = y[0] + sin_a * x + cos_a * y
+    leaf = x1 + stem_diameter / 2., y1, s, r # consider stem height for y
+
+    return leaf
+
+
+def leaf_mesh_for_growth(leaf, L_shape=1, Lw_shape=1, length=1, s_base=0, s_top=1, flipx=False,
+              twist=0, volume=0, stem_diameter=0, inclination=1,
+              relative=True):
+    """Compute mesh for a leaf element along a scaled leaf shape
+
+    Args:
+        leaf: a x,y,s,r tuple describing leaf shape
+        L_shape: length of the shape
+        Lw_shape: width of the shape
+        length: the total visible length to be meshed
+        s_base: normalised position (on the shape) of the start of the element
+        s_top: normalised position (on the shape) of the end of the element
+        flipx: should leaf shape be flipped ?
+        twist:
+        volume: float value of the tickness of the leaf.
+              Default is 0. Else it indicates the relative depth of the leaf
+              along the midrib.
+        stem_diameter: the diameter of the sem at the leaf insertion point
+        inclination: if relative=False, the leaf basal inclination (deg). A
+        multiplier to leaf basal inclination angle otherwise
+        relative: (bool) controls the meaning of inclination parameter
+
+    Returns:
+        a PlanGl mesh representing the element
+    """
+    shape = arrange_leaf_for_growth(leaf, stem_diameter=float(stem_diameter) / L_shape,
+                         inclination=inclination, relative=relative)
+    # flip to position leaves along tiller emitted
+    if flipx:
+        # to position leaves along tiller emitted
+        shape = (-shape[0],) + shape[1:]
+
+    # added by Oriane
+    x, y, s, r = list(map(numpy.array, shape))
+    x = x[::-1]
+    y = y[::-1]
+    s = s[::-1]
+    shape = x, y, s, r
+
+
+    mesh = fitting.mesh4(shape,
+                         L_shape,
+                         length,
+                         s_base,
+                         s_top,
+                         Lw_shape,
+                         twist=twist,
+                         volume=volume)
+
+    if mesh:
+        pts, ind = mesh
+        if len(ind) < 1:
+            mesh = None
+        else:
+            mesh = fitting.plantgl_shape(pts, ind)
+    else:
+        if length > 0:
+            print('ERROR No mesh', s_base, s_top, length)
+            pass
+        mesh = None
+
+    return mesh
+
+
+
+def compute_continuous_element(element_node, time, classic=False): # see maybe with *kwarg, **kwds, etc. for time
+    """ compute geometry of Adel base elements (LeafElement and StemElement)
+    element_node should be a mtg node proxy"""
+    n = element_node
+    geom = None
+
+    # added by Oriane, for continuous growth
+    if n.start_tt <= time < n.end_tt:
+        len_growth_period = n.end_tt - n.start_tt
+        relative_time = time - n.start_tt
+        relative_growth = (time - n.start_tt) / (n.end_tt - n.start_tt)
+        n.length *= relative_growth
+        if n.visible_length is not None:
+            n.visible_length *= relative_growth
+        n.srb = 1-relative_growth # see with srb and srt, how they are used in leaf_mesh
+        # if n.shape is not None:
+        #     n.shape[0] = n.shape[0][::-1]
+        #     n.shape[1] = n.shape[1][::-1]
+        # tuple --> immutable
+
+    if n.label.startswith('Leaf'):  # leaf element
+        if n.visible_length > 0.01:  # filter less than 0.1 mm leaves
+            if n.shape is not None and n.srb is not None:
+                geom = leaf_mesh_for_growth(n.shape,
+                                 n.shape_mature_length,
+                                 n.shape_max_width,
+                                 n.visible_length, n.srb, n.srt,
+                                 # flipx allows x-> -x to place the shape along
+                                 #  with the tiller positioned with
+                                 # turtle.down()
+                                 flipx=True,
+                                 stem_diameter=n.stem_diameter)
+            if n.lrolled > 0:
+                rolled = stem_mesh(n.lrolled, n.d_rolled, n.d_rolled,
+                                   classic)
+                if geom is None:
+                    geom = rolled
+                else:
+                    geom = addSets(rolled, geom, translate=(0, 0, n.lrolled))
+    elif n.label.startswith('Stem'):  # stem element
+        geom = stem_mesh(n.length, n.diameter_base, n.diameter_top, classic)
+
+    return geom
+
+
 class CerealsContinuousVisitor(CerealsVisitor):
 
     def __init__(self, classic):
@@ -531,29 +566,6 @@ class CerealsContinuousVisitor(CerealsVisitor):
 
 
 
-def mtg_interpreter(g, classic=False):
-    """
-    Compute/update the geometry on each node of the MTG using Turtle geometry.
-    """
-    # BUG : sub_mtg mange le vertex plant => on perd la plante !
-    # plants = g.component_roots_at_scale(g.root, scale=1)
-    # nplants = g.nb_vertices(scale=1)
-    # gt = MTG()
-
-    # for plant in plants:
-    #   gplant = g.sub_mtg(plant)
-    turtle = CerealsTurtle()
-    visitor = CerealsVisitor(classic)
-
-    scene = TurtleFrame(g,
-                        visitor=visitor,
-                        turtle=turtle,
-                        gc=False,
-                        all_roots=True)
-
-    return g
-
-
 def mtg_interpreter_continuous(g, classic=False):
     """
     Compute/update the geometry on each node of the MTG using Turtle geometry.
@@ -575,6 +587,3 @@ def mtg_interpreter_continuous(g, classic=False):
                         all_roots=True)
 
     return g
-
-
-
