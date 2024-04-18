@@ -1,7 +1,7 @@
 """ Parametric leaf used for simple maize"""
 import numpy
 from math import pi, cos, sin, radians
-import fitting as fitting
+from . import fitting 
 import openalea.plantgl.all as pgl
 from scipy.integrate import trapz
 from scipy.optimize import brentq

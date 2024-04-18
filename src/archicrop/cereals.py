@@ -1,8 +1,8 @@
 import numpy
 
-from generator import cereals as cereals_generator
-from plant_design import blade_dimension, stem_dimension, get_form_factor, leaf_azimuth
-from cereals_leaf import parametric_leaf
+from .generator import cereals as cereals_generator
+from .plant_design import blade_dimension, stem_dimension, get_form_factor, leaf_azimuth
+from .cereals_leaf import parametric_leaf
 
 def build_shoot(stem_radius, insertion_heights, leaf_lengths, leaf_areas, leaf_azimuths=None, leaf_shapes=None):
     """create a shoot

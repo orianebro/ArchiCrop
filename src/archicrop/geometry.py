@@ -6,7 +6,7 @@ from scipy.integrate import trapz
 import openalea.plantgl.all as pgl
 from openalea.mtg.turtle import TurtleFrame
 
-import fitting
+from . import fitting
 
 def blade_elt_area(s, r, Lshape=1, Lwshape=1, sr_base=0, sr_top=1):
     """ surface of a blade element, positioned with two relative curvilinear absisca"""

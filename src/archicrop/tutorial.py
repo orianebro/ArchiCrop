@@ -1,12 +1,13 @@
 # ipython --gui=qt
-from cereals import build_shoot, parametric_leaf, leaf_azimuth, shoot_at_stage
-from display import display_mtg, build_scene, display_scene
-from stand import agronomic_plot
-from simple_maize import bell_shaped_dist, geometric_dist
-from geometry import form_factor
 import pandas
 import numpy
-import sky_sources as skys
+
+from .cereals import build_shoot, parametric_leaf, leaf_azimuth, shoot_at_stage
+from .display import display_mtg, build_scene, display_scene
+from .stand import agronomic_plot
+from .simple_maize import bell_shaped_dist, geometric_dist
+from .geometry import form_factor
+import .sky_sources as skys
 # import light_it as ltfs
 
 

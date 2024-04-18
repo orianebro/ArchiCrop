@@ -1,5 +1,5 @@
 from openalea.mtg.traversal import pre_order2, pre_order2_with_filter
-from geometry import CerealsVisitor, CerealsTurtle, CerealsContinuousVisitor
+from .geometry import CerealsVisitor, CerealsTurtle, CerealsContinuousVisitor
 
 
 

@@ -5,7 +5,7 @@ from alinea.astk.sun_and_sky import sun_sources as ss, sky_sources, sun_sky_sour
 from alinea.astk.meteorology.sky_irradiance import sun_position
 
 import openalea.plantgl.all as pgl
-from colormap import jet_colors
+from .colormap import jet_colors
 
 def cartesian(elevation, azimuth, radius=1):
     """ Cartesian coordinates from elevation and azimuth angles"""

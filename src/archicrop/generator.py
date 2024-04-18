@@ -4,8 +4,8 @@ import pandas
 
 from scipy.interpolate import interp1d
 from openalea.mtg import MTG, fat_mtg
-from geometry import mtg_interpreter
-from plant_design import get_form_factor
+from .geometry import mtg_interpreter
+from .plant_design import get_form_factor
 
 
 def curvilinear_abscisse(x, y, z=None):

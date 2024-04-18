@@ -4,7 +4,7 @@ import pandas
 from itertools import cycle
 from scipy.integrate import simps
 from scipy.interpolate import interp1d
-from fitting import fit_leaves
+from .fitting import fit_leaves
 import base64
 import json
 

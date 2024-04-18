@@ -4,9 +4,9 @@ import numpy
 from itertools import cycle
 from scipy.interpolate import interp1d
 
-from plant_design import get_form_factor, blade_dimension, \
-    stem_dimension, load_leaf_db
-from fitting import fit3
+from .plant_design import (get_form_factor, blade_dimension, 
+    stem_dimension, load_leaf_db)
+from .fitting import fit3
 
 # def maize_leaves_path():
 #     import os

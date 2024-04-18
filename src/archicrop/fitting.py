@@ -5,7 +5,7 @@ from scipy.integrate import simps, trapz
 
 
 import openalea.plantgl.all as pgl
-from simplification import cost
+from .simplification import cost
 
 
 ##### DEBUG
