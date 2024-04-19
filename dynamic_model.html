@@ -8,7 +8,7 @@
 
 <meta name="author" content="Oriane Braud">
 
-<title>PhD Oriane - 3&nbsp; Dynamic model</title>
+<title>PhD Oriane - 4&nbsp; Dynamic model</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -21,10 +21,44 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
-<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script><script src="site_libs/quarto-nav/quarto-nav.js"></script>
 <script src="site_libs/quarto-nav/headroom.min.js"></script>
 <script src="site_libs/clipboard/clipboard.min.js"></script>
 <script src="site_libs/quarto-search/autocomplete.umd.js"></script>
@@ -69,6 +103,10 @@ ul.task-list li input[type="checkbox"] {
     "search-label": "Search"
   }
 }</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+<script src="https://unpkg.com/@jupyter-widgets/html-manager@*/dist/embed-amd.js" crossorigin="anonymous"></script>
 
   <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
@@ -111,7 +149,7 @@ window.Quarto = {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./year_1.html">First chapter: Analyzing accuracy of formalisms in crop model when adding shoot structural variability</a></li><li class="breadcrumb-item"><a href="./dynamic_model.html"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Dynamic model</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./year_1.html">First chapter: Analyzing accuracy of formalisms in crop model when adding shoot structural variability</a></li><li class="breadcrumb-item"><a href="./dynamic_model.html"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Dynamic model</span></a></li></ol></nav>
         <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
@@ -165,25 +203,57 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./intro_1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Introduction</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./structural_cereal_model.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Structural cereal model</span></span></a>
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Structural cereal model</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./dynamic_model.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Dynamic model</span></span></a>
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Dynamic model</span></span></a>
   </div>
 </li>
       </ul>
   </li>
         <li class="sidebar-item sidebar-item-section">
-      <span class="sidebar-item-text sidebar-link text-start">
- <span class="menu-text">Second chapter : Analyzing accuracy of formalisms in crop model when adding root structural variability</span></span>
+      <div class="sidebar-item-container"> 
+            <a href="./year_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Second chapter : Analyzing accuracy of formalisms in crop model when adding root structural variability</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro_2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Introduction</span></span></a>
+  </div>
+</li>
+      </ul>
   </li>
         <li class="sidebar-item sidebar-item-section">
-      <span class="sidebar-item-text sidebar-link text-start">
- <span class="menu-text">Third chapter: Improving STICS</span></span>
+      <div class="sidebar-item-container"> 
+            <a href="./year_3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Third chapter: Improving STICS</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro_3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Introduction</span></span></a>
+  </div>
+</li>
+      </ul>
   </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
@@ -201,20 +271,20 @@ window.Quarto = {
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#conceptual-diagram" id="toc-conceptual-diagram" class="nav-link active" data-scroll-target="#conceptual-diagram"><span class="header-section-number">3.1</span> Conceptual diagram</a></li>
-  <li><a href="#time-dependent-parametrization-of-leaf-area" id="toc-time-dependent-parametrization-of-leaf-area" class="nav-link" data-scroll-target="#time-dependent-parametrization-of-leaf-area"><span class="header-section-number">3.2</span> Time-dependent parametrization of leaf area</a></li>
-  <li><a href="#apparition-and-growth-of-phytomers-stem-and-leaf" id="toc-apparition-and-growth-of-phytomers-stem-and-leaf" class="nav-link" data-scroll-target="#apparition-and-growth-of-phytomers-stem-and-leaf"><span class="header-section-number">3.3</span> Apparition and growth of phytomers (stem and leaf)</a></li>
-  <li><a href="#modifying-the-mtg-of-a-growing-plant" id="toc-modifying-the-mtg-of-a-growing-plant" class="nav-link" data-scroll-target="#modifying-the-mtg-of-a-growing-plant"><span class="header-section-number">3.4</span> Modifying the MTG of a growing plant</a></li>
-  <li><a href="#next-steps" id="toc-next-steps" class="nav-link" data-scroll-target="#next-steps"><span class="header-section-number">3.5</span> Next steps</a></li>
+  <li><a href="#conceptual-diagram" id="toc-conceptual-diagram" class="nav-link active" data-scroll-target="#conceptual-diagram"><span class="header-section-number">4.1</span> Conceptual diagram</a></li>
+  <li><a href="#time-dependent-parametrization-of-leaf-area" id="toc-time-dependent-parametrization-of-leaf-area" class="nav-link" data-scroll-target="#time-dependent-parametrization-of-leaf-area"><span class="header-section-number">4.2</span> Time-dependent parametrization of leaf area</a></li>
+  <li><a href="#apparition-and-growth-of-phytomers-stem-and-leaf" id="toc-apparition-and-growth-of-phytomers-stem-and-leaf" class="nav-link" data-scroll-target="#apparition-and-growth-of-phytomers-stem-and-leaf"><span class="header-section-number">4.3</span> Apparition and growth of phytomers (stem and leaf)</a></li>
+  <li><a href="#modifying-the-mtg-of-a-growing-plant" id="toc-modifying-the-mtg-of-a-growing-plant" class="nav-link" data-scroll-target="#modifying-the-mtg-of-a-growing-plant"><span class="header-section-number">4.4</span> Modifying the MTG of a growing plant</a></li>
+  <li><a href="#next-steps" id="toc-next-steps" class="nav-link" data-scroll-target="#next-steps"><span class="header-section-number">4.5</span> Next steps</a></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./year_1.html">First chapter: Analyzing accuracy of formalisms in crop model when adding shoot structural variability</a></li><li class="breadcrumb-item"><a href="./dynamic_model.html"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Dynamic model</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./year_1.html">First chapter: Analyzing accuracy of formalisms in crop model when adding shoot structural variability</a></li><li class="breadcrumb-item"><a href="./dynamic_model.html"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Dynamic model</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Dynamic model</span></h1>
+<h1 class="title"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Dynamic model</span></h1>
 </div>
 
 
@@ -237,8 +307,8 @@ window.Quarto = {
 </header>
 
 
-<section id="conceptual-diagram" class="level2" data-number="3.1">
-<h2 data-number="3.1" class="anchored" data-anchor-id="conceptual-diagram"><span class="header-section-number">3.1</span> Conceptual diagram</h2>
+<section id="conceptual-diagram" class="level2" data-number="4.1">
+<h2 data-number="4.1" class="anchored" data-anchor-id="conceptual-diagram"><span class="header-section-number">4.1</span> Conceptual diagram</h2>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="images/shoot_FSPM_conceptual_diagram_alone.jpg" title="Conceptual diagram" class="img-fluid figure-img"></p>
@@ -252,8 +322,8 @@ window.Quarto = {
 <p>Leaf senescence is constrained by crop model, as it has a direct influence on LAI (green LAI vs.&nbsp;yellow LAI ?).</p>
 <p>The branching pattern is set (Tillers (Zhu et al., 2015)).</p>
 </section>
-<section id="time-dependent-parametrization-of-leaf-area" class="level2" data-number="3.2">
-<h2 data-number="3.2" class="anchored" data-anchor-id="time-dependent-parametrization-of-leaf-area"><span class="header-section-number">3.2</span> Time-dependent parametrization of leaf area</h2>
+<section id="time-dependent-parametrization-of-leaf-area" class="level2" data-number="4.2">
+<h2 data-number="4.2" class="anchored" data-anchor-id="time-dependent-parametrization-of-leaf-area"><span class="header-section-number">4.2</span> Time-dependent parametrization of leaf area</h2>
 <p><span class="math display">\[ \mathcal{A_normalized} = 2 * |\int_{0}^{1} \mathcal{C}(s(u))ds(u)| \]</span> <span class="math display">\[ \mathcal{A} = \mathcal{A_scaled} = 2 * w * |\int_{0}^{L} \mathcal{C}(\frac{s(u)}{L})d\frac{s(u)}{L}| \]</span> <span class="math display">\[ \frac{d\mathcal{A}}{dt} = 2 * w * |\int_{ds(t)/L} \mathcal{C}(\frac{s(u)}{L})d\frac{s(u)}{L}| \]</span></p>
 <ul>
 <li><span class="math inline">\(\mathcal{A}\)</span> : final leaf area (or surface), in <span class="math inline">\(cm^2\)</span> (given by crop model)</li>
@@ -272,8 +342,8 @@ window.Quarto = {
 <p><span class="math display">\[ F(\frac{s(t)}{L}) = |\frac{1}{2w} \frac{d\mathcal{A}}{dt} + F(\frac{s(t-1)}{L})| \]</span></p>
 <p>Knowing the other variables, we know have to determine <span class="math inline">\(s(t)\)</span> at thermal time <span class="math inline">\(t\)</span>.</p>
 </section>
-<section id="apparition-and-growth-of-phytomers-stem-and-leaf" class="level2" data-number="3.3">
-<h2 data-number="3.3" class="anchored" data-anchor-id="apparition-and-growth-of-phytomers-stem-and-leaf"><span class="header-section-number">3.3</span> Apparition and growth of phytomers (stem and leaf)</h2>
+<section id="apparition-and-growth-of-phytomers-stem-and-leaf" class="level2" data-number="4.3">
+<h2 data-number="4.3" class="anchored" data-anchor-id="apparition-and-growth-of-phytomers-stem-and-leaf"><span class="header-section-number">4.3</span> Apparition and growth of phytomers (stem and leaf)</h2>
 <p>The height of the plant/canopy (here we consider the height of the main stem) is given by the crop model.<br>
 The plastochron (i.e.&nbsp;leaf initiation rate, in <span class="math inline">\(leaf^{-1}\)</span>) is the time interval between two successive leaves produced at the SAM.<br>
 The phyllochron (i.e.&nbsp;leaf emergence rate, in <span class="math inline">\(leaf^{-1}\)</span>) is the time interval between two successive leaves emerging from the top of the former leaf sheath.<br>
@@ -291,16 +361,143 @@ We consider a linear (rough approximation of beta function) growth for the leaf.
 <p>Cf Fournier et al, 2005; Stewart and Dwyer, 1993; Skinner and Nelson, 1995</p>
 <p>From crop model:</p>
 </section>
-<section id="modifying-the-mtg-of-a-growing-plant" class="level2" data-number="3.4">
-<h2 data-number="3.4" class="anchored" data-anchor-id="modifying-the-mtg-of-a-growing-plant"><span class="header-section-number">3.4</span> Modifying the MTG of a growing plant</h2>
-<p>In progress …</p>
+<section id="modifying-the-mtg-of-a-growing-plant" class="level2" data-number="4.4">
+<h2 data-number="4.4" class="anchored" data-anchor-id="modifying-the-mtg-of-a-growing-plant"><span class="header-section-number">4.4</span> Modifying the MTG of a growing plant</h2>
 <p>There are several ways to conceive the MTG for a growing plant.</p>
 <p>At each thermal time step, the turtle visits each element and adds a value to a time series for each (almost) properties of the MTG.</p>
 <p><strong>OR</strong></p>
 <p>At each thermal time step, the MTG is replicated and the growing elements ar modified, and new elements are added if needed.</p>
+<div id="cell-16" class="cell" data-execution_count="22">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">## Imports</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># from installed packages</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> openalea.plantgl.<span class="bu">all</span> <span class="im">import</span> Vector3</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># from ./src</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cereals_leaf <span class="im">import</span> parametric_leaf</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co">## Code for generating a parametric leaf for a cereal </span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>pl<span class="op">=</span>parametric_leaf(nb_segment<span class="op">=</span><span class="dv">10</span>, insertion_angle<span class="op">=</span><span class="dv">40</span>, scurv<span class="op">=</span><span class="fl">0.7</span>, curvature<span class="op">=</span><span class="dv">90</span>, alpha<span class="op">=-</span><span class="fl">2.3</span>)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>pl</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-display" data-execution_count="22">
+<pre><code>(array([0.00749877, 0.08470364, 0.13238738, 0.20096865, 0.28491199,
+        0.32926371, 0.42131892, 0.52548588, 0.60150059, 0.72220515,
+        0.75800434, 0.82680868]),
+ array([-0.00446052,  0.11023448,  0.16375474,  0.22645733,  0.28536742,
+         0.30959196,  0.3455314 ,  0.3625188 ,  0.35762971,  0.31394208,
+         0.29066803,  0.22892874]),
+ array([0.        , 0.13825894, 0.20993988, 0.30286461, 0.40541647,
+        0.45595262, 0.55477471, 0.66031772, 0.73648949, 0.86485694,
+        0.90755663, 1.        ]),
+ array([0.738203  , 0.91365864, 0.96981854, 1.00337648, 0.99197869,
+        0.97093695, 0.90233574, 0.77807322, 0.64551957, 0.3668271 ,
+        0.26649993, 0.        ]))</code></pre>
+</div>
+</div>
+<div id="cell-17" class="cell" data-execution_count="27">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>pl <span class="op">=</span> (pl[<span class="dv">0</span>][::<span class="op">-</span><span class="dv">1</span>], pl[<span class="dv">1</span>][::<span class="op">-</span><span class="dv">1</span>], pl[<span class="dv">2</span>], pl[<span class="dv">3</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div id="cell-18" class="cell" data-execution_count="29">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">## Imports</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># from installed packages</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> math <span class="im">import</span> pi, cos, sin, radians</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.tri <span class="im">as</span> mtri</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> openalea.plantgl.<span class="bu">all</span> <span class="im">as</span> pgl</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co"># from ./src</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co"># from cereals_leaf import arrange_leaf</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co"># or </span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> geometry <span class="im">import</span> arrange_leaf</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> fitting <span class="im">import</span> leaf_to_mesh_2d</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="co">## Code for placing a leaf against a stem element (here a cylinder), with a given inclination</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>stem_diameter<span class="op">=</span><span class="fl">0.5</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>inclination<span class="op">=</span><span class="dv">1</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>al<span class="op">=</span>arrange_leaf(leaf<span class="op">=</span>pl, </span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>                stem_diameter<span class="op">=</span>stem_diameter, </span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>                inclination<span class="op">=</span>inclination, </span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>                relative<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>pourc <span class="op">=</span> <span class="fl">0.5</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>idx_cut <span class="op">=</span> <span class="bu">int</span>(pourc<span class="op">*</span><span class="bu">len</span>(al[<span class="dv">0</span>]))</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>al <span class="op">=</span> (al[<span class="dv">0</span>][:idx_cut], al[<span class="dv">1</span>][:idx_cut], al[<span class="dv">2</span>][:idx_cut], al[<span class="dv">3</span>][:idx_cut])</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>x<span class="op">=</span>al[<span class="dv">0</span>]</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>y<span class="op">=</span>al[<span class="dv">1</span>]</span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>s<span class="op">=</span>al[<span class="dv">2</span>]</span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>r<span class="op">=</span>al[<span class="dv">3</span>]</span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>pts,ind<span class="op">=</span>leaf_to_mesh_2d(x, y, r)</span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>xs<span class="op">=</span>[pt[<span class="dv">0</span>] <span class="cf">for</span> pt <span class="kw">in</span> pts]</span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>ys<span class="op">=</span>[pt[<span class="dv">1</span>] <span class="cf">for</span> pt <span class="kw">in</span> pts]</span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>zs<span class="op">=</span>[pt[<span class="dv">2</span>] <span class="cf">for</span> pt <span class="kw">in</span> pts]</span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>X,Y<span class="op">=</span>np.meshgrid(xs, ys)</span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>tri<span class="op">=</span>mtri.Triangulation(xs, ys)</span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>fig<span class="op">=</span>plt.figure()</span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a>ax<span class="op">=</span>fig.add_subplot(<span class="dv">111</span>, projection<span class="op">=</span><span class="st">'3d'</span>)</span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a>ax.plot(xs,ys,zs,c<span class="op">=</span><span class="st">"green"</span>)</span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a>ax.plot([xs[<span class="dv">0</span>],xs[<span class="dv">0</span>]],[ys[<span class="dv">0</span>],<span class="op">-</span>ys[<span class="dv">0</span>]],[<span class="dv">0</span>,<span class="dv">0</span>],c<span class="op">=</span><span class="st">"green"</span>)</span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a>ax.plot(xs,np.zeros(<span class="bu">len</span>(ys)),zs,c<span class="op">=</span><span class="st">"green"</span>,ls<span class="op">=</span><span class="st">"dashed"</span>)</span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a>radius<span class="op">=</span>stem_diameter<span class="op">/</span><span class="dv">2</span></span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a>z<span class="op">=</span>np.linspace(<span class="op">-</span>zs[<span class="op">-</span><span class="dv">1</span>], zs[<span class="op">-</span><span class="dv">1</span>])</span>
+<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a>theta<span class="op">=</span>np.linspace(<span class="dv">0</span>, <span class="dv">2</span><span class="op">*</span>np.pi)</span>
+<span id="cb4-52"><a href="#cb4-52" aria-hidden="true" tabindex="-1"></a>theta_grid, z_stem<span class="op">=</span>np.meshgrid(theta, z)</span>
+<span id="cb4-53"><a href="#cb4-53" aria-hidden="true" tabindex="-1"></a>x_stem<span class="op">=</span>radius<span class="op">*</span>np.cos(theta_grid)</span>
+<span id="cb4-54"><a href="#cb4-54" aria-hidden="true" tabindex="-1"></a>y_stem<span class="op">=</span>radius<span class="op">*</span>np.sin(theta_grid)</span>
+<span id="cb4-55"><a href="#cb4-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-56"><a href="#cb4-56" aria-hidden="true" tabindex="-1"></a>ax.plot_surface(x_stem, y_stem, z_stem, color<span class="op">=</span><span class="st">"green"</span>)</span>
+<span id="cb4-57"><a href="#cb4-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-58"><a href="#cb4-58" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">"3D representation of the placement of a leaf along a stem"</span>)</span>
+<span id="cb4-59"><a href="#cb4-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-60"><a href="#cb4-60" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"d4d5ec0a705543829dbedec3147a328f","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+</div>
+<div id="cell-19" class="cell" data-execution_count="25">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>pl</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-display" data-execution_count="25">
+<pre><code>(array([0.82680868, 0.75800434, 0.72220515, 0.60150059, 0.52548588,
+        0.42131892, 0.32926371, 0.28491199, 0.20096865, 0.13238738,
+        0.08470364, 0.00749877]),
+ array([ 0.22892874,  0.29066803,  0.31394208,  0.35762971,  0.3625188 ,
+         0.3455314 ,  0.30959196,  0.28536742,  0.22645733,  0.16375474,
+         0.11023448, -0.00446052]),
+ array([1.        , 0.90755663, 0.86485694, 0.73648949, 0.66031772,
+        0.55477471, 0.45595262, 0.40541647, 0.30286461, 0.20993988,
+        0.13825894, 0.        ]),
+ array([0.738203  , 0.91365864, 0.96981854, 1.00337648, 0.99197869,
+        0.97093695, 0.90233574, 0.77807322, 0.64551957, 0.3668271 ,
+        0.26649993, 0.        ]))</code></pre>
+</div>
+</div>
 </section>
-<section id="next-steps" class="level2" data-number="3.5">
-<h2 data-number="3.5" class="anchored" data-anchor-id="next-steps"><span class="header-section-number">3.5</span> Next steps</h2>
+<section id="next-steps" class="level2" data-number="4.5">
+<h2 data-number="4.5" class="anchored" data-anchor-id="next-steps"><span class="header-section-number">4.5</span> Next steps</h2>
 <ul>
 <li>Constrains from crop model</li>
 <li>Bending dynamics of leaves and tillers</li>
@@ -310,6 +507,9 @@ We consider a linear (rough approximation of beta function) growth for the leaf.
 </section>
 
 </main> <!-- /main -->
+<script type="application/vnd.jupyter.widget-state+json">
+{"state":{},"version_major":2,"version_minor":0}
+</script>
 <script id="quarto-html-after-body" type="application/javascript">
 window.document.addEventListener("DOMContentLoaded", function (event) {
   const toggleBodyColorMode = (bsSheetEl) => {
@@ -722,7 +922,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
       <a href="./structural_cereal_model.html" class="pagination-link" aria-label="Structural cereal model">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Structural cereal model</span></span>
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Structural cereal model</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">

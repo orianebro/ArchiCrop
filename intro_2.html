@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>PhD Oriane - Second chapter : Analyzing accuracy of formalisms in crop model when adding root structural variability</title>
+<title>PhD Oriane - 5&nbsp; Introduction</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -30,8 +30,8 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./intro_2.html" rel="next">
-<link href="./dynamic_model.html" rel="prev">
+<link href="./year_3.html" rel="next">
+<link href="./year_2.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
@@ -81,7 +81,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./year_2.html">Second chapter : Analyzing accuracy of formalisms in crop model when adding root structural variability</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./year_2.html">Second chapter : Analyzing accuracy of formalisms in crop model when adding root structural variability</a></li><li class="breadcrumb-item"><a href="./intro_2.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Introduction</span></a></li></ol></nav>
         <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
@@ -155,7 +155,7 @@ ul.task-list li input[type="checkbox"] {
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="./year_2.html" class="sidebar-item-text sidebar-link active">
+            <a href="./year_2.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Second chapter : Analyzing accuracy of formalisms in crop model when adding root structural variability</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -164,7 +164,7 @@ ul.task-list li input[type="checkbox"] {
       <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./intro_2.html" class="sidebar-item-text sidebar-link">
+  <a href="./intro_2.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Introduction</span></span></a>
   </div>
 </li>
@@ -204,9 +204,9 @@ ul.task-list li input[type="checkbox"] {
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default">
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./year_2.html">Second chapter : Analyzing accuracy of formalisms in crop model when adding root structural variability</a></li><li class="breadcrumb-item"><a href="./intro_2.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Introduction</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title">Second chapter : Analyzing accuracy of formalisms in crop model when adding root structural variability</h1>
+<h1 class="title"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Introduction</span></h1>
 </div>
 
 
@@ -223,20 +223,7 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>Analysis - root : Would considering root structure in an intercropping system be relevant for crop models ?</p>
-<p><em>Hypothesis: The error of crop models, when it comes to modeling intercrops, are mainly due to the average plant hypothesis and the non-consideration of the plant root architecture.</em></p>
-<p>Create a dynamic root FSPM for all 4 plants (cf lit), that enables to constrain root growth with density=f(depth) from STICS, in STICS’ 1D soil.<br>
-Implement well-known structural reactions to stresses.<br>
-<em>(january -&gt; march 2025)</em></p>
-<p>Run simulations with both FSPM and STICS (stressless and stressed conditions : Vezy et al., 2023; Traore et al., 2022, 2023), varying (define variations ranges) when possible: root structures, spatial arrangement (with all same plants or all different to separate effects), env/stresses (N, water, light)<br>
-<em>(april -&gt; june 2025)</em></p>
-<p>From outputs from my models and from STICS for given processes and given conditions:<br>
-Compare means and analyze variance of chosen output variables: water and N uptake, N fixing, etc.<br>
-Analyse uncertainty propagation in simulations; expected results: see which processes (integrated in root density) are the most impacted by the uncertainty in STICS’ root density.<br>
-Analyse sensitivity of some plant processes to structural variability (and spatial heterogeneity). Expected results: spot parameters of interest to implement in STICS as a parameter or different equation.<br>
-<em>(july -&gt; october 2025)</em></p>
-<p>Couple shoot and root models (when ?)</p>
-<p>Collaboration with post-doc from WUR, Jie Lu</p>
+<p>In progress …</p>
 
 
 
@@ -652,13 +639,13 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./dynamic_model.html" class="pagination-link" aria-label="Dynamic model">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Dynamic model</span></span>
+      <a href="./year_2.html" class="pagination-link" aria-label="Second chapter : Analyzing accuracy of formalisms in crop model when adding root structural variability">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Second chapter : Analyzing accuracy of formalisms in crop model when adding root structural variability</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./intro_2.html" class="pagination-link" aria-label="Introduction">
-        <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Introduction</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./year_3.html" class="pagination-link" aria-label="Third chapter: Improving STICS">
+        <span class="nav-page-text">Third chapter: Improving STICS</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
