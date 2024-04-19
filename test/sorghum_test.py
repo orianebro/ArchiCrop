@@ -1,6 +1,8 @@
 import numpy as np
 from openalea.mtg import MTG
 
+%gui qt
+
 ## Initialize parameters
 
 # Fixed parameters 

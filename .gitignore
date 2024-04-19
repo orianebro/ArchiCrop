@@ -67,7 +67,7 @@ nosetests.xml
 # svn
 .svn
 
-# temporary files
+# temporary files
 *._icon.png
 
 # Mac dirs

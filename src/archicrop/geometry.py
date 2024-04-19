@@ -445,13 +445,6 @@ def leaf_mesh_for_growth(leaf, L_shape=1, Lw_shape=1, length=1, s_base=0, s_top=
         # to position leaves along tiller emitted
         shape = (-shape[0],) + shape[1:]
 
-    # added by Oriane
-    x, y, s, r = list(map(numpy.array, shape))
-    x = x[::-1]
-    y = y[::-1]
-    s = s[::-1]
-    shape = x, y, s, r
-
 
     mesh = fitting.mesh4(shape,
                          L_shape,
@@ -486,17 +479,12 @@ def compute_continuous_element(element_node, time, classic=False): # see maybe w
 
     # added by Oriane, for continuous growth
     if n.start_tt <= time < n.end_tt:
-        len_growth_period = n.end_tt - n.start_tt
-        relative_time = time - n.start_tt
         relative_growth = (time - n.start_tt) / (n.end_tt - n.start_tt)
-        n.length *= relative_growth
-        if n.visible_length is not None:
-            n.visible_length *= relative_growth
-        n.srb = 1-relative_growth # see with srb and srt, how they are used in leaf_mesh
-        # if n.shape is not None:
-        #     n.shape[0] = n.shape[0][::-1]
-        #     n.shape[1] = n.shape[1][::-1]
-        # tuple --> immutable
+        if n.label.startswith('Leaf'):
+            n.length = n.shape_mature_length * relative_growth
+            n.visible_length = n.shape_mature_length * relative_growth
+        # elif n.label.startswith('Stem'):
+        #     n.length = n.shape_mature_length * relative_growth
 
     if n.label.startswith('Leaf'):  # leaf element
         if n.visible_length > 0.01:  # filter less than 0.1 mm leaves
