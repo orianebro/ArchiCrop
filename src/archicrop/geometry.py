@@ -478,11 +478,14 @@ def compute_continuous_element(element_node, time, classic=False): # see maybe w
     geom = None
 
     # added by Oriane, for continuous growth
-    if n.start_tt <= time < n.end_tt:
+    if n.start_tt <= time <= n.end_tt:
         relative_growth = (time - n.start_tt) / (n.end_tt - n.start_tt)
         if n.label.startswith('Leaf'):
-            n.length = n.shape_mature_length * relative_growth
+            # print(n.start_tt, n.end_tt)
+            # print(relative_growth)
+            # n.length = n.shape_mature_length * relative_growth
             n.visible_length = n.shape_mature_length * relative_growth
+            # print(n.visible_length)
         # elif n.label.startswith('Stem'):
         #     n.length = n.shape_mature_length * relative_growth
 
@@ -535,11 +538,12 @@ class CerealsContinuousVisitor(CerealsVisitor):
 
         if n.label.startswith('Leaf') or n.label.startswith('Stem'):
             # update geometry of elements
-            if n.length > 0:
-                mesh = compute_continuous_element(n, time, self.classic)
-                if mesh:  # To DO : reset to None if calculated so ?
-                    n.geometry = turtle.transform(mesh)
-                    n.anchor_point = turtle.getPosition()
+            # if n.length > 0:
+            # print(v)
+            mesh = compute_continuous_element(n, time, self.classic)
+            if mesh:  # To DO : reset to None if calculated so ?
+                n.geometry = turtle.transform(mesh)
+                n.anchor_point = turtle.getPosition()
 
         # 3. Update the turtle and context
         turtle.setId(v)
