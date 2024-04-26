@@ -216,7 +216,7 @@ def slim_cylinder(length, radius_base, radius_top):
     return set
 
 
-def stem_mesh(length, diameter_base, diameter_top, classic=False, slices=24):
+def stem_mesh(length, diameter, classic=False, slices=24):
     """ Compute mesh for a stem element
         - classic indicates
     """
@@ -226,13 +226,13 @@ def stem_mesh(length, diameter_base, diameter_top, classic=False, slices=24):
         # 6 is the minimal number of slices for a correct computation of star
         #  (percentage error lower than 5)
         slices = 6
-        stem = pgl.Tapered(diameter_base / 2., diameter_top / 2.,
+        stem = pgl.Tapered(diameter / 2., diameter / 2.,
                            pgl.Cylinder(1., length, solid, slices))
         tessel = pgl.Tesselator()
         stem.apply(tessel)
         mesh = tessel.triangulation
     else:
-        mesh = slim_cylinder(length, diameter_base / 2., diameter_top / 2.)
+        mesh = slim_cylinder(length, diameter / 2., diameter / 2.)
 
     return mesh
 
@@ -263,7 +263,7 @@ def compute_element(element_node, classic=False):
                 else:
                     geom = addSets(rolled, geom, translate=(0, 0, n.lrolled))
     elif n.label.startswith('Stem'):  # stem element
-        geom = stem_mesh(n.length, n.diameter_base, n.diameter_top, classic)
+        geom = stem_mesh(n.length, n.diameter, n.diameter, classic)
 
     return geom
 
@@ -509,7 +509,7 @@ def compute_continuous_element(element_node, time, classic=False): # see maybe w
                 else:
                     geom = addSets(rolled, geom, translate=(0, 0, n.lrolled))
     elif n.label.startswith('Stem'):  # stem element
-        geom = stem_mesh(n.length, n.diameter_base, n.diameter_top, classic)
+        geom = stem_mesh(n.length, n.diameter, n.diameter, classic)
 
     return geom
 

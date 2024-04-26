@@ -208,14 +208,17 @@ def cereals(json=None,
         dim = plant
         leaves = {row['ntop']: row['leaf_shape'] for index, row in dim.iterrows()}
 
+    # print(dim)
 
     g = MTG()
-    vid_plant = g.add_component(g.root, label='Plant', edge_type='/')
-    vid_axis = g.add_child_and_complex(vid_plant, label='Axis', edge_type='+')
+    vid_node = g.add_component(g.root, label='Plant', edge_type='/') # to vid_plant
+    # vid_axis,  = g.add_child_and_complex(vid_plant, label='Axis', edge_type='+')
     first = True
     for i, row in dim.iterrows():
         internode = {'label': 'StemElement',
+                     'mature_length': row['L_internode'],
                      'length': row['L_internode'],
+                     'visible_length': row['L_internode'],
                      'is_green': True,
                      'diameter': row['W_internode'],
                      'azimuth': row['leaf_azimuth']}
@@ -229,7 +232,7 @@ def cereals(json=None,
         blade = {'label': 'LeafElement',
                  'shape': leaves[row['ntop']],
                  'shape_mature_length': row['L_blade'],
-                 # 'length': row['L_blade'],
+                 'length': row['L_blade'],
                  'visible_length': row['L_blade'],
                  'is_green': True,
                  'srb': 0,
@@ -249,8 +252,9 @@ def cereals(json=None,
     return g
 
 
+## from adel, for inspiration
 
-
+'''
 def mtg_factory(parameters, metamer_factory=adel_metamer, leaf_sectors=1,
                 leaves=None, stand=None, axis_dynamics=None,
                 add_elongation=False, topology=['plant', 'axe_id', 'numphy'],
@@ -480,3 +484,4 @@ def mtg_factory(parameters, metamer_factory=adel_metamer, leaf_sectors=1,
         prev_axe = axe
 
     return fat_mtg(g)
+'''
