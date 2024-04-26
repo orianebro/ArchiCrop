@@ -199,7 +199,15 @@ ul.task-list li input[type="checkbox"] {
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#concevoir-un-fspm-contraint-par-un-modèle-de-culture-pour-les-cultures-intercalaires" id="toc-concevoir-un-fspm-contraint-par-un-modèle-de-culture-pour-les-cultures-intercalaires" class="nav-link active" data-scroll-target="#concevoir-un-fspm-contraint-par-un-modèle-de-culture-pour-les-cultures-intercalaires">1. Concevoir un FSPM contraint par un modèle de culture pour les cultures intercalaires</a></li>
+  <li><a href="#identifier-les-processus-perfectibles-des-modèles-de-culture" id="toc-identifier-les-processus-perfectibles-des-modèles-de-culture" class="nav-link" data-scroll-target="#identifier-les-processus-perfectibles-des-modèles-de-culture">2. Identifier les processus perfectibles des modèles de culture</a></li>
+  <li><a href="#tester-différentes-approches-pour-améliorer-la-prise-en-compte-des-paramètres-structuraux-dintérêt-pour-la-modélisation-des-cultures-intercalaires-dans-les-formalismes-du-modèle-de-culture-stics-intercrop-avec-une-approche-multi-échelle" id="toc-tester-différentes-approches-pour-améliorer-la-prise-en-compte-des-paramètres-structuraux-dintérêt-pour-la-modélisation-des-cultures-intercalaires-dans-les-formalismes-du-modèle-de-culture-stics-intercrop-avec-une-approche-multi-échelle" class="nav-link" data-scroll-target="#tester-différentes-approches-pour-améliorer-la-prise-en-compte-des-paramètres-structuraux-dintérêt-pour-la-modélisation-des-cultures-intercalaires-dans-les-formalismes-du-modèle-de-culture-stics-intercrop-avec-une-approche-multi-échelle">3. Tester différentes approches pour améliorer la prise en compte des paramètres structuraux d’intérêt pour la modélisation des cultures intercalaires dans les formalismes du modèle de culture STICS-Intercrop avec une approche multi-échelle</a></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
@@ -223,9 +231,27 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>In progress …</p>
+<section id="concevoir-un-fspm-contraint-par-un-modèle-de-culture-pour-les-cultures-intercalaires" class="level2">
+<h2 class="anchored" data-anchor-id="concevoir-un-fspm-contraint-par-un-modèle-de-culture-pour-les-cultures-intercalaires">1. Concevoir un FSPM contraint par un modèle de culture pour les cultures intercalaires</h2>
+<p>Un FSPM dynamique paramétrique, aérien et racinaire, adapté pour les céréales et les légumineuses, et visant à être contraint par les sorties d’un modèle de culture (par exemple, reconstruire la croissance et le développement d’une plante à partir du LAI et de la hauteur du couvert pour la partie aérienne) est en cours de création.<br>
+Cela laisse autant de degrés de liberté que la structure 3D implémentée dans le modèle le permet, et donc une variabilité architecturale aussi grande qu’il y a de paramètres architecturaux. En somme, le but est de pouvoir représenter un modèle de culture avec une structure 3D et un arrangement spatial explicite des cultures intercalaires.</p>
+<p>Réalisation : modèle FSPM</p>
+</section>
+<section id="identifier-les-processus-perfectibles-des-modèles-de-culture" class="level2">
+<h2 class="anchored" data-anchor-id="identifier-les-processus-perfectibles-des-modèles-de-culture">2. Identifier les processus perfectibles des modèles de culture</h2>
+<p>En utilisant le FSPM précédemment créé, il sera possible, pour une simulation avec un modèle de culture, d’en obtenir un grand nombre en explorant un espace phénotypique défini pour chaque espèce par les paramètres architecturaux non pris en compte dans le modèle de culture, ainsi qu’en modifiant l’arrangement spatial explicite des cultures intercalaires. Une vaste expérience de simulation sera réalisée pour comprendre comment les différents processus (interception de la lumière, absorption de l’eau et de l’azote, etc.) sont modifiés en fonction des variations des caractéristiques architecturales des plantes, de l’arrangement spatial des cultures intercalaires, mais aussi en tenant compte de l’échelle spatiale et temporelle des processus simulés.<br>
+Des analyses statistiques (comparaison de moyennes, analyse de la variance, de propagation d’incertitude, de sensibilité) seront faites sur les sorties de ces simulations pour identifier les processus pour lesquels la prise en compte d’échelles plus fines a une influence, ainsi que des paramètres d’intérêt.<br>
+Les espèces et variétés de plantes utilisées pour simuler les cultures intercalaires seront choisies en fonction de la paramétrisation existante de STICS pour les cultures intercalaires, ainsi que des expériences disponibles dans le projet IntercropValuES.</p>
+<p>Réalisation : méthodologie + application avec STICS</p>
+</section>
+<section id="tester-différentes-approches-pour-améliorer-la-prise-en-compte-des-paramètres-structuraux-dintérêt-pour-la-modélisation-des-cultures-intercalaires-dans-les-formalismes-du-modèle-de-culture-stics-intercrop-avec-une-approche-multi-échelle" class="level2">
+<h2 class="anchored" data-anchor-id="tester-différentes-approches-pour-améliorer-la-prise-en-compte-des-paramètres-structuraux-dintérêt-pour-la-modélisation-des-cultures-intercalaires-dans-les-formalismes-du-modèle-de-culture-stics-intercrop-avec-une-approche-multi-échelle">3. Tester différentes approches pour améliorer la prise en compte des paramètres structuraux d’intérêt pour la modélisation des cultures intercalaires dans les formalismes du modèle de culture STICS-Intercrop avec une approche multi-échelle</h2>
+<p>Les processus identifiés précédemment seront étudiés à différentes échelles spatiales et temporelles. Pour passer d’une échelle (par exemple l’échelle de l’organe) à une autre (par exemple l’échelle de la culture), plusieurs stratégies seront étudiées : comment trouver un modèle analytique équivalent pour l’absorption d’eau en utilisant des hypothèses homogènes (Couveur et al., 2012) ? Comment estimer un modèle de substitution basé sur la sortie du modèle à une échelle plus fine pour capturer les propriétés émergentes ? Ou encore, comment concevoir des modèles hybrides en combinant des modules existants à la même échelle ou à des échelles différentes ?<br>
+Cela conduira à de nouveaux formalismes dans le modèle de culture.</p>
+<p>Réalisation : nouveaux formalismes pour la prochaine version de STICS</p>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
