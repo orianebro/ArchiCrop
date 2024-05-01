@@ -208,7 +208,7 @@ def cereals(json=None,
         dim = plant
         leaves = {row['ntop']: row['leaf_shape'] for index, row in dim.iterrows()}
 
-    print(dim)
+    # print(dim)
 
     g = MTG()
     vid_plant = g.add_component(g.root, label='Plant', edge_type='/') 
