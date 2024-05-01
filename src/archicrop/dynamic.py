@@ -11,12 +11,12 @@ def thermal_time(g, phyllochron=110., leaf_duration=1.6, stem_duration=1.6, leaf
     falling_rate (degrees / phyllochron) is the rate at which leaves fall after colar appearance
     """
 
-    plants = g.vertices(scale=1)
+    axes = g.vertices(scale=1)
     metamer_scale = g.max_scale()
 
-    for plant in plants:
+    for axis in axes:
         tt = 0
-        v = next(g.component_roots_at_scale_iter(plant, scale=metamer_scale))
+        v = next(g.component_roots_at_scale_iter(axis, scale=metamer_scale))
         stem_ids = g.Trunk(v)
         nb_stems = len(stem_ids)
         nb_sectors = 1
@@ -30,7 +30,7 @@ def thermal_time(g, phyllochron=110., leaf_duration=1.6, stem_duration=1.6, leaf
                 stem_tt = tt
                 nm.start_tt = stem_tt
                 nm.end_tt = stem_tt+dtt
-            else: # Leaf Element
+            else: # Leaf
                 nm.start_tt = tt
                 nm.end_tt = end_leaf
                 tt += phyllochron

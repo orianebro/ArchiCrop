@@ -216,7 +216,7 @@ def slim_cylinder(length, radius_base, radius_top):
     return set
 
 
-def stem_mesh(length, diameter, classic=False, slices=24):
+def stem_mesh(length, visible_length, diameter, classic=False, slices=24):
     """ Compute mesh for a stem element
         - classic indicates
     """
@@ -256,14 +256,14 @@ def compute_element(element_node, classic=False):
                                  flipx=True,
                                  stem_diameter=n.stem_diameter)
             if n.lrolled > 0:
-                rolled = stem_mesh(n.lrolled, n.d_rolled, n.d_rolled,
+                rolled = stem_mesh(n.lrolled, n.lrolled, n.d_rolled, n.d_rolled,
                                    classic)
                 if geom is None:
                     geom = rolled
                 else:
                     geom = addSets(rolled, geom, translate=(0, 0, n.lrolled))
     elif n.label.startswith('Stem'):  # stem element
-        geom = stem_mesh(n.length, n.diameter, n.diameter, classic)
+        geom = stem_mesh(n.length, n.visible_length, n.diameter, n.diameter, classic)
 
     return geom
 
@@ -481,13 +481,9 @@ def compute_continuous_element(element_node, time, classic=False): # see maybe w
     if n.start_tt <= time <= n.end_tt:
         relative_growth = (time - n.start_tt) / (n.end_tt - n.start_tt)
         if n.label.startswith('Leaf'):
-            # print(n.start_tt, n.end_tt)
-            # print(relative_growth)
-            # n.length = n.shape_mature_length * relative_growth
             n.visible_length = n.shape_mature_length * relative_growth
-            # print(n.visible_length)
-        # elif n.label.startswith('Stem'):
-        #     n.length = n.shape_mature_length * relative_growth
+        elif n.label.startswith('Stem'):
+            n.visible_length = n.mature_length * relative_growth
 
     if n.label.startswith('Leaf'):  # leaf element
         if n.visible_length > 0.01:  # filter less than 0.1 mm leaves
@@ -502,14 +498,14 @@ def compute_continuous_element(element_node, time, classic=False): # see maybe w
                                  flipx=True,
                                  stem_diameter=n.stem_diameter)
             if n.lrolled > 0:
-                rolled = stem_mesh(n.lrolled, n.d_rolled, n.d_rolled,
+                rolled = stem_mesh(n.lrolled, n.lrolled, n.d_rolled, n.d_rolled,
                                    classic)
                 if geom is None:
                     geom = rolled
                 else:
                     geom = addSets(rolled, geom, translate=(0, 0, n.lrolled))
     elif n.label.startswith('Stem'):  # stem element
-        geom = stem_mesh(n.length, n.diameter, n.diameter, classic)
+        geom = stem_mesh(n.length, n.visible_length, n.diameter, n.diameter, classic)
 
     return geom
 
@@ -549,7 +545,7 @@ class CerealsContinuousVisitor(CerealsVisitor):
         turtle.setId(v)
         if n.label.startswith('Stem'):
             if n.length > 0:
-                turtle.f(n.length)
+                turtle.f(n.visible_length)
             turtle.context.update({'top': turtle.getFrame()})
         if n.label.startswith('Leaf'):
             if n.lrolled > 0:

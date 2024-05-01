@@ -208,14 +208,69 @@ def cereals(json=None,
         dim = plant
         leaves = {row['ntop']: row['leaf_shape'] for index, row in dim.iterrows()}
 
-    # print(dim)
+    print(dim)
 
     g = MTG()
-    vid_node = g.add_component(g.root, label='Plant', edge_type='/') # to vid_plant
-    # vid_axis,  = g.add_child_and_complex(vid_plant, label='Axis', edge_type='+')
-    first = True
+    vid_plant = g.add_component(g.root, label='Plant', edge_type='/') 
+    vid_axis = g.add_component(vid_plant, label='MainAxis', edge_type='/') 
+
+    '''
+    #first u1
+    u1 = g.add_component(plant_id, label='U1', Length=10, Diameter=5.9)
+    i = g.add_component(u1,label='I1' )
+    i = g.add_child(i,label='I2', edge_type='<' )
+    i = g.add_child(i,label='I3', edge_type='<' )
+    i = g.add_child(i,label='I4', edge_type='<' )
+    i = g.add_child(i,label='I5', edge_type='<' )
+    i6 = i = g.add_child(i,label='I6', edge_type='<' )
+
+    #u2 branch
+    i,u2 = g.add_child_and_complex(i6,label='I20', edge_type='+', Length=7, Diameter=3.5 )
+    g.node(u2).label='U2'
+    g.node(u2).edge_type='+'
+    i = g.add_child(i,label='I21', edge_type='<' )
+    i = g.add_child(i,label='I22', edge_type='<' )
+    i = g.add_child(i,label='I23', edge_type='<' )
+    i = g.add_child(i,label='I24', edge_type='<' )
+
+    #u3 branch
+    i,u3 = g.add_child_and_complex(i,label='I25', edge_type='<', Length=4, Diameter=2.1)
+    g.node(u3).label='U3'
+    g.node(u3).edge_type='<'
+    i = g.add_child(i,label='I25', edge_type='<' )
+    i = g.add_child(i,label='I26', edge_type='<' )
+    i = g.add_child(i,label='I27', edge_type='<' )
+    i = g.add_child(i,label='I28', edge_type='<' )
+    i = g.add_child(i,label='I29', edge_type='<' )
+
+    #continue u1
+    i = g.add_child(i6,label='I7', edge_type='<' )
+    i = g.add_child(i,label='I8', edge_type='<' )
+    i = g.add_child(i,label='I9', edge_type='<' )
+
+    # u2 main axe
+    i,c = g.add_child_and_complex(i,label='I10', edge_type='<' , Length=8, Diameter=4.3)
+    g.node(c).label='U2'
+    g.node(c).edge_type='<'
+    i = g.add_child(i,label='I11', edge_type='<' )
+    i = g.add_child(i,label='I12', edge_type='<' )
+    i = g.add_child(i,label='I13', edge_type='<' )
+    i = g.add_child(i,label='I14', edge_type='<' )
+    i = g.add_child(i,label='I15', edge_type='<' )
+
+    # u3 main axe
+    i,c = g.add_child_and_complex(i,label='I16', edge_type='<', Length=7.5, diameter=3.9 )
+    g.node(c).label='U3'
+    g.node(c).edge_type='<'
+    i = g.add_child(i,label='I17', edge_type='<' )
+    i = g.add_child(i,label='I18', edge_type='<' )
+    i = g.add_child(i,label='I19', edge_type='<' )
+    '''
+
+    first_internode = True
+
     for i, row in dim.iterrows():
-        internode = {'label': 'StemElement',
+        internode = {'label': 'Stem',
                      'mature_length': row['L_internode'],
                      'length': row['L_internode'],
                      'visible_length': row['L_internode'],
@@ -223,26 +278,32 @@ def cereals(json=None,
                      'diameter': row['W_internode'],
                      'azimuth': row['leaf_azimuth']}
 
-        if first :
-            vid_node = g.add_component(vid_node, edge_type='/', **internode)
-            first=False
+        if first_internode :
+            # vid_metamer = g.add_component(vid_axis)
+            vid_internode = g.add_component(vid_axis, **internode)
+            # g.node(vid_metamer).label='Metamer'
+            # g.node(vid_metamer).edge_type='/'
+            first_internode=False
         else:
-            vid_node = g.add_child(vid_node, edge_type='<', **internode)
+            vid_internode = g.add_child(vid_internode, edge_type='<', **internode)
+            # vid_internode, vid_metamer = g.add_child_and_complex(vid_internode, edge_type='<', **internode)
+            # g.node(vid_metamer).label='Metamer'
+            # g.node(vid_metamer).edge_type='<'
 
-        blade = {'label': 'LeafElement',
-                 'shape': leaves[row['ntop']],
-                 'shape_mature_length': row['L_blade'],
-                 'length': row['L_blade'],
-                 'visible_length': row['L_blade'],
-                 'is_green': True,
-                 'srb': 0,
-                 'srt': 1,
-                 'lrolled': 0,
-                 'd_rolled': 0,
-                 'shape_max_width': row['W_blade'],
-                 'stem_diameter': row['W_internode']}
+        leaf = {'label': 'Leaf',
+                'shape': leaves[row['ntop']],
+                'shape_mature_length': row['L_blade'],
+                'length': row['L_blade'],
+                'visible_length': row['L_blade'],
+                'is_green': True,
+                'srb': 0,
+                'srt': 1,
+                'lrolled': 0,
+                'd_rolled': 0,
+                'shape_max_width': row['W_blade'],
+                'stem_diameter': row['W_internode']}
 
-        vid_blade = g.add_child(vid_node, edge_type='+', **blade)
+        vid_leaf = g.add_child(vid_internode, edge_type='+', **leaf)
 
     g = fat_mtg(g)
 
