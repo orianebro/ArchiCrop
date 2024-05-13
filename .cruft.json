@@ -1,0 +1,25 @@
+{
+  "template": "https://github.com/scientific-python/cookie",
+  "commit": "a920e61dd0d59be32955c1e2e01bbd9fc702dfb6",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "project_name": "ArchiCrop",
+      "org": "orianebro",
+      "url": "https://github.com/orianebro/ArchiCrop",
+      "full_name": "orianebro",
+      "email": "orianebraud1@gmail.com",
+      "project_short_description": "3D plant model that gives structure to crop model outputs",
+      "license": "Cecill-C",
+      "backend": "setuptools621",
+      "vcs": true,
+      "__year": "2024",
+      "__project_slug": "archicrop",
+      "__type": "pure",
+      "__answers": "",
+      "__ci": "github",
+      "_template": "https://github.com/scientific-python/cookie"
+    }
+  },
+  "directory": null
+}
