@@ -172,7 +172,8 @@ def blade_dimension(area=None,
                              'ntop': ntop,
                              'L_blade': length,
                              'W_blade': width,
-                             'S_blade': area})
+                             'S_blade': area,
+                             'form_factor' : form_factor})
 
 
 def stem_dimension(h_ins=None,

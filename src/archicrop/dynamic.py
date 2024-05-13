@@ -1,5 +1,7 @@
+from openalea.plantgl.all import Material, Color3, Shape, Scene, Viewer, Translated, AxisRotated
 from openalea.mtg.traversal import pre_order2, pre_order2_with_filter
 from .geometry import CerealsVisitor, CerealsTurtle, CerealsContinuousVisitor
+from .display import build_scene
 
 
 
@@ -30,7 +32,7 @@ def thermal_time(g, phyllochron=110., leaf_duration=1.6, stem_duration=1.6, leaf
                 stem_tt = tt
                 nm.start_tt = stem_tt
                 nm.end_tt = stem_tt+dtt
-            else: # Leaf
+            elif 'Leaf' in nm.label:
                 nm.start_tt = tt
                 nm.end_tt = end_leaf
                 tt += phyllochron
@@ -105,3 +107,16 @@ def mtg_turtle_time(g, time, update_visitor=None ):
     return g
 
 
+def grow_plant(g, time):
+    g = thermal_time(g)
+    g = mtg_turtle_time(g, time=time)
+    return g
+
+def grow_plant_and_display(g, time):
+    g = grow_plant(g=g, time=time)
+    # Build and display scene
+    nice_green=Color3((50,100,0))
+    scene, nump = build_scene(g, 
+                              leaf_material=Material(nice_green), 
+                              stem_material=Material(nice_green))
+    return g, scene, nump

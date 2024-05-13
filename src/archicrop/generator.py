@@ -164,7 +164,8 @@ def as_plant(json):
                                'W_blade': df.w_leaf,
                                'ntop': df.ntop,
                                'plant': 1,
-                               'leaf_azimuth': df.azimuth})
+                               'leaf_azimuth': df.azimuth,
+                               'form_factor' : df.ff})
 
     stem = pandas.DataFrame({'L_internode': df.internode,
                              'L_sheath': 0,
@@ -208,7 +209,7 @@ def cereals(json=None,
         dim = plant
         leaves = {row['ntop']: row['leaf_shape'] for index, row in dim.iterrows()}
 
-    # print(dim)
+    print(dim)
 
     g = MTG()
     vid_plant = g.add_component(g.root, label='Plant', edge_type='/') 
@@ -294,7 +295,10 @@ def cereals(json=None,
                 'shape': leaves[row['ntop']],
                 'shape_mature_length': row['L_blade'],
                 'length': row['L_blade'],
-                'visible_length': row['L_blade'],
+                # 'visible_length': row['L_blade'],
+                'visible_length': row['L_blade']+1,
+                'leaf_area' : row['S_blade'],
+                'form_factor' : row['form_factor'],
                 'is_green': True,
                 'srb': 0,
                 'srt': 1,

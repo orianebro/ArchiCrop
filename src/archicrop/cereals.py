@@ -4,7 +4,7 @@ from .generator import cereals as cereals_generator
 from .plant_design import blade_dimension, stem_dimension, get_form_factor, leaf_azimuth
 from .cereals_leaf import parametric_leaf
 
-def build_shoot(stem_radius, insertion_heights, leaf_lengths, leaf_areas, leaf_azimuths=None, leaf_shapes=None):
+def build_shoot(stem_diameters, insertion_heights, leaf_lengths, leaf_areas, leaf_azimuths=None, leaf_shapes=None):
     """create a shoot
 
     Args:
@@ -30,7 +30,7 @@ def build_shoot(stem_radius, insertion_heights, leaf_lengths, leaf_areas, leaf_a
     leaf_azimuths[1:] = numpy.diff(leaf_azimuths)
     ff = [get_form_factor(leaf) for leaf in leaf_shapes]
     blades = blade_dimension(area=leaf_areas, length=leaf_lengths, ntop=ntop)
-    stem = stem_dimension(h_ins=insertion_heights, d_internode=numpy.array(stem_radius) * 2, ntop=ntop)
+    stem = stem_dimension(h_ins=insertion_heights, d_internode=stem_diameters, ntop=ntop)
     df = blades.merge(stem)
     df['leaf_azimuth'] = leaf_azimuths
     df['leaf_rank'] = ranks

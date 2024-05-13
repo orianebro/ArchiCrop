@@ -133,6 +133,7 @@ def leaf_mesh(leaf, L_shape=1, Lw_shape=1, length=1, s_base=0, s_top=1, flipx=Fa
     """
     shape = arrange_leaf(leaf, stem_diameter=float(stem_diameter) / L_shape,
                          inclination=inclination, relative=relative)
+
     # flip to position leaves along tiller emitted
     if flipx:
         # to position leaves along tiller emitted
@@ -244,20 +245,20 @@ def compute_element(element_node, classic=False):
     geom = None
 
     if n.label.startswith('Leaf'):  # leaf element
-        if n.visible_length > 0.01:  # filter less than 0.1 mm leaves
+        if n.visible_length > 0.0001:  # filter less than 0.001 mm leaves
             if n.shape is not None and n.srb is not None:
                 geom = leaf_mesh(n.shape,
-                                 n.shape_mature_length,
-                                 n.shape_max_width,
-                                 n.visible_length, n.srb, n.srt,
-                                 # flipx allows x-> -x to place the shape along
-                                 #  with the tiller positioned with
-                                 # turtle.down()
-                                 flipx=True,
-                                 stem_diameter=n.stem_diameter)
+                                    n.shape_mature_length,
+                                    n.shape_max_width,
+                                    n.visible_length, n.srb, n.srt,
+                                    # flipx allows x-> -x to place the shape along
+                                    #  with the tiller positioned with
+                                    # turtle.down()
+                                    flipx=True,
+                                    stem_diameter=n.stem_diameter)
             if n.lrolled > 0:
                 rolled = stem_mesh(n.lrolled, n.lrolled, n.d_rolled, n.d_rolled,
-                                   classic)
+                                    classic)
                 if geom is None:
                     geom = rolled
                 else:
@@ -486,20 +487,20 @@ def compute_continuous_element(element_node, time, classic=False): # see maybe w
             n.visible_length = n.mature_length * relative_growth
 
     if n.label.startswith('Leaf'):  # leaf element
-        if n.visible_length > 0.01:  # filter less than 0.1 mm leaves
+        if n.visible_length > 0.0001:  # filter less than 0.001 mm leaves
             if n.shape is not None and n.srb is not None:
                 geom = leaf_mesh_for_growth(n.shape,
-                                 n.shape_mature_length,
-                                 n.shape_max_width,
-                                 n.visible_length, n.srb, n.srt,
-                                 # flipx allows x-> -x to place the shape along
-                                 #  with the tiller positioned with
-                                 # turtle.down()
-                                 flipx=True,
-                                 stem_diameter=n.stem_diameter)
+                                    n.shape_mature_length,
+                                    n.shape_max_width,
+                                    n.visible_length, n.srb, n.srt,
+                                    # flipx allows x-> -x to place the shape along
+                                    #  with the tiller positioned with
+                                    # turtle.down()
+                                    flipx=True,
+                                    stem_diameter=n.stem_diameter)
             if n.lrolled > 0:
                 rolled = stem_mesh(n.lrolled, n.lrolled, n.d_rolled, n.d_rolled,
-                                   classic)
+                                    classic)
                 if geom is None:
                     geom = rolled
                 else:
