@@ -114,14 +114,14 @@ def mtg_turtle_time(g, time, update_visitor=None):
 
 
 
-def grow_plant(g, time):
-    g = thermal_time(g)
+def grow_plant(g, time, phyllochron):
+    g = thermal_time(g, phyllochron)
     g = mtg_turtle_time(g, time=time)
     return g
 
 
-def grow_plant_and_display(g, time):
-    g = grow_plant(g=g, time=time)
+def grow_plant_and_display(g, time, phyllochron):
+    g = grow_plant(g=g, time=time, phyllochron=phyllochron)
     # Build and display scene
     nice_green=Color3((50,100,0))
     scene, nump = build_scene(g, 

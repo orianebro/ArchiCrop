@@ -102,7 +102,7 @@ def blade_dimension(area=None,
                     ntop=None,
                     form_factor=None,
                     plant=1,
-                    wl=0.1):
+                    wl=0.2):
     """Estimate blade dimension and/or compatibility with leaf shapes form
     factors
 
