@@ -1,9 +1,13 @@
-from numpy import linspace, cos, sin
+from __future__ import annotations
+
 from math import pi, sqrt
-from random import random,sample
-from numpy.random import vonmises
-import numpy as np
 from operator import itemgetter
+from random import random, sample
+
+import numpy as np
+from numpy import cos, linspace, sin
+from numpy.random import vonmises
+
 
 def regular(nb_plants, nb_rank, dx, dy, nx=None):
     
@@ -135,6 +139,7 @@ def sample_selection(points, gap_fraction):
     k = int(n * (1. - gap_fraction / 100.))
     return sample(points, k)
 
+'''
 def clumping_selection(points, nb_clumps, radius_mu, radius_sigma):
     """
     Select a set of points based on andomly choosen groups 
@@ -148,6 +153,7 @@ def clumping_selection(points, nb_clumps, radius_mu, radius_sigma):
         r2 = radius**2
         # filter to select all the poit in a ball of radius r2
         # Add these points to the result
+'''
 
 def sample_regular_gaps(points, pattern = [0,1]):
     """ Sample points along pattern.

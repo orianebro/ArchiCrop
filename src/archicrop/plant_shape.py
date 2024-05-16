@@ -1,5 +1,9 @@
+from __future__ import annotations
+
 import numpy as np
+from openalea.mtg.traversal import pre_order2
 from scipy.integrate import quad
+
 
 def geometric_dist(height, nb_phy, q=1):
     """ returns distances between individual leaves along a geometric model """
@@ -33,19 +37,26 @@ def compute_leaf_area(g):
         return r
     
     leaf_areas = []
-    for v in g.vertices():
-        n=g.node(v)
-        if n.label is not None and n.label.startswith('Leaf'):
-            if n.visible_length <= n.shape_mature_length:
-                L=n.shape_mature_length
-                alpha=-2.3
-                lower_bound=max(L-n.visible_length, 0.0)
-                upper_bound=L
-                la, error=quad(scaled_leaf_shape, lower_bound, upper_bound, args=(L, alpha))
-                la=2*n.shape_max_width*la
-                leaf_areas.append(la)
+    # for v in g.vertices():
+        # n=g.node(v)
+    axes = g.vertices(scale=1)
+    metamer_scale = g.max_scale()
 
-    return sum(leaf_areas), leaf_areas
+    for axis in axes:
+        v = next(g.component_roots_at_scale_iter(axis, scale=metamer_scale))
+        for metamer in pre_order2(g, v):
+            n = g.node(metamer)
+            if n.label is not None and n.label.startswith('Leaf'): 
+                if n.grow == True:
+                    L=n.shape_mature_length
+                    alpha=-2.3
+                    lower_bound=max(L-n.visible_length, 0.0)
+                    upper_bound=L
+                    la, error=quad(scaled_leaf_shape, lower_bound, upper_bound, args=(L, alpha))
+                    la=2*n.shape_max_width*la
+                    leaf_areas.append(la)
+
+    return leaf_areas
 
 
 '''

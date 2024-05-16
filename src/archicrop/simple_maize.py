@@ -1,12 +1,13 @@
 """ A collection of simple allometric functions for parameterising the
 architecture of maize"""
-import numpy
-from itertools import cycle
-from scipy.interpolate import interp1d
+from __future__ import annotations
 
-from .plant_design import (get_form_factor, blade_dimension, 
-    stem_dimension, load_leaf_db)
+from itertools import cycle
+
+import numpy as np
+
 from .fitting import fit3
+from .plant_design import blade_dimension, get_form_factor, stem_dimension
 
 # def maize_leaves_path():
 #     import os
@@ -18,9 +19,9 @@ from .fitting import fit3
 def bell_shaped_dist(plant_area=1, nb_phy=15, rmax=.7, skew=0.15):
     """ returns leaf area of individual leaves along bell shaped model """
 
-    k = -numpy.log(skew) * rmax
-    r = numpy.linspace(1. / nb_phy, 1, nb_phy)
-    relative_surface = numpy.exp(
+    k = -np.log(skew) * rmax
+    r = np.linspace(1. / nb_phy, 1, nb_phy)
+    relative_surface = np.exp(
         -k / rmax * (2 * (r - rmax) ** 2 + (r - rmax) ** 3))
     leaf_area = relative_surface / relative_surface.sum() * plant_area
     return leaf_area.tolist()
@@ -56,13 +57,13 @@ def leaf_azimuth(size=1, phyllotactic_angle=180, phyllotactic_deviation=15, plan
     if size == 1:
         return plant_orientation
     if spiral:
-        main = numpy.arange(0, size) * phyllotactic_angle
+        main = np.arange(0, size) * phyllotactic_angle
     else:
         it = cycle((0, phyllotactic_angle))
-        main = numpy.array([next(it) for i in range(size)])
-    azim = plant_orientation + main + (numpy.random.random(size) - 0.5) * 2 * phyllotactic_deviation
+        main = np.array([next(it) for i in range(size)])
+    azim = plant_orientation + main + (np.random.random(size) - 0.5) * 2 * phyllotactic_deviation
     azim = azim % 360
-    return numpy.where(azim <= 180, azim, azim - 360)
+    return np.where(azim <= 180, azim, azim - 360)
 
 
 def leaf_shape_perez(nb_segment=100, insertion_angle=50, delta_angle=180, coef_curv=-0.2):
@@ -74,21 +75,21 @@ def leaf_shape_perez(nb_segment=100, insertion_angle=50, delta_angle=180, coef_c
         # coefCurv= coefficient of leaf curvature [-1,inf] -1=no curvature inf=curvature at insertion
         # leafLength = length of the leaf
 
-    s = numpy.linspace(0,1,nb_segment+1)
+    s = np.linspace(0,1,nb_segment+1)
     ds = 1. / (nb_segment)
-    angle_simu = _curvature(s, coef_curv=coef_curv) * numpy.radians(
-        delta_angle) + numpy.radians(insertion_angle)
-    dx = numpy.array([0] + (ds * numpy.sin(angle_simu)).tolist())[:-1]
-    dy = numpy.array([0] + (ds * numpy.cos(angle_simu)).tolist())[:-1]
-    x, y = numpy.cumsum(dx), numpy.cumsum(dy)
-    length = numpy.sum(numpy.sqrt(dx**2 + dy**2))
+    angle_simu = _curvature(s, coef_curv=coef_curv) * np.radians(
+        delta_angle) + np.radians(insertion_angle)
+    dx = np.array([0, *(ds * np.sin(angle_simu)).tolist()])[:-1]
+    dy = np.array([0, *(ds * np.cos(angle_simu)).tolist()])[:-1]
+    x, y = np.cumsum(dx), np.cumsum(dy)
+    length = np.sum(np.sqrt(dx**2 + dy**2))
     return x / length, y / length
 
 
 def sr_prevot(nb_segment=10, alpha=-2.5):
-    beta = -2 * (alpha + numpy.sqrt(-alpha))
-    gamma = 2 * numpy.sqrt(-alpha) + alpha
-    s = numpy.linspace(0, 1, nb_segment + 1)
+    beta = -2 * (alpha + np.sqrt(-alpha))
+    gamma = 2 * np.sqrt(-alpha) + alpha
+    s = np.linspace(0, 1, nb_segment + 1)
     r = alpha * s**2 + beta * s + gamma
     return s, r
 
@@ -145,9 +146,9 @@ def simple_maize(plant_area=10000, plant_height=200, pseudostem_height=20,
 
     """
 
-    numpy.random.seed(seed)
+    np.random.seed(seed)
     ranks = range(1, phytomer + 1)
-    ntop = max(ranks) - numpy.array(ranks) + 1
+    ntop = max(ranks) - np.array(ranks) + 1
     # if leaves is None:
     #     path = maize_leaves_path()
     #     db = load_leaf_db(path)
@@ -160,7 +161,7 @@ def simple_maize(plant_area=10000, plant_height=200, pseudostem_height=20,
     nb_young_phy = int(round((phytomer - 1.95) / 1.84 / 1.3))
 
     # compute the leaf surface
-    leaf_area = numpy.array(
+    leaf_area = np.array(
         bell_shaped_dist(plant_area=plant_area, nb_phy=phytomer, rmax=rmax,
                          skew=skew))
 
@@ -172,7 +173,7 @@ def simple_maize(plant_area=10000, plant_height=200, pseudostem_height=20,
     internode = pseudostem + stem
     # stem diameters
     diameter = ([diam_base] * nb_young_phy +
-                numpy.linspace(diam_base, diam_top,
+                np.linspace(diam_base, diam_top,
                                phytomer - nb_young_phy).tolist())
 
     ff = [get_form_factor(leaves[rank]) for rank in ranks]

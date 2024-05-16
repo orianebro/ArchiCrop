@@ -1,12 +1,16 @@
 """ Helpers for desiging cereals plants"""
-import numpy
-import pandas
-from itertools import cycle
-from scipy.integrate import simps
-from scipy.interpolate import interp1d
-from .fitting import fit_leaves
+from __future__ import annotations
+
 import base64
 import json
+from itertools import cycle
+
+import numpy as np
+import pandas as pd
+from scipy.integrate import simps
+from scipy.interpolate import interp1d
+
+from .fitting import fit_leaves
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -14,7 +18,7 @@ class NumpyEncoder(json.JSONEncoder):
         """
         if input object is a ndarray it will be converted into a dict holding dtype, shape and the data base64 encoded
         """
-        if isinstance(obj, numpy.ndarray):
+        if isinstance(obj, np.ndarray):
             data_b64 = base64.b64encode(obj.data)
             return dict(__ndarray__=data_b64,
                         dtype=str(obj.dtype),
@@ -32,7 +36,7 @@ def json_numpy_obj_hook(dct):
     """
     if isinstance(dct, dict) and '__ndarray__' in dct:
         data = base64.b64decode(dct['__ndarray__'])
-        return numpy.frombuffer(data, dct['dtype']).reshape(dct['shape'])
+        return np.frombuffer(data, dct['dtype']).reshape(dct['shape'])
     return dct
 
 # Overload dump/load to default use this behavior.
@@ -71,7 +75,7 @@ def get_form_factor(leaf):
     
 def truncate_leaf(leaf, fraction=0.1):
     x, y, s, r = leaf
-    st = numpy.linspace(0, fraction, len(s))
+    st = np.linspace(0, fraction, len(s))
     xt = interp1d(s, x)(st)
     yt = interp1d(s, y)(st)
     rt = interp1d(s, r)(1 - fraction + st)
@@ -125,50 +129,41 @@ def blade_dimension(area=None,
     if area is None and length is None and width is None:
         area = (15, 20, 30)
 
-    if form_factor is None:
-        form_factor = numpy.array(0.75)
-    else:
-        form_factor = numpy.array(form_factor)
+    form_factor = np.array(0.75) if form_factor is None else np.array(form_factor)
         
-    wl = numpy.array(wl)
+    wl = np.array(wl)
 
     if area is None:
         if length is None:
-            width = numpy.array(width)
-            length = width / numpy.array(wl)
+            width = np.array(width)
+            length = width / np.array(wl)
         elif width is None:
-            length = numpy.array(length)
-            width = length * numpy.array(wl)
+            length = np.array(length)
+            width = length * np.array(wl)
         else:
-            length = numpy.array(length)
-            width = numpy.array(width)
-        if ntop is None:
-            ntop = numpy.arange(1, len(length) + 1)
-        else:
-            ntop = numpy.array(ntop)
+            length = np.array(length)
+            width = np.array(width)
+        ntop = np.arange(1, len(length) + 1) if ntop is None else np.array(ntop)
         area = form_factor * length * width
     else:
-        area = numpy.array(area)
-        if ntop is None:
-            ntop = numpy.arange(1, len(area) + 1)
-        else:
-            ntop = numpy.array(ntop)
+        area = np.array(area)
+        ntop = np.arange(1, len(area) + 1) if ntop is None else np.array(ntop)
         # adjust length/width if one is  None or overwrite width if all are set
         if length is None:
             if width is None:
-                length = numpy.sqrt(area / form_factor / wl)
+                length = np.sqrt(area / form_factor / wl)
                 width = length * wl
             else:
-                width = numpy.array(width)
+                width = np.array(width)
                 length = area / form_factor / width
         else:
-            length = numpy.array(length)
+            length = np.array(length)
             width = area / form_factor / length
 
     if isinstance(plant, int):
         plant = [plant] * len(ntop)
 
-    return pandas.DataFrame({'plant': plant,
+    return pd.DataFrame({'plant': plant,
                              'ntop': ntop,
                              'L_blade': length,
                              'W_blade': width,
@@ -212,59 +207,46 @@ def stem_dimension(h_ins=None,
         d_stem = 0.3
 
     if h_ins is None:
-        if sheath is None:
-            sheath = numpy.array([0] * len(internode))
-        else:
-            sheath = numpy.array(sheath)
+        sheath = np.array([0] * len(internode)) if sheath is None else np.array(sheath)
         if internode is None:
-            internode = numpy.array([0] * len(sheath))
+            internode = np.array([0] * len(sheath))
         else:
-            internode = numpy.array(internode)
-        if ntop is None:
-            ntop = numpy.arange(1, len(h_ins) + 1)
-        else:
-            ntop = numpy.array(ntop)
-        order = numpy.argsort(-ntop)
-        reorder = numpy.argsort(order)
+            internode = np.array(internode)
+        ntop = np.arange(1, len(h_ins) + 1) if ntop is None else np.array(ntop)
+        order = np.argsort(-ntop)
+        reorder = np.argsort(order)
         h_ins = (internode[order].cumsum() + sheath[order])[reorder]
     else:
-        h_ins = numpy.array(h_ins)
-        if ntop is None:
-            ntop = numpy.arange(1, len(h_ins) + 1)
-        else:
-            ntop = numpy.array(ntop)
-        order = numpy.argsort(-ntop)
-        reorder = numpy.argsort(order)
+        h_ins = np.array(h_ins)
+        ntop = np.arange(1, len(h_ins) + 1) if ntop is None else np.array(ntop)
+        order = np.argsort(-ntop)
+        reorder = np.argsort(order)
 
         if sheath is None:
             if internode is None:
-                sheath = numpy.array([0] * len(h_ins))
-                internode = numpy.diff([0] + list(h_ins[order]))[reorder]
+                sheath = np.array([0] * len(h_ins))
+                internode = np.diff([0, *list(h_ins[order])])[reorder]
             else:
-                internode = numpy.array(internode)
-                sheath = (numpy.maximum(
+                internode = np.array(internode)
+                sheath = (np.maximum(
                     0, h_ins[order] - internode[order].cumsum())[reorder])
 
-                internode = (numpy.diff([0] + (h_ins[order] - sheath[
-                    order]).tolist())[reorder])
+                internode = (np.diff([0, *(h_ins[order] - sheath[order]).tolist()])[reorder])
         else:
-            sheath = numpy.array(sheath)
-            internode = (numpy.diff([0] +
-                                    (h_ins[order] -
-                                     sheath[order]).tolist())[reorder])
+            sheath = np.array(sheath)
+            internode = (np.diff([0, *(h_ins[order] - sheath[order]).tolist()])[reorder])
+
 
     if d_internode is None:
-        if d_sheath is None:
-            d_internode = [d_stem] * len(h_ins)
-        else:
-            d_internode = d_sheath
+        d_internode = [d_stem] * len(h_ins) if d_sheath is None else d_sheath
     if d_sheath is None:
         d_sheath = d_internode
 
     if isinstance(plant, int):
         plant = [plant] * len(ntop)
 
-    return pandas.DataFrame(
+
+    return pd.DataFrame(
         {'plant': plant, 'ntop': ntop, 'h_ins': h_ins, 'L_sheath': sheath,
          'W_sheath': d_sheath, 'L_internode': internode,
          'W_internode': d_internode})
@@ -288,10 +270,10 @@ def leaf_azimuth(size=1, phyllotactic_angle=180, phyllotactic_deviation=15, plan
     if size == 1:
         return plant_orientation
     if spiral:
-        main = numpy.arange(0, size) * phyllotactic_angle
+        main = np.arange(0, size) * phyllotactic_angle
     else:
         it = cycle((0, phyllotactic_angle))
-        main = numpy.array([next(it) for i in range(size)])
-    azim = plant_orientation + main + (numpy.random.random(size) - 0.5) * 2 * phyllotactic_deviation
+        main = np.array([next(it) for i in range(size)])
+    azim = plant_orientation + main + (np.random.random(size) - 0.5) * 2 * phyllotactic_deviation
     azim = azim % 360
-    return numpy.where(azim <= 180, azim, azim - 360)
+    return np.where(azim <= 180, azim, azim - 360)

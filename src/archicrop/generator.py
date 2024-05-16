@@ -1,21 +1,23 @@
 """Generate a geometric-based MTG representation of a cereal plant"""
-import numpy
-import pandas
+from __future__ import annotations
 
-from scipy.interpolate import interp1d
+import numpy as np
+import pandas as pd
 from openalea.mtg import MTG, fat_mtg
+from scipy.interpolate import interp1d
+
 from .geometry import mtg_interpreter
 from .plant_design import get_form_factor
 
 
 def curvilinear_abscisse(x, y, z=None):
     """Curvilinear abcissa along a polyline"""
-    s = numpy.zeros(len(x))
+    s = np.zeros(len(x))
     if z is None:
-        s[1:] = numpy.sqrt(numpy.diff(x) ** 2 + numpy.diff(y) ** 2)
+        s[1:] = np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2)
     else:
-        s[1:] = numpy.sqrt(
-            numpy.diff(x) ** 2 + numpy.diff(y) ** 2 + numpy.diff(z) ** 2)
+        s[1:] = np.sqrt(
+            np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)
     return s.cumsum()
 
 
@@ -24,13 +26,13 @@ def majors_axes_regression(x, y):
     :return: a, b, c : (float) coef of the regression line ax + by + c = 0
     """
 
-    x = numpy.array(x)
-    y = numpy.array(y)
-    xm = numpy.mean(x)
-    ym = numpy.mean(y)
+    x = np.array(x)
+    y = np.array(y)
+    xm = np.mean(x)
+    ym = np.mean(y)
     s_xy = ((x - xm) * (y - ym)).sum()
-    s_xx = numpy.power(x - xm, 2).sum()
-    s_yy = numpy.power(y - ym, 2).sum()
+    s_xx = np.power(x - xm, 2).sum()
+    s_yy = np.power(y - ym, 2).sum()
 
     if s_xx == 0:
         a = 1
@@ -38,10 +40,7 @@ def majors_axes_regression(x, y):
         c = -xm
     else:
         b = -1
-        if s_xy > 0:
-            a = numpy.sqrt(s_yy / s_xx)
-        else:
-            a = -numpy.sqrt(s_yy / s_xx)
+        a = np.sqrt(s_yy / s_xx) if s_xy > 0 else -np.sqrt(s_yy / s_xx)
         c = ym - a * xm
     return a, b, c
 
@@ -72,13 +71,13 @@ def as_polyline(leaf, length=1, radius_max=1, origin=(0, 0, 0), azimuth=0):
 
     """
 
-    x, y, s, r = list(map(numpy.array, leaf))
+    x, y, s, r = list(map(np.array, leaf))
     cx = curvilinear_abscisse(x, y)
     cx_m = max(cx)
     xo, yo, zo = origin
-    azimuth = numpy.radians(azimuth)
-    leaf_x = xo + x / cx_m * length * numpy.cos(azimuth)
-    leaf_y = yo + x / cx_m * length * numpy.sin(azimuth)
+    azimuth = np.radians(azimuth)
+    leaf_x = xo + x / cx_m * length * np.cos(azimuth)
+    leaf_y = yo + x / cx_m * length * np.sin(azimuth)
     leaf_z = zo + y / cx_m * length
     leaf_r = r * radius_max
     return list(zip(*list(map(tuple, (leaf_x,
@@ -98,7 +97,7 @@ def as_leaf(polyline):
         (x, y, s, r), length, radius_max , azimuth, origin of the leaf
     """
 
-    x, y, z, r = list(map(lambda x : numpy.array(x).astype(float), list(zip(*polyline))))
+    x, y, z, r = list(map(lambda x : np.array(x).astype(float), list(zip(*polyline))))
     xo, yo, zo = x[0], y[0], z[0]
     sx = curvilinear_abscisse(x, y, z)
     a, b, c = majors_axes_regression(x, y)
@@ -112,7 +111,7 @@ def as_leaf(polyline):
     xp, yp = list(zip(*[line_projection(a, b, c, x[0], x[1]) for x in zip(x,y)]))
     x_leaf = curvilinear_abscisse(xp, yp)
     sxp = curvilinear_abscisse(x_leaf, y_leaf)
-    azimuth = numpy.degrees(numpy.arctan2(yp[-1] - yp[0], xp[-1] - xp[0]))
+    azimuth = np.degrees(np.arctan2(yp[-1] - yp[0], xp[-1] - xp[0]))
     return (x_leaf / sxp.max(), y_leaf / sxp.max(), s, r), length, radius_max, azimuth, origin
 
 
@@ -121,7 +120,7 @@ def as_json(plant):
     (reverse of 'as_plant')"""
     internode = plant.L_internode.values
     diameter = plant.W_internode.values
-    stem = [0] + internode.cumsum().tolist()
+    stem = [0, *internode.cumsum().tolist()]
     stem_diameter = [diameter[0]] + diameter.tolist()
     polylines = [as_polyline(leaf, length, width, (0,0,h), azim) for leaf, length, width, h, azim
                  in
@@ -141,7 +140,7 @@ def as_plant(json):
     ranks = json['leaf_order']
     leaves, l_leaf, w_leaf, azimuth, origin = list(zip(*list(map(as_leaf, json['leaf_polylines']))))
     # use rank as index
-    df = pandas.DataFrame(
+    df = pd.DataFrame(
         {'rank': ranks,
          'l_leaf': l_leaf,
          'w_leaf': w_leaf,
@@ -154,12 +153,12 @@ def as_plant(json):
         z_stem, r_stem, bounds_error=False, fill_value=r_stem[-1])(df.hins)
     df['ff'] = [get_form_factor(leaves[r]) for r in df.index]
     df['area'] = df.l_leaf * df.w_leaf * df.ff
-    stem = [0] + df.hins.tolist()
-    df['internode'] = numpy.diff(stem)
+    stem = [0, *df.hins.tolist()]
+    df['internode'] = np.diff(stem)
     df['ntop'] = df.index.max() - df.index + 1
     # re-index leaves with ntop
     leaves = {df.ntop[rank] : leaves[rank] for rank in df.index}
-    blades = pandas.DataFrame({'L_blade': df.l_leaf,
+    blades = pd.DataFrame({'L_blade': df.l_leaf,
                                'S_blade': df.area,
                                'W_blade': df.w_leaf,
                                'ntop': df.ntop,
@@ -167,7 +166,7 @@ def as_plant(json):
                                'leaf_azimuth': df.azimuth,
                                'form_factor' : df.ff})
 
-    stem = pandas.DataFrame({'L_internode': df.internode,
+    stem = pd.DataFrame({'L_internode': df.internode,
                              'L_sheath': 0,
                              'W_internode': df.diam,
                              'W_sheath': df.diam,
@@ -204,80 +203,29 @@ def cereals(json=None,
         dim = blade_dimensions.merge(stem_dimensions)
         dim = dim.sort_values('ntop', ascending=False)
         relative_azimuth = dim.leaf_azimuth.copy()
-        relative_azimuth[1:] = numpy.diff(relative_azimuth)
+        relative_azimuth[1:] = np.diff(relative_azimuth)
     else:
         dim = plant
         leaves = {row['ntop']: row['leaf_shape'] for index, row in dim.iterrows()}
 
-    print(dim)
+    # print(dim)
 
     g = MTG()
     vid_plant = g.add_component(g.root, label='Plant', edge_type='/') 
     vid_axis = g.add_component(vid_plant, label='MainAxis', edge_type='/') 
 
-    '''
-    #first u1
-    u1 = g.add_component(plant_id, label='U1', Length=10, Diameter=5.9)
-    i = g.add_component(u1,label='I1' )
-    i = g.add_child(i,label='I2', edge_type='<' )
-    i = g.add_child(i,label='I3', edge_type='<' )
-    i = g.add_child(i,label='I4', edge_type='<' )
-    i = g.add_child(i,label='I5', edge_type='<' )
-    i6 = i = g.add_child(i,label='I6', edge_type='<' )
-
-    #u2 branch
-    i,u2 = g.add_child_and_complex(i6,label='I20', edge_type='+', Length=7, Diameter=3.5 )
-    g.node(u2).label='U2'
-    g.node(u2).edge_type='+'
-    i = g.add_child(i,label='I21', edge_type='<' )
-    i = g.add_child(i,label='I22', edge_type='<' )
-    i = g.add_child(i,label='I23', edge_type='<' )
-    i = g.add_child(i,label='I24', edge_type='<' )
-
-    #u3 branch
-    i,u3 = g.add_child_and_complex(i,label='I25', edge_type='<', Length=4, Diameter=2.1)
-    g.node(u3).label='U3'
-    g.node(u3).edge_type='<'
-    i = g.add_child(i,label='I25', edge_type='<' )
-    i = g.add_child(i,label='I26', edge_type='<' )
-    i = g.add_child(i,label='I27', edge_type='<' )
-    i = g.add_child(i,label='I28', edge_type='<' )
-    i = g.add_child(i,label='I29', edge_type='<' )
-
-    #continue u1
-    i = g.add_child(i6,label='I7', edge_type='<' )
-    i = g.add_child(i,label='I8', edge_type='<' )
-    i = g.add_child(i,label='I9', edge_type='<' )
-
-    # u2 main axe
-    i,c = g.add_child_and_complex(i,label='I10', edge_type='<' , Length=8, Diameter=4.3)
-    g.node(c).label='U2'
-    g.node(c).edge_type='<'
-    i = g.add_child(i,label='I11', edge_type='<' )
-    i = g.add_child(i,label='I12', edge_type='<' )
-    i = g.add_child(i,label='I13', edge_type='<' )
-    i = g.add_child(i,label='I14', edge_type='<' )
-    i = g.add_child(i,label='I15', edge_type='<' )
-
-    # u3 main axe
-    i,c = g.add_child_and_complex(i,label='I16', edge_type='<', Length=7.5, diameter=3.9 )
-    g.node(c).label='U3'
-    g.node(c).edge_type='<'
-    i = g.add_child(i,label='I17', edge_type='<' )
-    i = g.add_child(i,label='I18', edge_type='<' )
-    i = g.add_child(i,label='I19', edge_type='<' )
-    '''
 
     first_internode = True
 
-    for i, row in dim.iterrows():
+    for _i, row in dim.iterrows():
         internode = {'label': 'Stem',
                      'mature_length': row['L_internode'],
                      'length': row['L_internode'],
                      'visible_length': row['L_internode'],
                      'is_green': True,
                      'diameter': row['W_internode'],
-                     'azimuth': row['leaf_azimuth']}
+                     'azimuth': row['leaf_azimuth'],
+                     'grow': False}
 
         if first_internode :
             # vid_metamer = g.add_component(vid_axis)
@@ -296,7 +244,7 @@ def cereals(json=None,
                 'shape_mature_length': row['L_blade'],
                 'length': row['L_blade'],
                 # 'visible_length': row['L_blade'],
-                'visible_length': row['L_blade']+1,
+                'visible_length': row['L_blade'],
                 'leaf_area' : row['S_blade'],
                 'form_factor' : row['form_factor'],
                 'is_green': True,
@@ -305,16 +253,17 @@ def cereals(json=None,
                 'lrolled': 0,
                 'd_rolled': 0,
                 'shape_max_width': row['W_blade'],
-                'stem_diameter': row['W_internode']}
+                'stem_diameter': row['W_internode'],
+                'grow': False}
 
-        vid_leaf = g.add_child(vid_internode, edge_type='+', **leaf)
+        vid_leaf = g.add_child(vid_internode, edge_type='+', **leaf)  # noqa: F841
 
     g = fat_mtg(g)
 
     # Compute geometry
     g = mtg_interpreter(g, classic=classic)
 
-    return g
+    return g  # noqa: RET504
 
 
 ## from adel, for inspiration

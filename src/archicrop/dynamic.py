@@ -1,11 +1,16 @@
-from openalea.plantgl.all import Material, Color3, Shape, Scene, Viewer, Translated, AxisRotated
+from __future__ import annotations
+
 from openalea.mtg.traversal import pre_order2, pre_order2_with_filter
-from .geometry import CerealsVisitor, CerealsTurtle, CerealsContinuousVisitor
+from openalea.plantgl.all import (
+    Color3,
+    Material,
+)
+
 from .display import build_scene
+from .geometry import CerealsContinuousVisitor, CerealsTurtle
 
 
-
-def thermal_time(g, phyllochron=110., leaf_duration=1.6, stem_duration=1.6, leaf_falling_rate = 10):
+def thermal_time(g, phyllochron=110., leaf_duration=1.6, stem_duration=1.6):
     """
     Add dynamic properties on the mtg to simulate developpement
     leaf_duration is the phyllochronic time for a leaf to develop from tip appearance to collar appearance
@@ -19,29 +24,28 @@ def thermal_time(g, phyllochron=110., leaf_duration=1.6, stem_duration=1.6, leaf
     for axis in axes:
         tt = 0
         v = next(g.component_roots_at_scale_iter(axis, scale=metamer_scale))
-        stem_ids = g.Trunk(v)
-        nb_stems = len(stem_ids)
-        nb_sectors = 1
-        dtt = phyllochron*stem_duration
+        # stem_ids = g.Trunk(v)
+        # nb_stems = len(stem_ids)
+        # nb_sectors = 1
+        dtt_stem = phyllochron*stem_duration
+        dtt_leaf = phyllochron*leaf_duration
         
         for metamer in pre_order2(g, v):
-            end_leaf = tt + phyllochron*leaf_duration
             nm = g.node(metamer)
 
             if 'Stem' in nm.label:
-                stem_tt = tt
-                nm.start_tt = stem_tt
-                nm.end_tt = stem_tt+dtt
+                nm.start_tt = tt
+                nm.end_tt = tt + dtt_stem
             elif 'Leaf' in nm.label:
                 nm.start_tt = tt
-                nm.end_tt = end_leaf
+                nm.end_tt = tt + dtt_leaf
                 tt += phyllochron
 
     return g
 
 
 
-def mtg_turtle_time(g, time, update_visitor=None ):
+def mtg_turtle_time(g, time, update_visitor=None):
     ''' Compute the geometry on each node of the MTG using Turtle geometry. 
     
     Update_visitor is a function called on each node in a pre order (parent before children).
@@ -84,22 +88,24 @@ def mtg_turtle_time(g, time, update_visitor=None ):
                     return False
             except: 
                 pass
-            if g.edge_type(v) == '+':
+            if g.edge_type(v) == '+':  # noqa: RET503
                 turtle.pop()
+                
 
         if g.node(vid).start_tt <= time:
-            visitor(g,vid,turtle,time)
-            #turtle.push()
-        plant_id = g.complex_at_scale(vid, scale=1)
+            visitor(g, vid, turtle, time)
+            # turtle.push()
+        # plant_id = g.complex_at_scale(vid, scale=1)
+        
         for v in pre_order2_with_filter(g, vid, None, push_turtle, pop_turtle):
-            if v == vid: continue
+            if v == vid: 
+                continue
             # Done for the leaves
             if g.node(v).start_tt > time:
-                print('Do not consider ', v, time)
                 continue
-            visitor(g,v,turtle,time)
-
-        scene = turtle.getScene()
+            visitor(g, v, turtle, time)
+        
+        # scene = turtle.getScene()
         return g
 
     for plant_id in g.component_roots_at_scale_iter(g.root, scale=max_scale):
@@ -107,10 +113,12 @@ def mtg_turtle_time(g, time, update_visitor=None ):
     return g
 
 
+
 def grow_plant(g, time):
     g = thermal_time(g)
     g = mtg_turtle_time(g, time=time)
     return g
+
 
 def grow_plant_and_display(g, time):
     g = grow_plant(g=g, time=time)

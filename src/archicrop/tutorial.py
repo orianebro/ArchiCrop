@@ -1,13 +1,16 @@
 # ipython --gui=qt
-import pandas
-import numpy
+from __future__ import annotations
 
-from .cereals import build_shoot, parametric_leaf, leaf_azimuth, shoot_at_stage
-from .display import display_mtg, build_scene, display_scene
-from .stand import agronomic_plot
-from .simple_maize import bell_shaped_dist, geometric_dist
+import numpy as np
+import pandas as pd
+
+from . import sky_sources as skys
+from .cereals import build_shoot, leaf_azimuth, parametric_leaf
+from .display import build_scene, display_scene
 from .geometry import form_factor
-import .sky_sources as skys
+from .simple_maize import bell_shaped_dist, geometric_dist
+from .stand import agronomic_plot
+
 # import light_it as ltfs
 
 
@@ -33,8 +36,8 @@ stem_radius=1
 leaf_areas = bell_shaped_dist(plant_area=10000)
 a_leaf = parametric_leaf(nb_segment=10, insertion_angle=50, scurv=0.5,curvature=50, alpha=-2.3)
 ff = form_factor(a_leaf)
-leaf_lengths = numpy.sqrt(numpy.array(leaf_areas) / 0.1 / ff)
-insertion_heights = numpy.cumsum(geometric_dist(height=200))
+leaf_lengths = np.sqrt(np.array(leaf_areas) / 0.1 / ff)
+insertion_heights = np.cumsum(geometric_dist(height=200))
 leaf_shapes = [a_leaf for l in leaf_lengths]
 leaf_azimuths = leaf_azimuth(size=len(leaf_lengths), phyllotactic_angle=180, phyllotactic_deviation=15, plant_orientation=0, spiral=False)
 shoot, g = build_shoot(stem_radius=stem_radius, insertion_heights=insertion_heights, leaf_lengths=leaf_lengths, leaf_areas=leaf_areas,
@@ -44,7 +47,7 @@ display_scene(scene)
 
 
 # some realistic values for a wheat plant
-df = pandas.read_csv('wheat.csv')
+df = pd.read_csv('wheat.csv')
 stem_radius=0.25
 a_leaf = parametric_leaf(nb_segment=10, insertion_angle=30, scurv=0.5,curvature=20, alpha=-1.5)
 ff = form_factor(a_leaf)

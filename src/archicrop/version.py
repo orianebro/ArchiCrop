@@ -1,5 +1,5 @@
-# {# pkglts, version
-#  -*- coding: utf-8 -*-
+# {# pkglts, version  
+#  -*- coding: utf-8 -*-  
 
 major = 0
 minor = 1

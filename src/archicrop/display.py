@@ -1,5 +1,17 @@
-from openalea.plantgl.all import Material, Color3, Shape, Scene, Viewer, Translated, AxisRotated
+from __future__ import annotations
+
 from itertools import cycle
+
+from openalea.plantgl.all import (
+    AxisRotated,
+    Color3,
+    Material,
+    Scene,
+    Shape,
+    Translated,
+    Viewer,
+)
+
 
 def build_scene(mtg, position=(0, 0, 0),
                      orientation=0,

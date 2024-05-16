@@ -1,12 +1,15 @@
 """ Geometric primitives for cereals"""
+from __future__ import annotations
 
-import numpy
-from math import pi, cos, sin, radians
-from scipy.integrate import trapz
+from math import cos, pi, radians, sin
+
+import numpy as np
 import openalea.plantgl.all as pgl
 from openalea.mtg.turtle import TurtleFrame
+from scipy.integrate import trapz
 
 from . import fitting
+
 
 def blade_elt_area(s, r, Lshape=1, Lwshape=1, sr_base=0, sr_top=1):
     """ surface of a blade element, positioned with two relative curvilinear absisca"""
@@ -17,11 +20,11 @@ def blade_elt_area(s, r, Lshape=1, Lwshape=1, sr_base=0, sr_top=1):
     sre = [sr for sr in zip(s, r) if (sr_base < sr[0] < sr_top)]
     if len(sre) > 0:
         se, re = list(zip(*sre))
-        snew = [sr_base] + list(se) + [sr_top]
-        rnew = [numpy.interp(sr_base, s, r)] + list(re) + [numpy.interp(sr_top, s, r)]
+        snew = [sr_base, *list(se), sr_top]
+        rnew = [np.interp(sr_base, s, r), *list(re), np.interp(sr_top, s, r)]
     else:
         snew = [sr_base, sr_top]
-        rnew = [numpy.interp(sr_base, s, r), numpy.interp(sr_top, s, r)]
+        rnew = [np.interp(sr_base, s, r), np.interp(sr_top, s, r)]
 
     S = trapz(rnew, snew) * Lshape * Lwshape
 
@@ -81,7 +84,7 @@ def arrange_leaf(leaf, stem_diameter=0, inclination=1, relative=True):
 
     """
 
-    x, y, s, r = list(map(numpy.array, leaf))
+    x, y, s, r = list(map(np.array, leaf))
     if relative and inclination == 1:
         x1, y1 = x, y
     else:
@@ -150,10 +153,7 @@ def leaf_mesh(leaf, L_shape=1, Lw_shape=1, length=1, s_base=0, s_top=1, flipx=Fa
 
     if mesh:
         pts, ind = mesh
-        if len(ind) < 1:
-            mesh = None
-        else:
-            mesh = fitting.plantgl_shape(pts, ind)
+        mesh = None if len(ind) < 1 else fitting.plantgl_shape(pts, ind)
     else:
         if length > 0:
             print('ERROR No mesh', s_base, s_top, length)
@@ -228,12 +228,12 @@ def stem_mesh(length, visible_length, diameter, classic=False, slices=24):
         #  (percentage error lower than 5)
         slices = 6
         stem = pgl.Tapered(diameter / 2., diameter / 2.,
-                           pgl.Cylinder(1., length, solid, slices))
+                           pgl.Cylinder(1., visible_length, solid, slices))
         tessel = pgl.Tesselator()
         stem.apply(tessel)
         mesh = tessel.triangulation
     else:
-        mesh = slim_cylinder(length, diameter / 2., diameter / 2.)
+        mesh = slim_cylinder(visible_length, diameter / 2., diameter / 2.)
 
     return mesh
 
@@ -278,10 +278,7 @@ class CerealsTurtle(pgl.PglTurtle):
 
     def transform(self, mesh, face_up=False):
         x = self.getUp()
-        if face_up:
-            z = pgl.Vector3(0, 0, 1)
-        else:
-            z = self.getHeading()
+        z = pgl.Vector3(0, 0, 1) if face_up else self.getHeading()
         bo = pgl.BaseOrientation(x, z ^ x)
         matrix = pgl.Transform4(bo.getMatrix())
         matrix.translate(self.getPosition())
@@ -324,7 +321,7 @@ class CerealsVisitor:
                 # print 'node', n._vid, 'azim ', azim
                 turtle.rollL(azim)
 
-        if n.label.startswith('Leaf') or n.label.startswith('Stem'):
+        if n.label.startswith('Leaf') or n.label.startswith('Stem'):  # noqa: SIM102
             # update geometry of elements
             if n.length > 0:
                 mesh = compute_element(n, self.classic)
@@ -338,7 +335,7 @@ class CerealsVisitor:
             if n.length > 0:
                 turtle.f(n.length)
             turtle.context.update({'top': turtle.getFrame()})
-        if n.label.startswith('Leaf'):
+        if n.label.startswith('Leaf'):  # noqa: SIM102
             if n.lrolled > 0:
                 turtle.f(n.lrolled)
                 turtle.context.update({'top': turtle.getFrame()})
@@ -388,7 +385,7 @@ def arrange_leaf_for_growth(leaf, stem_diameter=0, inclination=1, relative=True)
 
     """
 
-    x, y, s, r = list(map(numpy.array, leaf))
+    x, y, s, r = list(map(np.array, leaf))
 
     if relative and inclination == 1:
         x1, y1 = x, y
@@ -458,10 +455,7 @@ def leaf_mesh_for_growth(leaf, L_shape=1, Lw_shape=1, length=1, s_base=0, s_top=
 
     if mesh:
         pts, ind = mesh
-        if len(ind) < 1:
-            mesh = None
-        else:
-            mesh = fitting.plantgl_shape(pts, ind)
+        mesh = None if len(ind) < 1 else fitting.plantgl_shape(pts, ind)
     else:
         if length > 0:
             print('ERROR No mesh', s_base, s_top, length)
@@ -479,12 +473,28 @@ def compute_continuous_element(element_node, time, classic=False): # see maybe w
     geom = None
 
     # added by Oriane, for continuous growth
-    if n.start_tt <= time <= n.end_tt:
+    if n.start_tt <= time < n.end_tt: # organ growing
         relative_growth = (time - n.start_tt) / (n.end_tt - n.start_tt)
         if n.label.startswith('Leaf'):
             n.visible_length = n.shape_mature_length * relative_growth
+            n.grow = True
         elif n.label.startswith('Stem'):
             n.visible_length = n.mature_length * relative_growth
+            n.grow = True
+
+    elif time < n.start_tt: # organ not yet appeared
+        if n.label.startswith('Leaf') or n.label.startswith('Stem'):
+            n.visible_length = 0.0
+            n.grow = False
+
+    elif time >= n.end_tt: # organ mature
+        if n.label.startswith('Leaf'):
+            n.visible_length = n.shape_mature_length
+            n.grow = True
+        elif n.label.startswith('Stem'):
+            n.visible_length = n.mature_length
+            n.grow = True
+
 
     if n.label.startswith('Leaf'):  # leaf element
         if n.visible_length > 0.0001:  # filter less than 0.001 mm leaves
@@ -548,7 +558,7 @@ class CerealsContinuousVisitor(CerealsVisitor):
             if n.length > 0:
                 turtle.f(n.visible_length)
             turtle.context.update({'top': turtle.getFrame()})
-        if n.label.startswith('Leaf'):
+        if n.label.startswith('Leaf'):  # noqa: SIM102
             if n.lrolled > 0:
                 turtle.f(n.lrolled)
                 turtle.context.update({'top': turtle.getFrame()})

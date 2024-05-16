@@ -1,8 +1,11 @@
-import numpy
+from __future__ import annotations
 
-from .generator import cereals as cereals_generator
-from .plant_design import blade_dimension, stem_dimension, get_form_factor, leaf_azimuth
+import numpy as np
+
 from .cereals_leaf import parametric_leaf
+from .generator import cereals as cereals_generator
+from .plant_design import blade_dimension, get_form_factor, leaf_azimuth, stem_dimension
+
 
 def build_shoot(stem_diameters, insertion_heights, leaf_lengths, leaf_areas, leaf_azimuths=None, leaf_shapes=None):
     """create a shoot
@@ -21,13 +24,13 @@ def build_shoot(stem_diameters, insertion_heights, leaf_lengths, leaf_areas, lea
 
     """
     ranks = range(1, len(leaf_lengths) + 1)
-    ntop = max(ranks) - numpy.array(ranks) + 1
+    ntop = max(ranks) - np.array(ranks) + 1
     if leaf_shapes is None:
         a_leaf = parametric_leaf()
         leaf_shapes = [a_leaf for r in ranks]
     if leaf_azimuths is None:
         leaf_azimuths = leaf_azimuth(len(ranks))
-    leaf_azimuths[1:] = numpy.diff(leaf_azimuths)
+    leaf_azimuths[1:] = np.diff(leaf_azimuths)
     ff = [get_form_factor(leaf) for leaf in leaf_shapes]
     blades = blade_dimension(area=leaf_areas, length=leaf_lengths, ntop=ntop)
     stem = stem_dimension(h_ins=insertion_heights, d_internode=stem_diameters, ntop=ntop)

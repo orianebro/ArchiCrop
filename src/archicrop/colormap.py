@@ -14,8 +14,10 @@
     import openalea.color.colormap makes matplotlib
     with TkAgg frontend crash for some mysterious reason !!
 """
+from __future__ import annotations
 
 from math import isnan
+
 
 class ColorMap(object):
     """A RGB color map, between 2 colors defined in HSV code

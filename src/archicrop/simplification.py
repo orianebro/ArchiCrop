@@ -1,5 +1,7 @@
-from math import sqrt
+from __future__ import annotations
+
 from heapq import *
+
 from openalea.plantgl.all import Vector3
 
 points = [Vector3(*pt) for pt in
@@ -30,7 +32,7 @@ def distance(pt, p0, p1):
 def cost(polyline, nb_points):
     nb_points += 2
     n = len(polyline)
-    pts = [pt for pt in polyline]
+    pts = list(polyline)
     _cost = []
 
     sibling = [[i - 1, i + 1] for i in range(n)]
