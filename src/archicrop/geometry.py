@@ -1,4 +1,5 @@
-""" Geometric primitives for cereals"""
+"""Geometric primitives for cereals"""
+
 from __future__ import annotations
 
 from math import cos, pi, radians, sin
@@ -12,7 +13,7 @@ from . import fitting
 
 
 def blade_elt_area(s, r, Lshape=1, Lwshape=1, sr_base=0, sr_top=1):
-    """ surface of a blade element, positioned with two relative curvilinear absisca"""
+    """surface of a blade element, positioned with two relative curvilinear absisca"""
 
     S = 0
     sr_base = min([1, max([0, sr_base])])
@@ -36,7 +37,7 @@ def form_factor(leaf):
     return blade_elt_area(s, r, 1, 1, 0, 1)
 
 
-def leaf_area(leaf , length=1, mature_length=1, width_max=1, form_factor=None):
+def leaf_area(leaf, length=1, mature_length=1, width_max=1, form_factor=None):
     """
     Leaf area as a function of length
     -------
@@ -55,9 +56,9 @@ def leaf_area(leaf , length=1, mature_length=1, width_max=1, form_factor=None):
     """
     if length >= mature_length and form_factor is not None:
         return length * width_max * form_factor
-    _,_,s,r = leaf
-    sr_b = 1- float(length) / mature_length
-    return blade_elt_area(s,r, mature_length, width_max, sr_base=sr_b, sr_top=1)
+    _, _, s, r = leaf
+    sr_b = 1 - float(length) / mature_length
+    return blade_elt_area(s, r, mature_length, width_max, sr_base=sr_b, sr_top=1)
 
 
 def mesh_area(mesh):
@@ -67,8 +68,8 @@ def mesh_area(mesh):
         return sc.surface
     else:
         return None
-        
-        
+
+
 def arrange_leaf(leaf, stem_diameter=0, inclination=1, relative=True):
     """Arrange a leaf to be placed along a stem with a given inclination.
 
@@ -104,14 +105,25 @@ def arrange_leaf(leaf, stem_diameter=0, inclination=1, relative=True):
 
         x1 = x[0] + cos_a * x - sin_a * y
         y1 = y[0] + sin_a * x + cos_a * y
-    leaf = x1 + stem_diameter / 2., y1, s, r
+    leaf = x1 + stem_diameter / 2.0, y1, s, r
 
     return leaf
 
 
-def leaf_mesh(leaf, L_shape=1, Lw_shape=1, length=1, s_base=0, s_top=1, flipx=False,
-              twist=0, volume=0, stem_diameter=0, inclination=1,
-              relative=True):
+def leaf_mesh(
+    leaf,
+    L_shape=1,
+    Lw_shape=1,
+    length=1,
+    s_base=0,
+    s_top=1,
+    flipx=False,
+    twist=0,
+    volume=0,
+    stem_diameter=0,
+    inclination=1,
+    relative=True,
+):
     """Compute mesh for a leaf element along a scaled leaf shape
 
     Args:
@@ -134,36 +146,35 @@ def leaf_mesh(leaf, L_shape=1, Lw_shape=1, length=1, s_base=0, s_top=1, flipx=Fa
     Returns:
         a PlanGl mesh representing the element
     """
-    shape = arrange_leaf(leaf, stem_diameter=float(stem_diameter) / L_shape,
-                         inclination=inclination, relative=relative)
+    shape = arrange_leaf(
+        leaf,
+        stem_diameter=float(stem_diameter) / L_shape,
+        inclination=inclination,
+        relative=relative,
+    )
 
     # flip to position leaves along tiller emitted
     if flipx:
         # to position leaves along tiller emitted
         shape = (-shape[0],) + shape[1:]
 
-    mesh = fitting.mesh4(shape,
-                         L_shape,
-                         length,
-                         s_base,
-                         s_top,
-                         Lw_shape,
-                         twist=twist,
-                         volume=volume)
+    mesh = fitting.mesh4(
+        shape, L_shape, length, s_base, s_top, Lw_shape, twist=twist, volume=volume
+    )
 
     if mesh:
         pts, ind = mesh
         mesh = None if len(ind) < 1 else fitting.plantgl_shape(pts, ind)
     else:
         if length > 0:
-            print('ERROR No mesh', s_base, s_top, length)
-            pass
+            print("ERROR No mesh", s_base, s_top, length)
         mesh = None
 
     return mesh
 
 
 # Meshing function for StemElements
+
 
 def _is_iterable(x):
     try:
@@ -174,13 +185,12 @@ def _is_iterable(x):
 
 
 def as_tuples(pgl_3List, offset=0):
-    """ return pgl list of 3 numbers kind (indes3, vector3) as a list of python
+    """return pgl list of 3 numbers kind (indes3, vector3) as a list of python
     tuples
     """
     if not _is_iterable(offset):
         offset = [offset] * 3
-    return [(i[0] + offset[0], i[1] + offset[1], i[2] + offset[2]) for i in
-            pgl_3List]
+    return [(i[0] + offset[0], i[1] + offset[1], i[2] + offset[2]) for i in pgl_3List]
 
 
 def addSets(pglset1, pglset2, translate=(0, 0, 0)):
@@ -188,11 +198,12 @@ def addSets(pglset1, pglset2, translate=(0, 0, 0)):
     Create a new TriangleSet by addition of two existing ones
     if translate is not None, pglset2 is translated with vector translate
     """
-    points = as_tuples(pglset1.pointList) + as_tuples(pglset2.pointList,
-                                                      offset=translate)
-    index = as_tuples(pglset1.indexList) + as_tuples(pglset2.indexList,
-                                                     offset=len(
-                                                         pglset1.pointList))
+    points = as_tuples(pglset1.pointList) + as_tuples(
+        pglset2.pointList, offset=translate
+    )
+    index = as_tuples(pglset1.indexList) + as_tuples(
+        pglset2.indexList, offset=len(pglset1.pointList)
+    )
     return pgl.TriangleSet(points, index)
 
 
@@ -201,7 +212,7 @@ def slim_cylinder(length, radius_base, radius_top):
     Try to construct a cylinder with a low number of triangles.
     """
     rb, rt = radius_base, radius_top
-    a1, a2, a3 = 0, 2 * pi / 3., 4 * pi / 3.
+    a1, a2, a3 = 0, 2 * pi / 3.0, 4 * pi / 3.0
     r = rb
     p1 = (r * cos(a1), r * sin(a1), 0)
     p2 = (r * cos(a2), r * sin(a2), 0)
@@ -211,15 +222,25 @@ def slim_cylinder(length, radius_base, radius_top):
     q2 = (r * cos(a2 + pi), r * sin(a2 + pi), length)
     q3 = (r * cos(a3 + pi), r * sin(a3 + pi), length)
 
-    set = pgl.TriangleSet([p1, p2, p3, q1, q2, q3],
-                          [(2, 1, 0), (3, 4, 5), (0, 5, 4), (0, 4, 2),
-                           (2, 4, 3), (3, 1, 2), (1, 3, 5), (5, 0, 1)])
+    set = pgl.TriangleSet(
+        [p1, p2, p3, q1, q2, q3],
+        [
+            (2, 1, 0),
+            (3, 4, 5),
+            (0, 5, 4),
+            (0, 4, 2),
+            (2, 4, 3),
+            (3, 1, 2),
+            (1, 3, 5),
+            (5, 0, 1),
+        ],
+    )
     return set
 
 
 def stem_mesh(length, visible_length, diameter, classic=False, slices=24):
-    """ Compute mesh for a stem element
-        - classic indicates
+    """Compute mesh for a stem element
+    - classic indicates
     """
 
     if classic:
@@ -227,48 +248,54 @@ def stem_mesh(length, visible_length, diameter, classic=False, slices=24):
         # 6 is the minimal number of slices for a correct computation of star
         #  (percentage error lower than 5)
         slices = 6
-        stem = pgl.Tapered(diameter / 2., diameter / 2.,
-                           pgl.Cylinder(1., visible_length, solid, slices))
+        stem = pgl.Tapered(
+            diameter / 2.0,
+            diameter / 2.0,
+            pgl.Cylinder(1.0, visible_length, solid, slices),
+        )
         tessel = pgl.Tesselator()
         stem.apply(tessel)
         mesh = tessel.triangulation
     else:
-        mesh = slim_cylinder(visible_length, diameter / 2., diameter / 2.)
+        mesh = slim_cylinder(visible_length, diameter / 2.0, diameter / 2.0)
 
     return mesh
 
 
 def compute_element(element_node, classic=False):
-    """ compute geometry of Adel base elements (LeafElement and StemElement)
+    """compute geometry of Adel base elements (LeafElement and StemElement)
     element_node should be a mtg node proxy"""
     n = element_node
     geom = None
 
-    if n.label.startswith('Leaf'):  # leaf element
+    if n.label.startswith("Leaf"):  # leaf element
         if n.visible_length > 0.0001:  # filter less than 0.001 mm leaves
             if n.shape is not None and n.srb is not None:
-                geom = leaf_mesh(n.shape,
-                                    n.shape_mature_length,
-                                    n.shape_max_width,
-                                    n.visible_length, n.srb, n.srt,
-                                    # flipx allows x-> -x to place the shape along
-                                    #  with the tiller positioned with
-                                    # turtle.down()
-                                    flipx=True,
-                                    stem_diameter=n.stem_diameter)
+                geom = leaf_mesh(
+                    n.shape,
+                    n.shape_mature_length,
+                    n.shape_max_width,
+                    n.visible_length,
+                    n.srb,
+                    n.srt,
+                    # flipx allows x-> -x to place the shape along
+                    #  with the tiller positioned with
+                    # turtle.down()
+                    flipx=True,
+                    stem_diameter=n.stem_diameter,
+                )
             if n.lrolled > 0:
-                rolled = stem_mesh(n.lrolled, n.lrolled, n.d_rolled, n.d_rolled,
-                                    classic)
+                rolled = stem_mesh(
+                    n.lrolled, n.lrolled, n.d_rolled, n.d_rolled, classic
+                )
                 if geom is None:
                     geom = rolled
                 else:
                     geom = addSets(rolled, geom, translate=(0, 0, n.lrolled))
-    elif n.label.startswith('Stem'):  # stem element
+    elif n.label.startswith("Stem"):  # stem element
         geom = stem_mesh(n.length, n.visible_length, n.diameter, n.diameter, classic)
 
     return geom
-
-
 
 
 class CerealsTurtle(pgl.PglTurtle):
@@ -290,16 +317,15 @@ class CerealsTurtle(pgl.PglTurtle):
         pos = self.getPosition()
         Head = self.getHeading()
         Up = self.getUp()
-        return {'Position': pos, 'Head': Head, 'Up': Up}
+        return {"Position": pos, "Head": Head, "Up": Up}
 
     def setFrame(self, frame):
-        self.move(frame['Position'])
-        self.setHead(frame['Head'], frame['Up'])
+        self.move(frame["Position"])
+        self.setHead(frame["Head"], frame["Up"])
 
 
 class CerealsVisitor:
-    """ Performs geometric interpretation of mtg nodes
-    """
+    """Performs geometric interpretation of mtg nodes"""
 
     def __init__(self, classic):
         self.classic = classic
@@ -315,13 +341,13 @@ class CerealsVisitor:
             turtle.setHead(0, 0, 1, -1, 0, 0)
 
         # incline turtle at the base of stems,
-        if n.label.startswith('Stem'):
-            azim = float(n.azimuth) if n.azimuth else 0.
+        if n.label.startswith("Stem"):
+            azim = float(n.azimuth) if n.azimuth else 0.0
             if azim:
                 # print 'node', n._vid, 'azim ', azim
                 turtle.rollL(azim)
 
-        if n.label.startswith('Leaf') or n.label.startswith('Stem'):  # noqa: SIM102
+        if n.label.startswith("Leaf") or n.label.startswith("Stem"):  # noqa: SIM102
             # update geometry of elements
             if n.length > 0:
                 mesh = compute_element(n, self.classic)
@@ -331,16 +357,14 @@ class CerealsVisitor:
 
         # 3. Update the turtle and context
         turtle.setId(v)
-        if n.label.startswith('Stem'):
+        if n.label.startswith("Stem"):
             if n.length > 0:
                 turtle.f(n.length)
-            turtle.context.update({'top': turtle.getFrame()})
-        if n.label.startswith('Leaf'):  # noqa: SIM102
+            turtle.context.update({"top": turtle.getFrame()})
+        if n.label.startswith("Leaf"):  # noqa: SIM102
             if n.lrolled > 0:
                 turtle.f(n.lrolled)
-                turtle.context.update({'top': turtle.getFrame()})
-
-
+                turtle.context.update({"top": turtle.getFrame()})
 
 
 def mtg_interpreter(g, classic=False):
@@ -357,20 +381,17 @@ def mtg_interpreter(g, classic=False):
     turtle = CerealsTurtle()
     visitor = CerealsVisitor(classic)
 
-    scene = TurtleFrame(g,
-                        visitor=visitor,
-                        turtle=turtle,
-                        gc=False,
-                        all_roots=True)
+    scene = TurtleFrame(g, visitor=visitor, turtle=turtle, gc=False, all_roots=True)
 
     return g
 
 
-
-
 ### For continuous growth #####
 
-def arrange_leaf_for_growth(leaf, stem_diameter=0, inclination=1, relative=True): # add stem height
+
+def arrange_leaf_for_growth(
+    leaf, stem_diameter=0, inclination=1, relative=True
+):  # add stem height
     """Arrange a leaf to be placed along a stem with a given inclination.
 
     Args:
@@ -406,14 +427,25 @@ def arrange_leaf_for_growth(leaf, stem_diameter=0, inclination=1, relative=True)
 
         x1 = x[0] + cos_a * x - sin_a * y
         y1 = y[0] + sin_a * x + cos_a * y
-    leaf = x1 + stem_diameter / 2., y1, s, r # consider stem height for y
+    leaf = x1 + stem_diameter / 2.0, y1, s, r  # consider stem height for y
 
     return leaf
 
 
-def leaf_mesh_for_growth(leaf, L_shape=1, Lw_shape=1, length=1, s_base=0, s_top=1, flipx=False,
-              twist=0, volume=0, stem_diameter=0, inclination=1,
-              relative=True):
+def leaf_mesh_for_growth(
+    leaf,
+    L_shape=1,
+    Lw_shape=1,
+    length=1,
+    s_base=0,
+    s_top=1,
+    flipx=False,
+    twist=0,
+    volume=0,
+    stem_diameter=0,
+    inclination=1,
+    relative=True,
+):
     """Compute mesh for a leaf element along a scaled leaf shape
 
     Args:
@@ -436,93 +468,94 @@ def leaf_mesh_for_growth(leaf, L_shape=1, Lw_shape=1, length=1, s_base=0, s_top=
     Returns:
         a PlanGl mesh representing the element
     """
-    shape = arrange_leaf_for_growth(leaf, stem_diameter=float(stem_diameter) / L_shape,
-                         inclination=inclination, relative=relative)
+    shape = arrange_leaf_for_growth(
+        leaf,
+        stem_diameter=float(stem_diameter) / L_shape,
+        inclination=inclination,
+        relative=relative,
+    )
     # flip to position leaves along tiller emitted
     if flipx:
         # to position leaves along tiller emitted
         shape = (-shape[0],) + shape[1:]
 
-
-    mesh = fitting.mesh4(shape,
-                         L_shape,
-                         length,
-                         s_base,
-                         s_top,
-                         Lw_shape,
-                         twist=twist,
-                         volume=volume)
+    mesh = fitting.mesh4(
+        shape, L_shape, length, s_base, s_top, Lw_shape, twist=twist, volume=volume
+    )
 
     if mesh:
         pts, ind = mesh
         mesh = None if len(ind) < 1 else fitting.plantgl_shape(pts, ind)
     else:
         if length > 0:
-            print('ERROR No mesh', s_base, s_top, length)
-            pass
+            print("ERROR No mesh", s_base, s_top, length)
         mesh = None
 
     return mesh
 
 
-
-def compute_continuous_element(element_node, time, classic=False): # see maybe with *kwarg, **kwds, etc. for time
-    """ compute geometry of Adel base elements (LeafElement and StemElement)
+def compute_continuous_element(
+    element_node, time, classic=False
+):  # see maybe with *kwarg, **kwds, etc. for time
+    """compute geometry of Adel base elements (LeafElement and StemElement)
     element_node should be a mtg node proxy"""
     n = element_node
     geom = None
 
     # added by Oriane, for continuous growth
-    if n.start_tt <= time < n.end_tt: # organ growing
+    if n.start_tt <= time < n.end_tt:  # organ growing
         relative_growth = (time - n.start_tt) / (n.end_tt - n.start_tt)
-        if n.label.startswith('Leaf'):
+        if n.label.startswith("Leaf"):
             n.visible_length = n.shape_mature_length * relative_growth
             n.grow = True
-        elif n.label.startswith('Stem'):
+        elif n.label.startswith("Stem"):
             n.visible_length = n.mature_length * relative_growth
             n.grow = True
 
-    elif time < n.start_tt: # organ not yet appeared
-        if n.label.startswith('Leaf') or n.label.startswith('Stem'):
+    elif time < n.start_tt:  # organ not yet appeared
+        if n.label.startswith("Leaf") or n.label.startswith("Stem"):
             n.visible_length = 0.0
             n.grow = False
 
-    elif time >= n.end_tt: # organ mature
-        if n.label.startswith('Leaf'):
+    elif time >= n.end_tt:  # organ mature
+        if n.label.startswith("Leaf"):
             n.visible_length = n.shape_mature_length
             n.grow = True
-        elif n.label.startswith('Stem'):
+        elif n.label.startswith("Stem"):
             n.visible_length = n.mature_length
             n.grow = True
 
-
-    if n.label.startswith('Leaf'):  # leaf element
+    if n.label.startswith("Leaf"):  # leaf element
         if n.visible_length > 0.0001:  # filter less than 0.001 mm leaves
             if n.shape is not None and n.srb is not None:
-                geom = leaf_mesh_for_growth(n.shape,
-                                    n.shape_mature_length,
-                                    n.shape_max_width,
-                                    n.visible_length, n.srb, n.srt,
-                                    # flipx allows x-> -x to place the shape along
-                                    #  with the tiller positioned with
-                                    # turtle.down()
-                                    flipx=True,
-                                    stem_diameter=n.stem_diameter)
+                geom = leaf_mesh_for_growth(
+                    n.shape,
+                    n.shape_mature_length,
+                    n.shape_max_width,
+                    n.visible_length,
+                    n.srb,
+                    n.srt,
+                    # flipx allows x-> -x to place the shape along
+                    #  with the tiller positioned with
+                    # turtle.down()
+                    flipx=True,
+                    stem_diameter=n.stem_diameter,
+                )
             if n.lrolled > 0:
-                rolled = stem_mesh(n.lrolled, n.lrolled, n.d_rolled, n.d_rolled,
-                                    classic)
+                rolled = stem_mesh(
+                    n.lrolled, n.lrolled, n.d_rolled, n.d_rolled, classic
+                )
                 if geom is None:
                     geom = rolled
                 else:
                     geom = addSets(rolled, geom, translate=(0, 0, n.lrolled))
-    elif n.label.startswith('Stem'):  # stem element
+    elif n.label.startswith("Stem"):  # stem element
         geom = stem_mesh(n.length, n.visible_length, n.diameter, n.diameter, classic)
 
     return geom
 
 
 class CerealsContinuousVisitor(CerealsVisitor):
-
     def __init__(self, classic):
         super().__init__(classic)
 
@@ -537,13 +570,13 @@ class CerealsContinuousVisitor(CerealsVisitor):
             turtle.setHead(0, 0, 1, -1, 0, 0)
 
         # incline turtle at the base of stems,
-        if n.label.startswith('Stem'):
-            azim = float(n.azimuth) if n.azimuth else 0.
+        if n.label.startswith("Stem"):
+            azim = float(n.azimuth) if n.azimuth else 0.0
             if azim:
                 # print 'node', n._vid, 'azim ', azim
                 turtle.rollL(azim)
 
-        if n.label.startswith('Leaf') or n.label.startswith('Stem'):
+        if n.label.startswith("Leaf") or n.label.startswith("Stem"):
             # update geometry of elements
             # if n.length > 0:
             # print(v)
@@ -554,15 +587,14 @@ class CerealsContinuousVisitor(CerealsVisitor):
 
         # 3. Update the turtle and context
         turtle.setId(v)
-        if n.label.startswith('Stem'):
+        if n.label.startswith("Stem"):
             if n.length > 0:
                 turtle.f(n.visible_length)
-            turtle.context.update({'top': turtle.getFrame()})
-        if n.label.startswith('Leaf'):  # noqa: SIM102
+            turtle.context.update({"top": turtle.getFrame()})
+        if n.label.startswith("Leaf"):  # noqa: SIM102
             if n.lrolled > 0:
                 turtle.f(n.lrolled)
-                turtle.context.update({'top': turtle.getFrame()})
-
+                turtle.context.update({"top": turtle.getFrame()})
 
 
 def mtg_interpreter_continuous(g, classic=False):
@@ -579,10 +611,6 @@ def mtg_interpreter_continuous(g, classic=False):
     turtle = CerealsTurtle()
     visitor = CerealsContinuousVisitor(classic)
 
-    scene = TurtleFrame(g,
-                        visitor=visitor,
-                        turtle=turtle,
-                        gc=False,
-                        all_roots=True)
+    scene = TurtleFrame(g, visitor=visitor, turtle=turtle, gc=False, all_roots=True)
 
     return g

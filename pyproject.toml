@@ -29,7 +29,7 @@ classifiers = [
   "Topic :: Scientific/Engineering",
   "Typing :: Typed",
 ]
-dynamic = ["version"]
+# dynamic = ["version"]
 dependencies = []
 
 [project.optional-dependencies]
@@ -89,7 +89,7 @@ enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 warn_unreachable = true
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
-hide_error_codes = false
+# hide_error_codes = false
 
 [[tool.mypy.overrides]]
 module = "archicrop.*"

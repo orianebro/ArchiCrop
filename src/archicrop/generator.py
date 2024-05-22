@@ -1,4 +1,5 @@
 """Generate a geometric-based MTG representation of a cereal plant"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -16,13 +17,12 @@ def curvilinear_abscisse(x, y, z=None):
     if z is None:
         s[1:] = np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2)
     else:
-        s[1:] = np.sqrt(
-            np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)
+        s[1:] = np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)
     return s.cumsum()
 
 
 def majors_axes_regression(x, y):
-    """ Performs a major axis regression
+    """Performs a major axis regression
     :return: a, b, c : (float) coef of the regression line ax + by + c = 0
     """
 
@@ -48,7 +48,7 @@ def majors_axes_regression(x, y):
 def line_projection(a, b, c, xo, yo):
     """coordinate of the projection of xo, yo on ax + by + c = 0 line"""
     x = (b * (b * xo - a * yo) - a * c) / (a**2 + b**2)
-    y = (a * (-b * xo + a* yo) - b * c) / (a**2 + b**2)
+    y = (a * (-b * xo + a * yo) - b * c) / (a**2 + b**2)
     return x, y
 
 
@@ -80,10 +80,7 @@ def as_polyline(leaf, length=1, radius_max=1, origin=(0, 0, 0), azimuth=0):
     leaf_y = yo + x / cx_m * length * np.sin(azimuth)
     leaf_z = zo + y / cx_m * length
     leaf_r = r * radius_max
-    return list(zip(*list(map(tuple, (leaf_x,
-                            leaf_y,
-                            leaf_z,
-                            leaf_r)))))
+    return list(zip(*list(map(tuple, (leaf_x, leaf_y, leaf_z, leaf_r)))))
 
 
 def as_leaf(polyline):
@@ -97,7 +94,7 @@ def as_leaf(polyline):
         (x, y, s, r), length, radius_max , azimuth, origin of the leaf
     """
 
-    x, y, z, r = list(map(lambda x : np.array(x).astype(float), list(zip(*polyline))))
+    x, y, z, r = list(map(lambda x: np.array(x).astype(float), list(zip(*polyline))))
     xo, yo, zo = x[0], y[0], z[0]
     sx = curvilinear_abscisse(x, y, z)
     a, b, c = majors_axes_regression(x, y)
@@ -108,11 +105,17 @@ def as_leaf(polyline):
     r /= radius_max
     origin = (xo, yo, zo)
     y_leaf = z - zo
-    xp, yp = list(zip(*[line_projection(a, b, c, x[0], x[1]) for x in zip(x,y)]))
+    xp, yp = list(zip(*[line_projection(a, b, c, x[0], x[1]) for x in zip(x, y)]))
     x_leaf = curvilinear_abscisse(xp, yp)
     sxp = curvilinear_abscisse(x_leaf, y_leaf)
     azimuth = np.degrees(np.arctan2(yp[-1] - yp[0], xp[-1] - xp[0]))
-    return (x_leaf / sxp.max(), y_leaf / sxp.max(), s, r), length, radius_max, azimuth, origin
+    return (
+        (x_leaf / sxp.max(), y_leaf / sxp.max(), s, r),
+        length,
+        radius_max,
+        azimuth,
+        origin,
+    )
 
 
 def as_json(plant):
@@ -122,64 +125,82 @@ def as_json(plant):
     diameter = plant.W_internode.values
     stem = [0, *internode.cumsum().tolist()]
     stem_diameter = [diameter[0]] + diameter.tolist()
-    polylines = [as_polyline(leaf, length, width, (0,0,h), azim) for leaf, length, width, h, azim
-                 in
-                 zip(plant.leaf_shape, plant.L_blade, plant.W_blade,
-                     plant.h_ins, plant.leaf_azimuth)]
+    polylines = [
+        as_polyline(leaf, length, width, (0, 0, h), azim)
+        for leaf, length, width, h, azim in zip(
+            plant.leaf_shape,
+            plant.L_blade,
+            plant.W_blade,
+            plant.h_ins,
+            plant.leaf_azimuth,
+        )
+    ]
 
     return {
-        'leaf_polylines': polylines,
-        'leaf_order': plant.leaf_rank.values.tolist(),
-        'stem': [(0, 0, z, r) for z, r in zip(stem, stem_diameter)]}
+        "leaf_polylines": polylines,
+        "leaf_order": plant.leaf_rank.values.tolist(),
+        "stem": [(0, 0, z, r) for z, r in zip(stem, stem_diameter)],
+    }
 
 
 def as_plant(json):
     """restore plant dimension + leaves representation of a plant encoded in
     json (reverse of as_json)"""
 
-    ranks = json['leaf_order']
-    leaves, l_leaf, w_leaf, azimuth, origin = list(zip(*list(map(as_leaf, json['leaf_polylines']))))
+    ranks = json["leaf_order"]
+    leaves, l_leaf, w_leaf, azimuth, origin = list(
+        zip(*list(map(as_leaf, json["leaf_polylines"])))
+    )
     # use rank as index
     df = pd.DataFrame(
-        {'rank': ranks,
-         'l_leaf': l_leaf,
-         'w_leaf': w_leaf,
-         'azimuth': azimuth,
-         'hins': [ori[2] for ori in origin]}).set_index('rank')
+        {
+            "rank": ranks,
+            "l_leaf": l_leaf,
+            "w_leaf": w_leaf,
+            "azimuth": azimuth,
+            "hins": [ori[2] for ori in origin],
+        }
+    ).set_index("rank")
     df.sort_index(inplace=True)
-    leaves = {rank:leaves[i] for i, rank in enumerate(ranks)}
-    x_stem, y_stem, z_stem, r_stem = list(zip(*json['stem']))
-    df['diam'] = interp1d(
-        z_stem, r_stem, bounds_error=False, fill_value=r_stem[-1])(df.hins)
-    df['ff'] = [get_form_factor(leaves[r]) for r in df.index]
-    df['area'] = df.l_leaf * df.w_leaf * df.ff
+    leaves = {rank: leaves[i] for i, rank in enumerate(ranks)}
+    x_stem, y_stem, z_stem, r_stem = list(zip(*json["stem"]))
+    df["diam"] = interp1d(z_stem, r_stem, bounds_error=False, fill_value=r_stem[-1])(
+        df.hins
+    )
+    df["ff"] = [get_form_factor(leaves[r]) for r in df.index]
+    df["area"] = df.l_leaf * df.w_leaf * df.ff
     stem = [0, *df.hins.tolist()]
-    df['internode'] = np.diff(stem)
-    df['ntop'] = df.index.max() - df.index + 1
+    df["internode"] = np.diff(stem)
+    df["ntop"] = df.index.max() - df.index + 1
     # re-index leaves with ntop
-    leaves = {df.ntop[rank] : leaves[rank] for rank in df.index}
-    blades = pd.DataFrame({'L_blade': df.l_leaf,
-                               'S_blade': df.area,
-                               'W_blade': df.w_leaf,
-                               'ntop': df.ntop,
-                               'plant': 1,
-                               'leaf_azimuth': df.azimuth,
-                               'form_factor' : df.ff})
+    leaves = {df.ntop[rank]: leaves[rank] for rank in df.index}
+    blades = pd.DataFrame(
+        {
+            "L_blade": df.l_leaf,
+            "S_blade": df.area,
+            "W_blade": df.w_leaf,
+            "ntop": df.ntop,
+            "plant": 1,
+            "leaf_azimuth": df.azimuth,
+            "form_factor": df.ff,
+        }
+    )
 
-    stem = pd.DataFrame({'L_internode': df.internode,
-                             'L_sheath': 0,
-                             'W_internode': df.diam,
-                             'W_sheath': df.diam,
-                             'h_ins': df.hins,
-                             'ntop': df.ntop,
-                             'plant': 1})
+    stem = pd.DataFrame(
+        {
+            "L_internode": df.internode,
+            "L_sheath": 0,
+            "W_internode": df.diam,
+            "W_sheath": df.diam,
+            "h_ins": df.hins,
+            "ntop": df.ntop,
+            "plant": 1,
+        }
+    )
     return blades, stem, leaves
 
 
-def cereals(json=None,
-            classic=False,
-            seed=None,
-            plant=None):
+def cereals(json=None, classic=False, seed=None, plant=None):
     """
     Generate a 'geometric-based' MTG representation of cereals
 
@@ -200,61 +221,64 @@ def cereals(json=None,
         blade_dimensions, stem_dimensions, leaves = as_plant(json)
 
         dim = blade_dimensions.merge(stem_dimensions)
-        dim = dim.sort_values('ntop', ascending=False)
+        dim = dim.sort_values("ntop", ascending=False)
         relative_azimuth = dim.leaf_azimuth.copy()
         relative_azimuth[1:] = np.diff(relative_azimuth)
     else:
         dim = plant
-        leaves = {row['ntop']: row['leaf_shape'] for index, row in dim.iterrows()}
+        leaves = {row["ntop"]: row["leaf_shape"] for index, row in dim.iterrows()}
 
     # print(dim)
 
     g = MTG()
-    vid_plant = g.add_component(g.root, label='Plant', edge_type='/') 
-    vid_axis = g.add_component(vid_plant, label='MainAxis', edge_type='/') 
-
+    vid_plant = g.add_component(g.root, label="Plant", edge_type="/")
+    vid_axis = g.add_component(vid_plant, label="MainAxis", edge_type="/")
 
     first_internode = True
 
     for _i, row in dim.iterrows():
-        internode = {'label': 'Stem',
-                     'mature_length': row['L_internode'],
-                     'length': row['L_internode'],
-                     'visible_length': row['L_internode'],
-                     'is_green': True,
-                     'diameter': row['W_internode'],
-                     'azimuth': row['leaf_azimuth'],
-                     'grow': False}
+        internode = {
+            "label": "Stem",
+            "mature_length": row["L_internode"],
+            "length": row["L_internode"],
+            "visible_length": row["L_internode"],
+            "is_green": True,
+            "diameter": row["W_internode"],
+            "azimuth": row["leaf_azimuth"],
+            "grow": False,
+        }
 
-        if first_internode :
+        if first_internode:
             # vid_metamer = g.add_component(vid_axis)
             vid_internode = g.add_component(vid_axis, **internode)
             # g.node(vid_metamer).label='Metamer'
             # g.node(vid_metamer).edge_type='/'
-            first_internode=False
+            first_internode = False
         else:
-            vid_internode = g.add_child(vid_internode, edge_type='<', **internode)
+            vid_internode = g.add_child(vid_internode, edge_type="<", **internode)
             # vid_internode, vid_metamer = g.add_child_and_complex(vid_internode, edge_type='<', **internode)
             # g.node(vid_metamer).label='Metamer'
             # g.node(vid_metamer).edge_type='<'
 
-        leaf = {'label': 'Leaf',
-                'shape': leaves[row['ntop']],
-                'shape_mature_length': row['L_blade'],
-                'length': row['L_blade'],
-                'visible_length': row['L_blade'],
-                'leaf_area' : row['S_blade'],
-                'form_factor' : row['form_factor'],
-                'is_green': True,
-                'srb': 0,
-                'srt': 1,
-                'lrolled': 0,
-                'd_rolled': 0,
-                'shape_max_width': row['W_blade'],
-                'stem_diameter': row['W_internode'],
-                'grow': False}
+        leaf = {
+            "label": "Leaf",
+            "shape": leaves[row["ntop"]],
+            "shape_mature_length": row["L_blade"],
+            "length": row["L_blade"],
+            "visible_length": row["L_blade"],
+            "leaf_area": row["S_blade"],
+            "form_factor": row["form_factor"],
+            "is_green": True,
+            "srb": 0,
+            "srt": 1,
+            "lrolled": 0,
+            "d_rolled": 0,
+            "shape_max_width": row["W_blade"],
+            "stem_diameter": row["W_internode"],
+            "grow": False,
+        }
 
-        vid_leaf = g.add_child(vid_internode, edge_type='+', **leaf)  # noqa: F841
+        vid_leaf = g.add_child(vid_internode, edge_type="+", **leaf)  # noqa: F841
 
     g = fat_mtg(g)
 
@@ -283,7 +307,7 @@ def mtg_factory(parameters, metamer_factory=adel_metamer, leaf_sectors=1,
     aborting_tiller_reduction is a scaling factor applied to reduce all dimensions of organs of tillers that will abort
 
     Axe number 0 is compulsory
-  
+
     """
 
     def get_component(components, index):
@@ -415,7 +439,7 @@ def mtg_factory(parameters, metamer_factory=adel_metamer, leaf_sectors=1,
             if not 'Gd' in args:
                 args.update({'Gd': 0.19})
             args.update({'split': split})
-            
+
             hs_f = args.get('HS_final')
             if hs_f != 'NA':
                 if float(hs_f) < args.get('nff'):
@@ -443,9 +467,9 @@ def mtg_factory(parameters, metamer_factory=adel_metamer, leaf_sectors=1,
             vid_metamer = g.add_child(vid_metamer, child=new_metamer,
                                       edge_type='<')
 
-        # add metamer components, if any           
+        # add metamer components, if any
         if len(components) > 0:
-            # deals with first component (internode) and first element 
+            # deals with first component (internode) and first element
             node, elements = get_component(components, 0)
             element = elements[0]
             new_node = g.add_component(vid_metamer, edge_type='/', **node)
@@ -470,7 +494,7 @@ def mtg_factory(parameters, metamer_factory=adel_metamer, leaf_sectors=1,
             vid_topstem_node = vid_node
             vid_topstem_element = vid_elt  # last element of internode
 
-            # add other components   
+            # add other components
             for i in range(1, len(components)):
                 node, elements = get_component(components, i)
                 if node['label'] == 'sheath':

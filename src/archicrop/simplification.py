@@ -4,13 +4,15 @@ from heapq import *
 
 from openalea.plantgl.all import Vector3
 
-points = [Vector3(*pt) for pt in
-          zip(range(10), list(range(5)) + list(range(5, 0, -1)), [0] * 10)]
+points = [
+    Vector3(*pt)
+    for pt in zip(range(10), list(range(5)) + list(range(5, 0, -1)), [0] * 10)
+]
 
 
 def max_distance(pts, line):
     d_line = line.__normSquared__()
-    max_dist = 0.
+    max_dist = 0.0
     index = 0
     for i, pt in enumerate(pts):
         d = (Vector3(pt) ^ line).__normSquared__()

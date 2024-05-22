@@ -1,4 +1,5 @@
-"""Some macro / utilities to run light simpulation on pgl/lpy virtual scene """
+"""Some macro / utilities to run light simpulation on pgl/lpy virtual scene"""
+
 from __future__ import annotations
 
 import pandas as pd
@@ -6,7 +7,7 @@ from alinea.caribu.CaribuScene import CaribuScene
 from alinea.caribu.light import light_sources  # here to avoid import line in notebook
 
 
-def illuminate(scene, light=None, pattern=None, scene_unit='cm', north=0):
+def illuminate(scene, light=None, pattern=None, scene_unit="cm", north=0):
     """Illuminate scene
 
     Args:
@@ -25,8 +26,6 @@ def illuminate(scene, light=None, pattern=None, scene_unit='cm', north=0):
         infinite = True
     if light is not None:
         light = light_sources(*light, orientation=north)
-    cs = CaribuScene(scene, light=light,scene_unit=scene_unit, pattern=pattern)
+    cs = CaribuScene(scene, light=light, scene_unit=scene_unit, pattern=pattern)
     raw, agg = cs.run(direct=True, simplify=True, infinite=infinite)
-    return cs, raw['Ei'], pd.DataFrame(agg)
-
-
+    return cs, raw["Ei"], pd.DataFrame(agg)

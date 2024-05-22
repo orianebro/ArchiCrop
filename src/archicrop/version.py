@@ -1,5 +1,5 @@
-# {# pkglts, version  
-#  -*- coding: utf-8 -*-  
+# {# pkglts, version
+from __future__ import annotations
 
 major = 0
 minor = 1

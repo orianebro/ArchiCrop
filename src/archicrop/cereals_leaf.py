@@ -1,4 +1,5 @@
 """Parametric leaf used for simple maize"""
+
 from __future__ import annotations
 
 from math import cos, pi, radians, sin
@@ -124,9 +125,7 @@ def sr_dornbush(nb_segment=100, klig=0.6, swmax=0.55, f1=0.64, f2=0.92):
     offset = 1.0 / nb_segment / 10
     sb = np.array([0, *np.linspace(offset, 1 - swmax, nbase)[:-1].tolist()])
     rb = klig + (1 - klig) * np.log(1 + c2 * sb / (1 - swmax)) / np.log(1 + c2)
-    return np.array(sb.tolist() + st.tolist()), np.array(
-        rb.tolist() + rt.tolist()
-    )
+    return np.array(sb.tolist() + st.tolist()), np.array(rb.tolist() + rt.tolist())
 
 
 def leaf_morpho_rel(nb_segment=10, w0=0.5, lm=0.5):
@@ -220,7 +219,6 @@ def blade_elt_area(s, r, Lshape=1, Lwshape=1, sr_base=0, sr_top=1):
     S = trapz(rnew, snew) * Lshape * Lwshape
 
     return S
-
 
 
 def form_factor(leaf):
@@ -325,7 +323,6 @@ def leaf_mesh(
     else:
         if length > 0:
             print("ERROR No mesh", s_base, s_top, length)
-            pass
         mesh = None
 
     return mesh

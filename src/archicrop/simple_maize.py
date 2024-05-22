@@ -1,5 +1,6 @@
-""" A collection of simple allometric functions for parameterising the
+"""A collection of simple allometric functions for parameterising the
 architecture of maize"""
+
 from __future__ import annotations
 
 from itertools import cycle
@@ -16,30 +17,35 @@ from .plant_design import blade_dimension, get_form_factor, stem_dimension
 #     return os.path.join(data_dir, 'leaves_simple.db')
 
 
-def bell_shaped_dist(plant_area=1, nb_phy=15, rmax=.7, skew=0.15):
-    """ returns leaf area of individual leaves along bell shaped model """
+def bell_shaped_dist(plant_area=1, nb_phy=15, rmax=0.7, skew=0.15):
+    """returns leaf area of individual leaves along bell shaped model"""
 
     k = -np.log(skew) * rmax
-    r = np.linspace(1. / nb_phy, 1, nb_phy)
-    relative_surface = np.exp(
-        -k / rmax * (2 * (r - rmax) ** 2 + (r - rmax) ** 3))
+    r = np.linspace(1.0 / nb_phy, 1, nb_phy)
+    relative_surface = np.exp(-k / rmax * (2 * (r - rmax) ** 2 + (r - rmax) ** 3))
     leaf_area = relative_surface / relative_surface.sum() * plant_area
     return leaf_area.tolist()
 
 
 def geometric_dist(height=15, nb_phy=15, q=1):
-    """ returns distances between individual leaves along a geometric model """
+    """returns distances between individual leaves along a geometric model"""
 
     if q == 1:
         u0 = float(height) / nb_phy
     else:
-        u0 = height * (1. - q) / (1. - q ** (nb_phy + 1))
+        u0 = height * (1.0 - q) / (1.0 - q ** (nb_phy + 1))
 
-    return [u0 * q ** i for i in range(nb_phy)]
+    return [u0 * q**i for i in range(nb_phy)]
 
 
-def leaf_azimuth(size=1, phyllotactic_angle=180, phyllotactic_deviation=15, plant_orientation=0, spiral=False):
-    """ Generate leaf azimuth series
+def leaf_azimuth(
+    size=1,
+    phyllotactic_angle=180,
+    phyllotactic_deviation=15,
+    plant_orientation=0,
+    spiral=False,
+):
+    """Generate leaf azimuth series
 
     Args:
         size: the size of the sample
@@ -61,12 +67,18 @@ def leaf_azimuth(size=1, phyllotactic_angle=180, phyllotactic_deviation=15, plan
     else:
         it = cycle((0, phyllotactic_angle))
         main = np.array([next(it) for i in range(size)])
-    azim = plant_orientation + main + (np.random.random(size) - 0.5) * 2 * phyllotactic_deviation
+    azim = (
+        plant_orientation
+        + main
+        + (np.random.random(size) - 0.5) * 2 * phyllotactic_deviation
+    )
     azim = azim % 360
     return np.where(azim <= 180, azim, azim - 360)
 
 
-def leaf_shape_perez(nb_segment=100, insertion_angle=50, delta_angle=180, coef_curv=-0.2):
+def leaf_shape_perez(
+    nb_segment=100, insertion_angle=50, delta_angle=180, coef_curv=-0.2
+):
     def _curvature(s, coef_curv):
         return ((1 + coef_curv) * (s**2)) / (1 + coef_curv * (s**2))
         # positionRelativeLeaf=vector of relative position on the leaf [0;1]
@@ -75,10 +87,11 @@ def leaf_shape_perez(nb_segment=100, insertion_angle=50, delta_angle=180, coef_c
         # coefCurv= coefficient of leaf curvature [-1,inf] -1=no curvature inf=curvature at insertion
         # leafLength = length of the leaf
 
-    s = np.linspace(0,1,nb_segment+1)
-    ds = 1. / (nb_segment)
+    s = np.linspace(0, 1, nb_segment + 1)
+    ds = 1.0 / (nb_segment)
     angle_simu = _curvature(s, coef_curv=coef_curv) * np.radians(
-        delta_angle) + np.radians(insertion_angle)
+        delta_angle
+    ) + np.radians(insertion_angle)
     dx = np.array([0, *(ds * np.sin(angle_simu)).tolist()])[:-1]
     dy = np.array([0, *(ds * np.cos(angle_simu)).tolist()])[:-1]
     x, y = np.cumsum(dx), np.cumsum(dy)
@@ -94,8 +107,9 @@ def sr_prevot(nb_segment=10, alpha=-2.5):
     return s, r
 
 
-def parametric_leaf(nb_segment=10, insertion_angle=50, delta_angle=180,
-                    coef_curv=-0.2, alpha=-2.5):
+def parametric_leaf(
+    nb_segment=10, insertion_angle=50, delta_angle=180, coef_curv=-0.2, alpha=-2.5
+):
     """
 
     Args:
@@ -114,11 +128,25 @@ def parametric_leaf(nb_segment=10, insertion_angle=50, delta_angle=180,
     return fit3(x, y, s, r, nb_points=nb_segment)
 
 
-def simple_maize(plant_area=10000, plant_height=200, pseudostem_height=20,
-                 phytomer=16, rmax=0.67, pseudostem_dist=1.4, stem_dist=1.,
-                 diam_base=2.5, diam_top=1, leaves=None, phyllotactic_angle=180,
-                 phyllotactic_deviation=15, plant_orientation=0, wl=0.1, skew=0.15, seed=None):
-    """ Generate a detailed parameter set for maize simulation from global
+def simple_maize(
+    plant_area=10000,
+    plant_height=200,
+    pseudostem_height=20,
+    phytomer=16,
+    rmax=0.67,
+    pseudostem_dist=1.4,
+    stem_dist=1.0,
+    diam_base=2.5,
+    diam_top=1,
+    leaves=None,
+    phyllotactic_angle=180,
+    phyllotactic_deviation=15,
+    plant_orientation=0,
+    wl=0.1,
+    skew=0.15,
+    seed=None,
+):
+    """Generate a detailed parameter set for maize simulation from global
     parameters
 
     Args:
@@ -162,30 +190,32 @@ def simple_maize(plant_area=10000, plant_height=200, pseudostem_height=20,
 
     # compute the leaf surface
     leaf_area = np.array(
-        bell_shaped_dist(plant_area=plant_area, nb_phy=phytomer, rmax=rmax,
-                         skew=skew))
+        bell_shaped_dist(plant_area=plant_area, nb_phy=phytomer, rmax=rmax, skew=skew)
+    )
 
     # distances between leaves
-    pseudostem = geometric_dist(pseudostem_height, nb_young_phy,
-                                pseudostem_dist)
-    stem = geometric_dist(plant_height - pseudostem_height,
-                          phytomer - nb_young_phy, stem_dist)
+    pseudostem = geometric_dist(pseudostem_height, nb_young_phy, pseudostem_dist)
+    stem = geometric_dist(
+        plant_height - pseudostem_height, phytomer - nb_young_phy, stem_dist
+    )
     internode = pseudostem + stem
     # stem diameters
-    diameter = ([diam_base] * nb_young_phy +
-                np.linspace(diam_base, diam_top,
-                               phytomer - nb_young_phy).tolist())
+    diameter = [diam_base] * nb_young_phy + np.linspace(
+        diam_base, diam_top, phytomer - nb_young_phy
+    ).tolist()
 
     ff = [get_form_factor(leaves[rank]) for rank in ranks]
     blades = blade_dimension(area=leaf_area, form_factor=ff, ntop=ntop, wl=wl)
     stem = stem_dimension(internode=internode, d_internode=diameter, ntop=ntop)
     df = blades.merge(stem)
 
-    df['leaf_azimuth'] = leaf_azimuth(size=len(ranks), phyllotactic_angle=phyllotactic_angle, phyllotactic_deviation=phyllotactic_deviation,
-                                      plant_orientation=plant_orientation)
-    df['leaf_rank'] = ranks
-    df['leaf_shape'] = [leaves[n] for n in df.leaf_rank]
+    df["leaf_azimuth"] = leaf_azimuth(
+        size=len(ranks),
+        phyllotactic_angle=phyllotactic_angle,
+        phyllotactic_deviation=phyllotactic_deviation,
+        plant_orientation=plant_orientation,
+    )
+    df["leaf_rank"] = ranks
+    df["leaf_shape"] = [leaves[n] for n in df.leaf_rank]
 
     return df
-
-
