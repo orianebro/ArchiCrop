@@ -32,7 +32,7 @@ def pylint(session: nox.Session) -> None:
     # This needs to be installed into the package environment, and is slower
     # than a pre-commit check
     session.install(".", "pylint")
-    session.run("pylint", "openalea/archicrop", *session.posargs)
+    session.run("pylint", "ArchiCrop", *session.posargs)
 
 
 @nox.session
@@ -89,7 +89,7 @@ def build_api_docs(session: nox.Session) -> None:
         "--module-first",
         "--no-toc",
         "--force",
-        "src/archicrop",
+        "src/openalea/archicrop",
     )
 
 
