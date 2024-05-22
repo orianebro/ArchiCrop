@@ -1,12 +1,14 @@
 """Parametric leaf used for simple maize"""
+
 from __future__ import annotations
 
 from math import cos, pi, radians, sin
 
 import numpy as np
-import openalea.plantgl.all as pgl
 from scipy.integrate import trapz
 from scipy.optimize import brentq
+
+import openalea.plantgl.all as pgl
 
 from . import fitting
 
@@ -107,7 +109,7 @@ def sr_dornbush(nb_segment=100, klig=0.6, swmax=0.55, f1=0.64, f2=0.92):
     Returns
     -------
 
-    s,r parralel array for curviliear abcissa / relative leaf width along leaf shape
+    s,r parallel array for curviliear abcissa / relative leaf width along leaf shape
     """
 
     c1 = 1.0 / f1 - 1
@@ -124,9 +126,7 @@ def sr_dornbush(nb_segment=100, klig=0.6, swmax=0.55, f1=0.64, f2=0.92):
     offset = 1.0 / nb_segment / 10
     sb = np.array([0, *np.linspace(offset, 1 - swmax, nbase)[:-1].tolist()])
     rb = klig + (1 - klig) * np.log(1 + c2 * sb / (1 - swmax)) / np.log(1 + c2)
-    return np.array(sb.tolist() + st.tolist()), np.array(
-        rb.tolist() + rt.tolist()
-    )
+    return np.array(sb.tolist() + st.tolist()), np.array(rb.tolist() + rt.tolist())
 
 
 def leaf_morpho_rel(nb_segment=10, w0=0.5, lm=0.5):
@@ -222,7 +222,6 @@ def blade_elt_area(s, r, Lshape=1, Lwshape=1, sr_base=0, sr_top=1):
     return S
 
 
-
 def form_factor(leaf):
     _, _, s, r = leaf
     return blade_elt_area(s, r, 1, 1, 0, 1)
@@ -293,7 +292,7 @@ def leaf_mesh(
         s_top: normalised position (on the shape) of the end of the element
         flipx: should leaf shape be flipped ?
         twist:
-        volume: float value of the tickness of the leaf.
+        volume: float value of the thickness of the leaf.
               Default is 0. Else it indicates the relative depth of the leaf
               along the midrib.
         stem_diameter: the diameter of the sem at the leaf insertion point
@@ -325,7 +324,6 @@ def leaf_mesh(
     else:
         if length > 0:
             print("ERROR No mesh", s_base, s_top, length)
-            pass
         mesh = None
 
     return mesh

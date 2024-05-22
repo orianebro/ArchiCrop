@@ -1,4 +1,5 @@
-""" Helpers for desiging cereals plants"""
+"""Helpers for designing cereals plants"""
+
 from __future__ import annotations
 
 import base64
@@ -20,9 +21,7 @@ class NumpyEncoder(json.JSONEncoder):
         """
         if isinstance(obj, np.ndarray):
             data_b64 = base64.b64encode(obj.data)
-            return dict(__ndarray__=data_b64,
-                        dtype=str(obj.dtype),
-                        shape=obj.shape)
+            return dict(__ndarray__=data_b64, dtype=str(obj.dtype), shape=obj.shape)
         # Let the base class default method raise the TypeError
         return json.JSONEncoder(self, obj)
 
@@ -34,32 +33,35 @@ def json_numpy_obj_hook(dct):
     :param dct: (dict) json encoded ndarray
     :return: (ndarray) if input was an encoded ndarray
     """
-    if isinstance(dct, dict) and '__ndarray__' in dct:
-        data = base64.b64decode(dct['__ndarray__'])
-        return np.frombuffer(data, dct['dtype']).reshape(dct['shape'])
+    if isinstance(dct, dict) and "__ndarray__" in dct:
+        data = base64.b64decode(dct["__ndarray__"])
+        return np.frombuffer(data, dct["dtype"]).reshape(dct["shape"])
     return dct
+
 
 # Overload dump/load to default use this behavior.
 def dumps(*args, **kwargs):
-    kwargs.setdefault('cls', NumpyEncoder)
+    kwargs.setdefault("cls", NumpyEncoder)
     return json.dumps(*args, **kwargs)
 
+
 def loads(*args, **kwargs):
-    kwargs.setdefault('object_hook', json_numpy_obj_hook)    
+    kwargs.setdefault("object_hook", json_numpy_obj_hook)
     return json.loads(*args, **kwargs)
 
+
 def dump(*args, **kwargs):
-    kwargs.setdefault('cls', NumpyEncoder)
+    kwargs.setdefault("cls", NumpyEncoder)
     return json.dump(*args, **kwargs)
 
+
 def load(*args, **kwargs):
-    kwargs.setdefault('object_hook', json_numpy_obj_hook)
+    kwargs.setdefault("object_hook", json_numpy_obj_hook)
     return json.load(*args, **kwargs)
 
 
-
 def load_leaf_db(path, nb_points=9, dynamic=False):
-    """ load database from path"""
+    """load database from path"""
     with open(path) as f:
         leaves = load(f)
     leaves, discard = fit_leaves(leaves, nb_points=nb_points, dynamic=dynamic)
@@ -72,7 +74,8 @@ def get_form_factor(leaf):
     """
     _, _, s, r = leaf
     return simps(r, s)
-    
+
+
 def truncate_leaf(leaf, fraction=0.1):
     x, y, s, r = leaf
     st = np.linspace(0, fraction, len(s))
@@ -83,7 +86,7 @@ def truncate_leaf(leaf, fraction=0.1):
 
 
 def get_base_width(leaf, visible_length=None):
-    """ Get the width at the base a leaf with a given visibility
+    """Get the width at the base a leaf with a given visibility
 
     Args:
         leaf:  a x, y, s, r tuple
@@ -96,13 +99,10 @@ def get_base_width(leaf, visible_length=None):
     s /= max(s)
     return interp1d(s, r)(1 - visible_length)
 
-def blade_dimension(area=None,
-                    length=None,
-                    width=None,
-                    ntop=None,
-                    form_factor=None,
-                    plant=1,
-                    wl=0.2):
+
+def blade_dimension(
+    area=None, length=None, width=None, ntop=None, form_factor=None, plant=1, wl=0.2
+):
     """Estimate blade dimension and/or compatibility with leaf shapes form
     factors
 
@@ -119,7 +119,7 @@ def blade_dimension(area=None,
          (default) the adel default shape will be used
         plant: (int or array) vector of plant number
         wl: (float) the width / length ratio used to estimates dimensions in
-        case of  uncomplete data
+        case of incomplete data
 
     Returns:
         a pandas dataframe with estimated blade dimensions
@@ -130,7 +130,7 @@ def blade_dimension(area=None,
         area = (15, 20, 30)
 
     form_factor = np.array(0.75) if form_factor is None else np.array(form_factor)
-        
+
     wl = np.array(wl)
 
     if area is None:
@@ -163,22 +163,28 @@ def blade_dimension(area=None,
     if isinstance(plant, int):
         plant = [plant] * len(ntop)
 
-    return pd.DataFrame({'plant': plant,
-                             'ntop': ntop,
-                             'L_blade': length,
-                             'W_blade': width,
-                             'S_blade': area,
-                             'form_factor' : form_factor})
+    return pd.DataFrame(
+        {
+            "plant": plant,
+            "ntop": ntop,
+            "L_blade": length,
+            "W_blade": width,
+            "S_blade": area,
+            "form_factor": form_factor,
+        }
+    )
 
 
-def stem_dimension(h_ins=None,
-                   d_stem=None,
-                   internode=None,
-                   sheath=None,
-                   d_internode=None,
-                   d_sheath=None,
-                   ntop=None,
-                   plant=1):
+def stem_dimension(
+    h_ins=None,
+    d_stem=None,
+    internode=None,
+    sheath=None,
+    d_internode=None,
+    d_sheath=None,
+    ntop=None,
+    plant=1,
+):
     """Estimate botanical dimension of stem organs from stem measurements
 
     Args:
@@ -228,14 +234,16 @@ def stem_dimension(h_ins=None,
                 internode = np.diff([0, *list(h_ins[order])])[reorder]
             else:
                 internode = np.array(internode)
-                sheath = (np.maximum(
-                    0, h_ins[order] - internode[order].cumsum())[reorder])
+                sheath = np.maximum(0, h_ins[order] - internode[order].cumsum())[
+                    reorder
+                ]
 
-                internode = (np.diff([0, *(h_ins[order] - sheath[order]).tolist()])[reorder])
+                internode = np.diff([0, *(h_ins[order] - sheath[order]).tolist()])[
+                    reorder
+                ]
         else:
             sheath = np.array(sheath)
-            internode = (np.diff([0, *(h_ins[order] - sheath[order]).tolist()])[reorder])
-
+            internode = np.diff([0, *(h_ins[order] - sheath[order]).tolist()])[reorder]
 
     if d_internode is None:
         d_internode = [d_stem] * len(h_ins) if d_sheath is None else d_sheath
@@ -245,14 +253,27 @@ def stem_dimension(h_ins=None,
     if isinstance(plant, int):
         plant = [plant] * len(ntop)
 
-
     return pd.DataFrame(
-        {'plant': plant, 'ntop': ntop, 'h_ins': h_ins, 'L_sheath': sheath,
-         'W_sheath': d_sheath, 'L_internode': internode,
-         'W_internode': d_internode})
-         
-def leaf_azimuth(size=1, phyllotactic_angle=180, phyllotactic_deviation=15, plant_orientation=0, spiral=False):
-    """ Generate leaf azimuth series
+        {
+            "plant": plant,
+            "ntop": ntop,
+            "h_ins": h_ins,
+            "L_sheath": sheath,
+            "W_sheath": d_sheath,
+            "L_internode": internode,
+            "W_internode": d_internode,
+        }
+    )
+
+
+def leaf_azimuth(
+    size=1,
+    phyllotactic_angle=180,
+    phyllotactic_deviation=15,
+    plant_orientation=0,
+    spiral=False,
+):
+    """Generate leaf azimuth series
 
     Args:
         size: the size of the sample
@@ -261,7 +282,7 @@ def leaf_azimuth(size=1, phyllotactic_angle=180, phyllotactic_deviation=15, plan
         successive leaves (deg)
         phyllotactic_deviation: half-amplitude of deviation around phyllotactic
         angle (deg)
-        plant_orientation : first azimuth of the serie (deg, from X+ positive
+        plant_orientation : first azimuth of the series (deg, from X+ positive
         counter-clockwise)
 
     Returns:
@@ -274,6 +295,10 @@ def leaf_azimuth(size=1, phyllotactic_angle=180, phyllotactic_deviation=15, plan
     else:
         it = cycle((0, phyllotactic_angle))
         main = np.array([next(it) for i in range(size)])
-    azim = plant_orientation + main + (np.random.random(size) - 0.5) * 2 * phyllotactic_deviation
+    azim = (
+        plant_orientation
+        + main
+        + (np.random.random(size) - 0.5) * 2 * phyllotactic_deviation
+    )
     azim = azim % 360
     return np.where(azim <= 180, azim, azim - 360)
