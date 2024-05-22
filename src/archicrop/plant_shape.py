@@ -13,7 +13,7 @@ def geometric_dist(height, nb_phy, q=1):
     else:
         u0=height*(1.-q)/(1.-q**(nb_phy+1))
 
-    return [u0*q**i for i in range(nb_phy)]
+    return [u0*q**i for i in range(nb_phy)] # while value < height (but not >> either)
 
 
 def bell_shaped_dist(max_leaf_length, nb_phy, rmax=.8, skew=0.15):
@@ -46,15 +46,27 @@ def compute_leaf_area(g):
         v = next(g.component_roots_at_scale_iter(axis, scale=metamer_scale))
         for metamer in pre_order2(g, v):
             n = g.node(metamer)
-            if n.label is not None and n.label.startswith('Leaf'): 
-                if n.grow == True:
+            if n.label is not None:
+                if n.label.startswith('Leaf') and n.grow == True:
                     L=n.shape_mature_length
                     alpha=-2.3
                     lower_bound=max(L-n.visible_length, 0.0)
                     upper_bound=L
-                    la, error=quad(scaled_leaf_shape, lower_bound, upper_bound, args=(L, alpha))
-                    la=2*n.shape_max_width*la
-                    leaf_areas.append(la)
+                    blade_area, error=quad(scaled_leaf_shape, lower_bound, upper_bound, args=(L, alpha))
+                    blade_area=2*n.shape_max_width*blade_area
+                    leaf_areas.append(blade_area)
+
+                if n.label.startswith('Stem') and n.grow == True:
+                    h=n.visible_length
+                    radius=n.diameter/2
+                    sheath_area=2*np.pi*radius*h
+                    leaf_areas.append(sheath_area)
+
+    # filter label
+    # g.property('label')
+
+    # PlantGL surface function
+                
 
     return leaf_areas
 

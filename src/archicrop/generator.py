@@ -178,7 +178,6 @@ def as_plant(json):
 
 def cereals(json=None,
             classic=False,
-            unit='cm',
             seed=None,
             plant=None):
     """
@@ -243,7 +242,6 @@ def cereals(json=None,
                 'shape': leaves[row['ntop']],
                 'shape_mature_length': row['L_blade'],
                 'length': row['L_blade'],
-                # 'visible_length': row['L_blade'],
                 'visible_length': row['L_blade'],
                 'leaf_area' : row['S_blade'],
                 'form_factor' : row['form_factor'],
