@@ -5,9 +5,10 @@ from __future__ import annotations
 from math import cos, pi, radians, sin
 
 import numpy as np
+from scipy.integrate import trapz
+
 import openalea.plantgl.all as pgl
 from openalea.mtg.turtle import TurtleFrame
-from scipy.integrate import trapz
 
 from . import fitting
 
@@ -135,7 +136,7 @@ def leaf_mesh(
         s_top: normalised position (on the shape) of the end of the element
         flipx: should leaf shape be flipped ?
         twist:
-        volume: float value of the tickness of the leaf.
+        volume: float value of the thickness of the leaf.
               Default is 0. Else it indicates the relative depth of the leaf
               along the midrib.
         stem_diameter: the diameter of the sem at the leaf insertion point
@@ -457,7 +458,7 @@ def leaf_mesh_for_growth(
         s_top: normalised position (on the shape) of the end of the element
         flipx: should leaf shape be flipped ?
         twist:
-        volume: float value of the tickness of the leaf.
+        volume: float value of the thickness of the leaf.
               Default is 0. Else it indicates the relative depth of the leaf
               along the midrib.
         stem_diameter: the diameter of the sem at the leaf insertion point

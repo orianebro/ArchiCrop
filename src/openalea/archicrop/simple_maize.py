@@ -54,7 +54,7 @@ def leaf_azimuth(
         successive leaves (deg)
         phyllotactic_deviation: half-amplitude of deviation around phyllotactic
         angle (deg)
-        plant_orientation : first azimuth of the serie (deg, from X+ positive
+        plant_orientation : first azimuth of the series (deg, from X+ positive
         counter-clockwise)
 
     Returns:
@@ -158,7 +158,7 @@ def simple_maize(
         rmax: control the magitude of the leaf area as a function of
         leaf rank function
         pseudostem_dist: parameter contrling spacing between pseudostem leaves
-        stem_dist: parameter controling spacing between stem leaves
+        stem_dist: parameter controlling spacing between stem leaves
         diam_base: diameter at the base of the stem
         diam_top: dimaeter at the top of the stem
         leaves: a {rank: (x, y, s, r)} dict of tuples defining the (x,y)

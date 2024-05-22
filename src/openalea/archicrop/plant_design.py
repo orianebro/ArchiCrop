@@ -1,4 +1,4 @@
-"""Helpers for desiging cereals plants"""
+"""Helpers for designing cereals plants"""
 
 from __future__ import annotations
 
@@ -75,7 +75,7 @@ def blade_dimension(
          (default) the adel default shape will be used
         plant: (int or array) vector of plant number
         wl: (float) the width / length ratio used to estimates dimensions in
-        case of  uncomplete data
+        case of incomplete data
 
     Returns:
         a pandas dataframe with estimated blade dimensions
@@ -238,7 +238,7 @@ def leaf_azimuth(
         successive leaves (deg)
         phyllotactic_deviation: half-amplitude of deviation around phyllotactic
         angle (deg)
-        plant_orientation : first azimuth of the serie (deg, from X+ positive
+        plant_orientation : first azimuth of the series (deg, from X+ positive
         counter-clockwise)
 
     Returns:

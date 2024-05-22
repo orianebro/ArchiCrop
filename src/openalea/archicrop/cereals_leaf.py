@@ -5,9 +5,10 @@ from __future__ import annotations
 from math import cos, pi, radians, sin
 
 import numpy as np
-import openalea.plantgl.all as pgl
 from scipy.integrate import trapz
 from scipy.optimize import brentq
+
+import openalea.plantgl.all as pgl
 
 from . import fitting
 
@@ -108,7 +109,7 @@ def sr_dornbush(nb_segment=100, klig=0.6, swmax=0.55, f1=0.64, f2=0.92):
     Returns
     -------
 
-    s,r parralel array for curviliear abcissa / relative leaf width along leaf shape
+    s,r parallel array for curviliear abcissa / relative leaf width along leaf shape
     """
 
     c1 = 1.0 / f1 - 1
@@ -291,7 +292,7 @@ def leaf_mesh(
         s_top: normalised position (on the shape) of the end of the element
         flipx: should leaf shape be flipped ?
         twist:
-        volume: float value of the tickness of the leaf.
+        volume: float value of the thickness of the leaf.
               Default is 0. Else it indicates the relative depth of the leaf
               along the midrib.
         stem_diameter: the diameter of the sem at the leaf insertion point

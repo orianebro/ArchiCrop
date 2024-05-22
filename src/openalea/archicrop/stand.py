@@ -84,11 +84,11 @@ def agronomic_plot(
     sowing density is the density of seeds sawn
     plant_density is the density of plants that are present (after loss due to bad emergence, early death...)
     inter_row (m) is for the  distance between rows
-    noise (m) is the radius of the circle where individual plant are randomly positionned
+    noise (m) is the radius of the circle where individual plant are randomly positioned
     convunit is the conversion factor from meter to scene unit
-    center_scene allows to center the position arround origin. If False, the scene is in the x+,y+ sector, the origin being at the lower left corner of the domain
+    center_scene allows to center the position around origin. If False, the scene is in the x+,y+ sector, the origin being at the lower left corner of the domain
 
-    Rows are parrallel to x-axis
+    Rows are parallel to x-axis
     Length and Width are adjusted to produce a canopy centered in its domain and compliant with infinitisation
     """
 
@@ -213,7 +213,7 @@ def sample_selection(points, gap_fraction):
 '''
 def clumping_selection(points, nb_clumps, radius_mu, radius_sigma):
     """
-    Select a set of points based on andomly choosen groups
+    Select a set of points based on andomly chosen groups
     with a radius following a normal distribution.
     """
     n = len(points)
@@ -222,7 +222,7 @@ def clumping_selection(points, nb_clumps, radius_mu, radius_sigma):
     for index in centers:
         radius = normalvariate(radius_mu, radius_sigma)
         r2 = radius**2
-        # filter to select all the poit in a ball of radius r2
+        # filter to select all the points in a ball of radius r2
         # Add these points to the result
 '''
 

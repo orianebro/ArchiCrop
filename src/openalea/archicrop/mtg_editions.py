@@ -22,6 +22,7 @@ from alinea.adel.newmtg import (
     properties_from_dict,
     sheath_elements,
 )
+
 from openalea.mtg import MTG, fat_mtg
 from openalea.mtg.traversal import iter_mtg
 
@@ -70,7 +71,7 @@ def find_plants(g):
 
 
 def find_metamers(g, plant_number=1, axe_label="MS"):
-    """the vid of all metamers beared by axe indentified by its label
+    """the vid of all metamers beared by axe identified by its label
 
     Args:
         g: an mtg
@@ -273,7 +274,7 @@ def add_axe(
     metamer_properties=None,
     collar_properties=None,
 ):
-    """Add an axe identified by its label to a plant identifed by its number.
+    """Add an axe identified by its label to a plant identified by its number.
     The axe is created with 4 sub-scales axe /metamer0 / collar / baseElement
     If the axe already exists, nothing is added
     If bearing metamers are missing they are added
@@ -360,7 +361,7 @@ def update_organ_elements(g, leaves=None, split=False, phyllochron=None):
     Args:
         g: an adel mtg
         leaves: a leaf shape database
-        split: (bool) flag trigering the separation between senescent and green
+        split: (bool) flag triggering the separation between senescent and green
         part of an organ
 
     Returns:

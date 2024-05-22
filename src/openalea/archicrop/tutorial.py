@@ -14,7 +14,7 @@ from .stand import agronomic_plot
 # import light_it as ltfs
 
 
-# generation of a 3D plant from descritive parameters
+# generation of a 3D plant from descriptive parameters
 stem_radius = 0.5
 insertion_heights = (10, 20)
 leaf_lengths = (10, 10)

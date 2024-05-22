@@ -12,7 +12,7 @@ from .geometry import CerealsContinuousVisitor, CerealsTurtle
 
 def thermal_time(g, phyllochron=110.0, leaf_duration=1.6, stem_duration=1.6):
     """
-    Add dynamic properties on the mtg to simulate developpement
+    Add dynamic properties on the mtg to simulate development
     leaf_duration is the phyllochronic time for a leaf to develop from tip appearance to collar appearance
     stem_duration is the phyllochronic time for a stem to develop
     falling_rate (degrees / phyllochron) is the rate at which leaves fall after colar appearance

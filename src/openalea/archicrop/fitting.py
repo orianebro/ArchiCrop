@@ -3,9 +3,10 @@ from __future__ import annotations
 import os
 
 import numpy as np
-import openalea.plantgl.all as pgl
 from scipy.integrate import simps, trapz
 from scipy.interpolate import splev, splprep
+
+import openalea.plantgl.all as pgl
 
 from .simplification import cost
 
@@ -482,7 +483,7 @@ def leaf_element(leaf, length_max=1, length=1, s_base=0, s_top=1, radius_max=1):
     s_valid = np.compress(s_valid <= s_top, s_valid)
     s_valid = np.compress(s_valid >= s_base, s_valid)
 
-    # delete small intervals COMIT from  Here !
+    # delete small intervals COMMIT from  Here !
     eps = (s_top - s_base) / (len(s) * 2)
     ds = s_valid[1:] - s_valid[:-1]
     error = ds >= eps
@@ -522,7 +523,7 @@ def mesh4(leaf, length_max, length, s_base, s_top, radius_max, twist=0, volume=0
 
     if len(xf) < 2:
         # All the radius are negative or null.
-        # Degenarated element.
+        # Degenerated element.
         return [], []
 
     pts, ind = leaf_to_mesh(

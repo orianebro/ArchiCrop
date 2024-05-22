@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from openalea.mtg import MTG, fat_mtg
 from scipy.interpolate import interp1d
+
+from openalea.mtg import MTG, fat_mtg
 
 from .geometry import mtg_interpreter
 from .plant_design import get_form_factor

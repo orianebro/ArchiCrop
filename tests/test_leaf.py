@@ -11,7 +11,7 @@ Build parameters for a leaf
         s_top: normalised position (on the shape) of the end of the element
         flipx: should leaf shape be flipped ?
         twist:
-        volume: float value of the tickness of the leaf.
+        volume: float value of the thickness of the leaf.
               Default is 0. Else it indicates the relative depth of the leaf
               along the midrib.
         stem_diameter: the diameter of the sem at the leaf insertion point

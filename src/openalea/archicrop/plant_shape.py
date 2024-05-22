@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import numpy as np
-from openalea.mtg.traversal import pre_order2
 from scipy.integrate import quad
+
+from openalea.mtg.traversal import pre_order2
 
 
 def geometric_dist(height, nb_phy, q=1):

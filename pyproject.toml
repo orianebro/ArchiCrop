@@ -4,7 +4,8 @@ build-backend = "setuptools.build_meta"
 
 
 [project]
-name = "ArchiCrop"
+name = "openalea.archicrop"
+version = "0.1.0"
 authors = [
   { name = "orianebro", email = "orianebraud1@gmail.com" },
 ]
@@ -57,7 +58,7 @@ Changelog = "https://github.com/orianebro/ArchiCrop/releases"
 
 
 [tool.setuptools_scm]
-write_to = "src/archicrop/_version.py"
+write_to = "src/openalea/archicrop/_version.py"
 
 
 [tool.pytest.ini_options]
