@@ -6,16 +6,20 @@ from scipy.integrate import quad
 from openalea.mtg.traversal import pre_order2
 
 
-def geometric_dist(height, nb_phy, q=1):
+def geometric_dist(height, nb_phy, q=1, u0=None):
     """returns distances between individual leaves along a geometric model"""
 
-    if q == 1:
-        u0 = float(height) / nb_phy
-    else:
-        u0 = height * (1.0 - q) / (1.0 - q ** (nb_phy + 1))
+    if u0 is None:
+        if q == 1:
+            u0 = float(height) / nb_phy
+        else:
+            # u0 = height * (1.0 - q) / (1.0 - q ** (nb_phy + 1))
+            u0 = 2
+
+    # print(u0*(1-q**(nb_phy))/(1-q))
 
     return [
-        u0 * q**i for i in range(nb_phy)
+        u0 * q**i for i in range(1,nb_phy+1)
     ]  # while value < height (but not >> either)
 
 

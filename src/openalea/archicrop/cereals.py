@@ -12,7 +12,7 @@ def build_shoot(
     nb_phy,
     height,
     max_leaf_length,
-    wl=0.2,
+    wl=0.1,
     diam_base=2.5,
     diam_top=1.0,
     insertion_angle=30,
@@ -20,7 +20,7 @@ def build_shoot(
     curvature=90,
     alpha=-2.3,
     stem_q=1.25,
-    rmax=0.9,
+    rmax=0.8,
     skew=0.2,
     phyllotactic_angle=180,
     phyllotactic_deviation=0,
@@ -48,15 +48,19 @@ def build_shoot(
 
     ## Stem
     # internode lengths
+    #nb_young_phy = int(
+    #    round((nb_phy - 1.95) / 1.84 / 1.3)
+    #)  # Lejeune and Bernier formula + col
+
     nb_young_phy = int(
         round((nb_phy - 1.95) / 1.84 / 1.3)
-    )  # Lejeune and Bernier formula + col
+    )
 
     pseudostem_height = nb_young_phy * 1.5
 
-    pseudostem = np.array(geometric_dist(pseudostem_height, nb_young_phy, q=1.0))
+    pseudostem = np.array([i*1.5 for i in range(1,nb_young_phy+1)])
     stem = np.array(
-        geometric_dist(height - pseudostem_height, nb_phy - nb_young_phy, q=stem_q)
+        geometric_dist(height - pseudostem_height, nb_phy - nb_young_phy, q=stem_q, u0=pseudostem_height)
     )
     insertion_heights = np.concatenate((pseudostem, stem), axis=0)
 
@@ -72,11 +76,18 @@ def build_shoot(
     ## Leaves
 
     # leaf length repartition along axis
-    leaf_lengths = np.array(
+    leaf_lengths_stem = np.array(
         bell_shaped_dist(
-            max_leaf_length=max_leaf_length, nb_phy=nb_phy, rmax=rmax, skew=skew
+            max_leaf_length=max_leaf_length, nb_phy=nb_phy - nb_young_phy, rmax=rmax, skew=skew
         )
     )
+    leaf_lengths_pseudostem = np.array(
+        bell_shaped_dist(
+            max_leaf_length=leaf_lengths_stem[0], nb_phy=nb_young_phy, rmax=1.2, skew=skew
+        )
+    )
+    leaf_lengths = np.concatenate((leaf_lengths_pseudostem, leaf_lengths_stem), axis=0)
+
     blades = blade_dimension(area=None, length=leaf_lengths, ntop=ntop, wl=wl)
 
     # leaf shapes
