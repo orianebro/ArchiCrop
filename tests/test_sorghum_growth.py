@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 tmax = 100
 
@@ -24,3 +25,6 @@ for t in range(tmax):
 
 
 print(internodes)
+
+plt.plot(range(len(internodes)), internodes)
+plt.show()

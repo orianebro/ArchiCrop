@@ -7,7 +7,7 @@ from openalea.plantgl.all import (
 )
 
 from .display import build_scene
-from .geometry import CerealsContinuousVisitor, CerealsTurtle
+from .geometry import CerealsContinuousVisitor, CerealsTurtle, CerealsVisitorConstrained
 
 
 def thermal_time(g, phyllochron=110.0, leaf_duration=1.6, stem_duration=1.6):
@@ -112,6 +112,74 @@ def mtg_turtle_time(g, time, update_visitor=None):
     return g
 
 
+def mtg_turtle_time_with_constraint(g, time, constraint, update_visitor=None):
+    """Compute the geometry on each node of the MTG using Turtle geometry.
+
+    Update_visitor is a function called on each node in a pre order (parent before children).
+    This function allow to update the parameters and state variables of the vertices.
+
+    :Example:
+
+        >>> def grow(node, time):
+
+    """
+
+    g.properties()["geometry"] = {}
+    g.properties()["_plant_translation"] = {}
+
+    max_scale = g.max_scale()
+
+    cereal_visitor = CerealsVisitorConstrained(False)
+
+    def traverse_with_turtle_time(g, vid, time, constraint, visitor=cereal_visitor):
+        turtle = CerealsTurtle()
+
+        def push_turtle(v):
+            n = g.node(v)
+            # if 'Leaf' in n.label:
+            #    return False
+            try:
+                start_tt = n.start_tt
+                if start_tt > time:
+                    return False
+            except:
+                pass
+            if g.edge_type(v) == "+":
+                turtle.push()
+            return True
+
+        def pop_turtle(v):
+            n = g.node(v)
+            try:
+                start_tt = n.start_tt
+                if start_tt > time:
+                    return False
+            except:
+                pass
+            if g.edge_type(v) == "+":  # noqa: RET503
+                turtle.pop()
+
+        if g.node(vid).start_tt <= time:
+            visitor(g, vid, turtle, time, constraint)
+            # turtle.push()
+        # plant_id = g.complex_at_scale(vid, scale=1)
+
+        for v in pre_order2_with_filter(g, vid, None, push_turtle, pop_turtle):
+            if v == vid:
+                continue
+            # Done for the leaves
+            if g.node(v).start_tt > time:
+                continue
+            visitor(g, v, turtle, time)
+
+        # scene = turtle.getScene()
+        return g
+
+    for plant_id in g.component_roots_at_scale_iter(g.root, scale=max_scale):
+        g = traverse_with_turtle_time(g, plant_id, time, constraint)
+    return g
+
+
 def grow_plant(g, time, phyllochron):
     g = thermal_time(g, phyllochron)
     g = mtg_turtle_time(g, time=time)
@@ -120,6 +188,23 @@ def grow_plant(g, time, phyllochron):
 
 def grow_plant_and_display(g, time, phyllochron):
     g = grow_plant(g=g, time=time, phyllochron=phyllochron)
+    # Build and display scene
+    nice_green = Color3((50, 100, 0))
+    scene, nump = build_scene(
+        g, leaf_material=Material(nice_green), stem_material=Material(nice_green)
+    )
+    return g, scene, nump
+
+
+
+
+def grow_plant_with_constraint(g, time, phyllochron, constraint):
+    g = thermal_time(g, phyllochron)
+    g = mtg_turtle_time_with_constraint(g, time=time, constraint=constraint)
+    return g
+
+def grow_plant_with_constraint_and_display(g, time, phyllochron, constraint):
+    g = grow_plant_with_constraint(g=g, time=time, phyllochron=phyllochron, constraint=constraint)
     # Build and display scene
     nice_green = Color3((50, 100, 0))
     scene, nump = build_scene(
