@@ -1,5 +1,36 @@
-import sympy as sp
+from __future__ import annotations
 
+import sympy as sp
+from openalea.mtg.traversal import pre_order2
+
+from .geometry import leaf_mesh_for_growth, stem_mesh, CerealsTurtle, CerealsVisitor, addSets, TurtleFrame
+
+
+def read_columns_from_file(filename, separator=';'):
+    '''returns list of putput data through time from columns of STICS output file'''
+    with open(filename, 'r') as file:
+        columns = []
+        for line in file:
+            values = line.strip().split(separator) # Strip any extra whitespace and split the line by the separator
+            if not columns:
+                columns = [[] for _ in values]
+            while len(columns) < len(values):
+                columns.append([])
+            for i, value in enumerate(values):
+                columns[i].append(value)
+            # Handle lines with fewer values than columns
+            for i in range(len(values), len(columns)):
+                columns[i].append('')
+    return columns
+
+
+def distribute_constraint_among_plants(constraints_crop, nb_of_plants):
+    constraint_crop_height = constraints_crop[0]
+    constraint_crop_LAI = constraints_crop[1]
+    constraint_plants_height = constraint_crop_height
+    constraint_plants_LA = constraint_crop_LAI / nb_of_plants
+    constraints_plants = [constraint_plants_height, constraint_plants_LA]
+    return constraints_plants
 
 
 def compute_nb_of_growing_organs(g, time):
@@ -38,7 +69,6 @@ def compute_leaf_length_increment(constraint_LA, leaf):
 
     L = leaf.mature_length
     current_leaf_length = leaf.visible_length
-    alpha = -2.3
 
     # # compute current leaf area
     # if current_leaf_length == 0:
@@ -54,11 +84,28 @@ def compute_leaf_length_increment(constraint_LA, leaf):
 
     
     def leaf_area_function_of_length(s, L, wl=0.12):
-        '''returns the current leaf area (i.e. twice the integral of leaf shape) given the current length s'''
+        '''returns the current leaf area (i.e. twice the integral of leaf shape) given the current length s
+        
+            function obtained this way : 
+
+            # Define the variable and parameters
+            s = sp.symbols('s')
+            L, wl = sp.symbols('L, wl') 
+
+            # Define the scaled leaf shape function with parameters
+            beta = -2 * (-2.3 + math.sqrt(2.3))
+            gamma = 2 * math.sqrt(2.3) - 2.3
+            r = wl * L * (-2.3 * (s / L) ** 2 + beta * (s / L) + gamma)
+
+            # Reflect the function to the axis x=0.5 
+            reflected_r = r.subs(s, -s+L).simplify()
+
+            # Find the indefinite integral (primitive)
+            primitive_f = sp.integrate(reflected_r, s)
+        
+        '''
+
         return 2 * (1.51657508881031*s**2*wl - 0.766666666666667*s**3*wl/L)
-    
-    wl = 0.12
-    w = wl*L
     
     s = sp.symbols('s')
     
@@ -85,7 +132,7 @@ def compute_leaf_length_increment(constraint_LA, leaf):
 def compute_continuous_element_with_constraint(
     element_node, time, constraint_on_each_leaf, constraint_on_each_internode, 
     constraint_to_distribute_LA, constraint_to_distribute_height, 
-    nb_of_updated_leaves, nb_of_updated_internodes, classic=False
+    nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes, classic=False
 ):  # see maybe with *kwarg, **kwds, etc. for time
     """compute geometry of Adel base elements (LeafElement and StemElement)
     element_node should be a mtg node proxy"""
@@ -143,10 +190,7 @@ def compute_continuous_element_with_constraint(
             n.grow = True
 
     elif time >= n.end_tt:  # organ reaches maturity at potential
-        if n.label.startswith("Leaf"):
-            n.visible_length = n.mature_length
-            n.grow = True
-        elif n.label.startswith("Stem"):
+        if n.label.startswith("Leaf") or n.label.startswith("Stem"):
             n.visible_length = n.mature_length
             n.grow = True
 
@@ -178,7 +222,7 @@ def compute_continuous_element_with_constraint(
     elif n.label.startswith("Stem"):  # stem element
         geom = stem_mesh(n.length, n.visible_length, n.diameter, n.diameter, classic)
 
-    return geom, constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_updated_leaves, nb_of_updated_internodes
+    return geom, constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes
         
     
 
@@ -186,7 +230,7 @@ class CerealsVisitorConstrained(CerealsVisitor):
     def __init__(self, classic):
         super().__init__(classic)
 
-    def __call__(self, g, v, turtle, time, constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_updated_leaves, nb_of_updated_internodes):
+    def __call__(self, g, v, turtle, time, constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes):
         # 1. retrieve the node
         n = g.node(v)
 
@@ -208,7 +252,7 @@ class CerealsVisitorConstrained(CerealsVisitor):
             # if n.length > 0:
             # print(v)
             # nb_of_growing_internodes, nb_of_growing_leaves = compute_nb_of_growing_organs(g, time)
-            mesh, constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_updated_leaves, nb_of_updated_internodes = compute_continuous_element_with_constraint(n, time, constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_updated_leaves, nb_of_updated_internodes, self.classic)
+            mesh, constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes = compute_continuous_element_with_constraint(n, time, constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes, self.classic)
             if mesh:  # To DO : reset to None if calculated so ?
                 n.geometry = turtle.transform(mesh)
                 n.anchor_point = turtle.getPosition()

@@ -65,11 +65,11 @@ def compute_leaf_area(g):
                     blade_area = 2 * n.shape_max_width * blade_area
                     leaf_areas.append(blade_area)
 
-                if n.label.startswith("Stem") and n.grow == True:
-                    h = n.visible_length
-                    radius = n.diameter / 2
-                    sheath_area = 2 * np.pi * radius * h
-                    leaf_areas.append(sheath_area)
+                # if n.label.startswith("Stem") and n.grow == True:
+                #     h = n.visible_length
+                #     radius = n.diameter / 2
+                #     sheath_area = 2 * np.pi * radius * h
+                #     leaf_areas.append(sheath_area)
 
     # filter label
     # g.property('label')
