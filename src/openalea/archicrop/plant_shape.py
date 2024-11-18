@@ -13,14 +13,14 @@ def geometric_dist(height, nb_phy, q=1, u0=None):
         if q == 1:
             u0 = float(height) / nb_phy
         else:
-            # u0 = height * (1.0 - q) / (1.0 - q ** (nb_phy + 1))
-            u0 = 2
+            u0 = height * (1.0 - q) / (1.0 - q ** (nb_phy + 1))
 
     # print(u0*(1-q**(nb_phy))/(1-q))
 
-    return [
-        u0 * q**i for i in range(1,nb_phy+1)
-    ]  # while value < height (but not >> either)
+    table_heights = np.array([i * u0 * q**i for i in range(1,nb_phy+1)])
+
+
+    return [i * height / table_heights[-1] for i in table_heights]
 
 
 def bell_shaped_dist(max_leaf_length, nb_phy, rmax=0.8, skew=0.15):
@@ -55,7 +55,7 @@ def compute_leaf_area(g):
             n = g.node(metamer)
             if n.label is not None:
                 if n.label.startswith("Leaf") and n.grow == True:
-                    L = n.shape_mature_length
+                    L = n.mature_length
                     alpha = -2.3
                     lower_bound = max(L - n.visible_length, 0.0)
                     upper_bound = L

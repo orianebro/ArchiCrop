@@ -52,17 +52,21 @@ def build_shoot(
     #    round((nb_phy - 1.95) / 1.84 / 1.3)
     #)  # Lejeune and Bernier formula + col
 
-    nb_young_phy = int(
-        round((nb_phy - 1.95) / 1.84 / 1.3)
-    )
+    # nb_young_phy = int(
+    #     round((nb_phy - 1.95) / 1.84 / 1.3)
+    # )
+    nb_young_phy = 5
+    young_phy_height = 2
 
-    pseudostem_height = nb_young_phy * 1.5
+    pseudostem_height = nb_young_phy * young_phy_height
 
-    pseudostem = np.array([i*1.5 for i in range(1,nb_young_phy+1)])
+    pseudostem = np.array([i*young_phy_height for i in range(1,nb_young_phy+1)])
     stem = np.array(
-        geometric_dist(height - pseudostem_height, nb_phy - nb_young_phy, q=stem_q, u0=pseudostem_height)
+        geometric_dist(height - pseudostem_height, nb_phy - nb_young_phy, q=stem_q) #, u0=young_phy_height)
     )
+    # stem = np.array([pseudostem_height+i*(height - pseudostem_height)/(nb_phy - nb_young_phy) for i in range(nb_young_phy+1,nb_phy+1)])
     insertion_heights = np.concatenate((pseudostem, stem), axis=0)
+    # insertion_heights = np.array(geometric_dist(height, nb_phy, q=stem_q)) #, u0=young_phy_height))
 
     # stem diameters
     stem_diameters = [diam_base] * nb_young_phy + np.linspace(

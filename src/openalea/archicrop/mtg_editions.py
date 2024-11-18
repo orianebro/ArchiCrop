@@ -376,7 +376,7 @@ def update_organ_elements(g, leaves=None, split=False, phyllochron=None):
     inclination = g.property("inclination")
     diameter = g.property("diameter")
     sectors = g.property("n_sect")
-    shape_mature_length = g.property("shape_mature_length")
+    mature_length = g.property("mature_length")
     shape_max_width = g.property("shape_max_width")
     shape_key = g.property("shape_key")
     area = g.property("area")
@@ -419,7 +419,7 @@ def update_organ_elements(g, leaves=None, split=False, phyllochron=None):
                 visible_length[organ],
                 rolled_length[organ],
                 senesced_length[organ],
-                shape_mature_length[organ],
+                mature_length[organ],
                 shape_max_width[organ],
                 shape_key[organ],
                 leaves=leaves[species[organ]],

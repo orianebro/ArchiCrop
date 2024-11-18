@@ -264,7 +264,7 @@ def cereals(json=None, classic=False, seed=None, plant=None):
         leaf = {
             "label": "Leaf",
             "shape": leaves[row["ntop"]],
-            "shape_mature_length": row["L_blade"],
+            "mature_length": row["L_blade"],
             "length": row["L_blade"],
             "visible_length": row["L_blade"],
             "leaf_area": row["S_blade"],

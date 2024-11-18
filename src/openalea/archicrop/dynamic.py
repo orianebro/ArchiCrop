@@ -39,7 +39,7 @@ def thermal_time(g, phyllochron=110.0, leaf_duration=1.6, stem_duration=1.6):
             elif "Leaf" in nm.label:
                 nm.start_tt = tt
                 nm.end_tt = tt + dtt_leaf
-                tt += phyllochron
+                tt += phyllochron # plastochron
 
     return g
 
