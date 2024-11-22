@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import numpy as np
 from scipy.integrate import quad
 
@@ -21,6 +22,35 @@ def geometric_dist(height, nb_phy, q=1, u0=None):
 
 
     return [i * height / table_heights[-1] for i in table_heights]
+
+def collar_heights_kaitaniemi(height, nb_phy):
+    """return collar heights"""
+    # coefficient k between height of successive collars : 1,17/(1-2,29*exp(-0,79*i))  and k=1,3 for penultimate and k=1,44 for last
+    k = [1.17/(1-2.29*math.exp(-0.79*i)) for i in range(1, nb_phy-2)]
+    k_pelnultinate = 1.3
+    k.append(k_pelnultinate)
+    k_flag = 1.44
+    k.append(k_flag)
+
+    # Compute first collar height
+    k_product = 1
+    k_sum = 1
+    for j in k:
+        k_product *= j
+        k_sum += k_product
+
+    u1 = height * 1/k_sum
+
+    # Compute other collars height
+    internode_lengths = [u1]
+    k_product = 1  
+    for f in k:
+        k_product *= f
+        internode_lengths.append(k_product * u1)
+
+    collar_heights = np.cumsum(np.array(internode_lengths))
+
+    return collar_heights
 
 
 def bell_shaped_dist(max_leaf_length, nb_phy, rmax=0.8, skew=0.15):
@@ -56,8 +86,55 @@ def compute_leaf_area(g):
             if n.label is not None:
                 if n.label.startswith("Leaf") and n.grow == True:
                     L = n.mature_length
+                    wl = 0.12
+                    blade_area = 2 * (1.51657508881031*L**2*wl - 0.766666666666667*L**2*wl)
+                    # alpha = -2.3
+                    # lower_bound = max(L - n.visible_length, 0.0)
+                    # upper_bound = L
+                    # blade_area, error = quad(
+                    #     scaled_leaf_shape, lower_bound, upper_bound, args=(L, alpha)
+                    # )
+                    # blade_area = 2 * n.shape_max_width * blade_area
+                    leaf_areas.append(blade_area)
+
+                # if n.label.startswith("Stem") and n.grow == True:
+                #     h = n.visible_length
+                #     radius = n.diameter / 2
+                #     sheath_area = 2 * np.pi * radius * h
+                #     leaf_areas.append(sheath_area)
+
+    # filter label
+    # g.property('label')
+
+    # PlantGL surface function
+
+    return leaf_areas
+
+
+def compute_leaf_area_pot_plant(g):
+    """returns the leaf area of a potential plant"""
+
+    def scaled_leaf_shape(s, L, alpha=-2.3):
+        beta = -2 * (alpha + np.sqrt(-alpha))
+        gamma = 2 * np.sqrt(-alpha) + alpha
+        r = alpha * (s / L) ** 2 + beta * (s / L) + gamma
+        return r
+
+    leaf_areas = []
+    # for v in g.vertices():
+    # n=g.node(v)
+    axes = g.vertices(scale=1)
+    metamer_scale = g.max_scale()
+
+    for axis in axes:
+        v = next(g.component_roots_at_scale_iter(axis, scale=metamer_scale))
+        for metamer in pre_order2(g, v):
+            n = g.node(metamer)
+            if n.label is not None:
+                if n.label.startswith("Leaf"):
+                    L = n.mature_length
                     alpha = -2.3
-                    lower_bound = max(L - n.visible_length, 0.0)
+                    lower_bound = max(L - n.mature_length, 0.0)
                     upper_bound = L
                     blade_area, error = quad(
                         scaled_leaf_shape, lower_bound, upper_bound, args=(L, alpha)
