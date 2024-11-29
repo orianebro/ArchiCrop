@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from openalea.mtg.traversal import pre_order2, pre_order2_with_filter
 from openalea.plantgl.all import (Color3, Material, Vector3)
+from oawidgets.plantgl import *
 
 from .display import build_scene
 from .geometry import CerealsContinuousVisitor, CerealsTurtle
@@ -184,7 +185,7 @@ def mtg_turtle_time_with_constraint(g, time, constraint_plants, update_visitor=N
     constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes = distribute_constraint_among_organs(g, time, constraint_plants)
 
     cereal_visitor = CerealsVisitorConstrained(False)
-
+    
     
     def traverse_with_turtle_time(g, vid, time, constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes, visitor=cereal_visitor):
         turtle = CerealsTurtle()
@@ -215,7 +216,7 @@ def mtg_turtle_time_with_constraint(g, time, constraint_plants, update_visitor=N
                 turtle.pop()
 
         if g.node(vid).start_tt <= time:
-            visitor(g, vid, turtle, time, constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes)
+            constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes = visitor(g, vid, turtle, time, constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes)
             # turtle.push()
         # plant_id = g.complex_at_scale(vid, scale=1)
 
@@ -225,7 +226,7 @@ def mtg_turtle_time_with_constraint(g, time, constraint_plants, update_visitor=N
             # Done for the leaves
             if g.node(v).start_tt > time:
                 continue
-            visitor(g, v, turtle, time, constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes)
+            constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes = visitor(g, v, turtle, time, constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes)
 
         # scene = turtle.getScene()
         return g
@@ -275,12 +276,7 @@ def grow_plant_from_constraint(potential_plant, time, constraints_plants):
     return growing_plant
 
 
-def display_plant(g, time):
-    nice_green = Color3((50, 100, 0))
-    scene, nump = build_scene(
-        g, leaf_material = Material(nice_green), stem_material=Material(nice_green)
-    )
-    return g, scene, nump
+
 
 """ def display_in_NB(g, time):
     g, scene, nump=display_plant(g, time)

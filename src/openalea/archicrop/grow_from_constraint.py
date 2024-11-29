@@ -141,7 +141,6 @@ def compute_continuous_element_with_constraint(
 
     # added by Oriane, for continuous growth with constraint
     
-    
     # starting from the lowest (oldest) growing organ
     if n.start_tt <= time < n.end_tt and n.visible_length < n.mature_length:  # organ growing
         # for constrained growth
@@ -149,14 +148,14 @@ def compute_continuous_element_with_constraint(
         if n.label.startswith("Leaf"):
             # convert constraint for each organ(t) to leaf length
             leaf_length_increment = compute_leaf_length_increment(constraint_on_each_leaf, n)
-            print(leaf_length_increment, n.mature_length)
+            # print(leaf_length_increment, n.mature_length)
             
-            if n.visible_length + constraint_on_each_leaf <= n.mature_length:
-                n.visible_length += constraint_on_each_leaf
+            if n.visible_length + leaf_length_increment <= n.mature_length:
+                n.visible_length += leaf_length_increment
                 nb_of_updated_leaves += 1
                 constraint_to_distribute_LA -= constraint_on_each_leaf
             else: 
-                constraint_to_distribute_LA -= (n.mature_length - n.visible_length)
+                constraint_to_distribute_LA -= 1.5 * n.wl * (n.mature_length**2 - n.visible_length**2) 
                 n.visible_length = n.mature_length
                 nb_of_updated_leaves += 1
                 constraint_on_each_leaf = constraint_to_distribute_LA / (nb_of_growing_leaves - nb_of_updated_leaves)
@@ -267,6 +266,8 @@ class CerealsVisitorConstrained(CerealsVisitor):
             if n.lrolled > 0:
                 turtle.f(n.lrolled)
                 turtle.context.update({"top": turtle.getFrame()})
+
+        return constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes
 
 
 def mtg_interpreter_with_constraint(g, classic=False):

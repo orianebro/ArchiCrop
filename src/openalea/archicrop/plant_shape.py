@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 import numpy as np
 from scipy.integrate import quad
+from itertools import product
 
 from openalea.mtg.traversal import pre_order2
 
@@ -163,3 +164,70 @@ def sr_prevot(nb_segment=100, alpha=-2.3):
     s = numpy.linspace(0, 1, nb_segment + 1)
     r = alpha * s**2 + beta * s + gamma
 """
+
+def compute_leaf_area_plant_from_params(nb_phy,
+                                        max_leaf_length,
+                                        wl,
+                                        rmax,
+                                        skew):
+    """returns the leaf area of a plant"""
+
+    leaf_areas = []
+
+    leaf_lengths = np.array(bell_shaped_dist(max_leaf_length=max_leaf_length, nb_phy=nb_phy, rmax=rmax, skew=skew))
+
+    for L in leaf_lengths:
+        blade_area = 2 * wl * (1.51657508881031 - 0.766666666666667) * L**2 # 1.5*wl*L**2 # eg 1.5*0.12*70**2
+
+        leaf_areas.append(blade_area)
+
+
+    return sum(leaf_areas)
+
+
+
+
+def check_la_range(params, value_range):
+    """
+    Computes function values for all parameter combinations
+    and keeps only those whose results fall within a given range.
+
+    :param params: A dictionary where keys are parameter names
+                   and values are lists of possible values.
+                   Example: {'x': [1, 2], 'y': [3, 4], 'z': [5, 6]}
+    :param value_range: A tuple (min_val, max_val) defining the range.
+    :return: A list of tuples (combination, function_value).
+    """
+    min_val, max_val = value_range
+
+    # Generate all possible combinations of parameters
+    param_names = list(params.keys())
+    param_names_for_la = ["nb_phy", "max_leaf_length", "wl", "rmax", "skew"]
+    # param_values = list(params.values())
+    param_values = [
+        v if isinstance(v, list) else [v]
+        for v in params.values()
+    ]
+    param_values_for_la = [param for i,param in enumerate(param_values) if param_names[i] in param_names_for_la]
+
+    
+    combinations = list(product(*param_values_for_la))
+    
+    # Filter combinations based on the range
+    results = []
+    for combination in combinations:
+        # Convert the combination into a dictionary
+        values = dict(zip(param_names_for_la, combination))
+        # Calculate the function value
+        result = compute_leaf_area_plant_from_params(**values)
+        print(result)
+        # Check if the result is within the range
+        if min_val <= result <= max_val:
+            results.append((values, result))
+    
+    return results
+
+# la_per_plant_stics = max(la_cum)
+# print(la_per_plant_stics)
+# error = 2000
+# value_range = (la_per_plant_stics - error, la_per_plant_stics + error)

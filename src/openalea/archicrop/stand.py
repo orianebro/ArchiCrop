@@ -69,11 +69,10 @@ def regular_plot(
 
 
 def agronomic_plot(
-    length,
-    width,
-    sowing_density,
-    plant_density,
-    inter_row,
+    length=1,
+    width=1,
+    sowing_density=10,
+    inter_row=0.5,
     noise=0,
     convunit=100,
     center_scene=True,
@@ -105,7 +104,7 @@ def agronomic_plot(
         convunit=convunit,
         center_scene=center_scene,
     )
-    n_emerged = int(round(len(positions) * plant_density / sowing_density))
+    n_emerged = int(round(len(positions)))
     positions = sample(positions, n_emerged)
 
     return n_emerged, positions, domain, domain_area, 1.0 / convunit
