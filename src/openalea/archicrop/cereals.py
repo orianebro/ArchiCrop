@@ -24,7 +24,7 @@ def build_shoot(
     skew,
     phyllotactic_angle,
     phyllotactic_deviation,
-    plant_orientation=30,
+    plant_orientation=45,
     spiral=True,
 ):
     """create a shoot

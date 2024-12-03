@@ -12,6 +12,7 @@ from .stand import agronomic_plot
 from .dynamic import thermal_time, grow_plant_from_constraint
 from .grow_from_constraint import read_columns_from_file, distribute_constraint_among_plants
 from .light_it import compute_light_inter
+from .plant_shape import compute_leaf_area_plant_from_params
 
 
 def dict_ranges_to_all_possible_combinations(d):
@@ -110,9 +111,16 @@ def generate_and_display_plant(nb_phy,
                             skew,
                             phyllotactic_angle,
                             phyllotactic_deviation)
+    
+    print("LA plant = ", compute_leaf_area_plant_from_params(nb_phy,
+                                            max_leaf_length,
+                                            wl,
+                                            rmax,
+                                            skew))
+    
     nice_green = Color3((50, 100, 0))
     scene, nump = build_scene(
-        g, leaf_material = Material(nice_green), stem_material=Material(nice_green)
+        g, leaf_material = Material(nice_green), stem_material=Material(nice_green), soil_material=Material(Color3((150,100,50)))
     )
     w=PlantGL(scene, group_by_color=True)
     return w 
@@ -129,29 +137,32 @@ def retrieve_stics_dynamics_from_file(filename_outputs, density):
     columns_outputs = read_columns_from_file(filename_outputs)
     columns_outputs = columns_outputs[5:]
 
+    ## dict with clomn names and then lists (or not), more resilient to changes in order of STICS outputs 
 
     start = 21 # 21
     end = 90
     # density = 10 # density = 20 plants/m2 = 0.002 plants/cm2
 
-    tt_cum = list(np.cumsum([float(i) for i in columns_outputs[0][start:end-1]]))
-    # print(list(tt_cum))
+    thermal_time = list(np.cumsum([float(i) for i in columns_outputs[0][start:end-1]]))
 
-    la_cum = [1000*float(i)/density for i in columns_outputs[1][start:end]] # from m2/m2 to cm2/plant
-    la_incr = [la_cum[i+1]-la_cum[i] for i in range(len(la_cum[1:]))]
-    print(max(la_cum))
-    print(sum(la_incr))
+    leaf_area = [10000*float(i)/density for i in columns_outputs[1][start:end]] # from m2/m2 to cm2/plant
+    leaf_area_incr = [0] + [leaf_area[i+1]-leaf_area[i] for i in range(len(leaf_area[1:]))]
 
-    height_cum = [float(i) for i in columns_outputs[2][start:end]]
-    height_incr = [height_cum[i+1]-height_cum[i] for i in range(len(height_cum[1:]))]
-    # print(height_incr)
+    height = [float(i)*100 for i in columns_outputs[2][start:end]] # from m to cm
+    height_incr = [0] + [height[i+1]-height[i] for i in range(len(height[1:]))]
 
-    par_abs = [float(i)/(0.95*0.48*float(j)) for i, j in zip(columns_outputs[3][start:end], columns_outputs[4][start:end])] 
-    # print(len(par)) # in MJ/m^2
+    par_abs = [float(i)/(0.95*0.48*float(j)) for i, j in zip(columns_outputs[3][start:end], columns_outputs[4][start:end])] # to % of light intercepted, in MJ/m^2
 
-    constraints_crop = [height_incr, la_incr]
+    data = {
+        thermal_time[i]: {"Plant leaf area": leaf_area[i], 
+                          "Leaf area increment": leaf_area_incr[i], 
+                          "Plant height": height[i], 
+                          "Height increment": height_incr[i], 
+                          "Absorbed PAR": par_abs[i]}
+        for i in range(len(thermal_time))
+    }
 
-    return (tt_cum, height_cum, la_cum, constraints_crop, par_abs)
+    return data
 
 
 def grow_pop(g, constraints_crop, sowing_density, inter_row, tt_cum):

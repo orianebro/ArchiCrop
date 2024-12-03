@@ -243,38 +243,10 @@ def grow_plant(g, time, phyllochron):
     return g
 
 
-def grow_plant_and_display(g, time, phyllochron):
-    g = grow_plant(g=g, time=time, phyllochron=phyllochron)
-    # Build and display scene
-    nice_green = Color3((50, 100, 0))
-    scene, nump = build_scene(
-        g, leaf_material=Material(nice_green), stem_material=Material(nice_green)
-    )
-    return g, scene, nump
-
-
-
-
 def grow_plant_with_constraint(g, time, phyllochron, constraint):
     g = thermal_time(g, phyllochron)
     g = mtg_turtle_time_with_constraint(g, time=time, constraint=constraint)
     return g
-
-def grow_plant_with_constraint_and_display(g, time, phyllochron, constraint):
-    g = grow_plant_with_constraint(g=g, time=time, phyllochron=phyllochron, constraint=constraint)
-    # Build and display scene
-    nice_green = Color3((50, 100, 0))
-    scene, nump = build_scene(
-        g, leaf_material=Material(nice_green), stem_material=Material(nice_green)
-    )
-    return g, scene, nump
-
-
-
-def grow_plant_from_constraint(potential_plant, time, constraints_plants):
-    growing_plant = mtg_turtle_time_with_constraint(potential_plant, time=time, constraint_plants=constraints_plants)
-    return growing_plant
-
 
 
 

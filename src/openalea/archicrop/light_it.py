@@ -63,7 +63,7 @@ def compute_light_inter(scene):
     # Qem is the sum of the normal-to-the-sources irradiance emitted by sources (m-2)
     # Einc is the total incident energy received on the domain
     
-    scene_eabs,values_eabs = cs.plot(raw['Eabs'],display=False)
+    scene_eabs,values_eabs = cs.plot(raw['Eabs'],display=False) 
     # scene_ei,values_ei = cs.plot(raw['Ei'],display=False)
     # values = np.array([a / i if i != 0 else 0 for a, i in zip(values_eabs, values_ei)])
     # print("area : ", agg['area'])
@@ -90,7 +90,7 @@ def compute_light_inter(scene):
 
 
     # Division of sums
-    # result = sum_values_eabs / sum_values_ei if sum_values_ei != 0 else 0
+    # result = sum_(values_eabs * triangle area) * conv / sum_values_ei if sum_values_ei != 0 else 0
     result = sum_values_eabs / (Einc*100) if Einc != 0 else 0 # 10000 ?
 
     if result > 1:
