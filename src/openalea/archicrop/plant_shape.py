@@ -187,7 +187,7 @@ def compute_leaf_area_plant_from_params(nb_phy,
 
 
 
-def check_la_range(params, value_range):
+def check_LA_range(params, value_range):
     """
     Computes function values for all parameter combinations
     and keeps only those whose results fall within a given range.
@@ -220,7 +220,7 @@ def check_la_range(params, value_range):
         values = dict(zip(param_names_for_la, combination))
         # Calculate the function value
         result = compute_leaf_area_plant_from_params(**values)
-        print(result)
+        # print(result)
         # Check if the result is within the range
         if min_val <= result <= max_val:
             results.append((values, result))

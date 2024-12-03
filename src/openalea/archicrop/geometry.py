@@ -239,7 +239,7 @@ def slim_cylinder(length, radius_base, radius_top):
     return set
 
 
-def stem_mesh(length, visible_length, diameter, classic=False, slices=24):
+def stem_mesh(length, visible_length, stem_diameter, classic=False, slices=24):
     """Compute mesh for a stem element
     - classic indicates
     """
@@ -250,15 +250,15 @@ def stem_mesh(length, visible_length, diameter, classic=False, slices=24):
         #  (percentage error lower than 5)
         slices = 6
         stem = pgl.Tapered(
-            diameter / 2.0,
-            diameter / 2.0,
+            stem_diameter / 2.0,
+            stem_diameter / 2.0,
             pgl.Cylinder(1.0, visible_length, solid, slices),
         )
         tessel = pgl.Tesselator()
         stem.apply(tessel)
         mesh = tessel.triangulation
     else:
-        mesh = slim_cylinder(visible_length, diameter / 2.0, diameter / 2.0)
+        mesh = slim_cylinder(visible_length, stem_diameter / 2.0, stem_diameter / 2.0)
 
     return mesh
 
@@ -294,7 +294,7 @@ def compute_element(element_node, classic=False):
                 else:
                     geom = addSets(rolled, geom, translate=(0, 0, n.lrolled))
     elif n.label.startswith("Stem"):  # stem element
-        geom = stem_mesh(n.length, n.visible_length, n.diameter, n.diameter, classic)
+        geom = stem_mesh(n.length, n.visible_length, n.stem_diameter, n.stem_diameter, classic)
 
     return geom
 
@@ -392,7 +392,7 @@ def mtg_interpreter(g, classic=False):
 
 def arrange_leaf_for_growth(
     leaf, stem_diameter=0, inclination=1, relative=True
-):  # add stem height
+): 
     """Arrange a leaf to be placed along a stem with a given inclination.
 
     Args:

@@ -244,9 +244,10 @@ def cereals(json=None, classic=False, seed=None, plant=None):
             "length": row["L_internode"],
             "visible_length": row["L_internode"],
             "is_green": True,
-            "diameter": row["W_internode"],
+            "stem_diameter": row["W_internode"],
             "azimuth": row["leaf_azimuth"],
             "grow": False,
+            "age": 0.0,
         }
 
         if first_internode:
@@ -277,6 +278,7 @@ def cereals(json=None, classic=False, seed=None, plant=None):
             "shape_max_width": row["W_blade"],
             "stem_diameter": row["W_internode"],
             "grow": False,
+            "age": 0.0,
         }
 
         vid_leaf = g.add_child(vid_internode, edge_type="+", **leaf)  # noqa: F841

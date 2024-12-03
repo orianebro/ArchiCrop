@@ -1,10 +1,7 @@
 from __future__ import annotations
 
 from openalea.mtg.traversal import pre_order2, pre_order2_with_filter
-from openalea.plantgl.all import (Color3, Material, Vector3)
-from oawidgets.plantgl import *
 
-from .display import build_scene
 from .geometry import CerealsContinuousVisitor, CerealsTurtle
 from .grow_from_constraint import CerealsVisitorConstrained, compute_nb_of_growing_organs
 
@@ -132,7 +129,7 @@ def init_visible_length(g):
     return g
 
 
-def mtg_turtle_time_with_constraint(g, time, constraint_plants, update_visitor=None):
+def mtg_turtle_time_with_constraint(g, time, increments, update_visitor=None):
     """Compute the geometry on each node of the MTG using Turtle geometry.
 
     Update_visitor is a function called on each node in a pre order (parent before children).
@@ -150,44 +147,49 @@ def mtg_turtle_time_with_constraint(g, time, constraint_plants, update_visitor=N
     max_scale = g.max_scale()
 
 
-    def distribute_constraint_among_organs(g, time, constraint_plants):
+    def distribute_constraint_among_organs(g, time, increments):
 
         # compute number of growing organs
         nb_of_growing_internodes, nb_of_growing_leaves = compute_nb_of_growing_organs(g, time)
-        
-        # retrieve constraint for height and LA
-        constraint_plants_height = constraint_plants[0]
-        constraint_plants_LA = constraint_plants[1]
     
         # set initial total amount of growth to distribute among organs
-        constraint_to_distribute_height = constraint_plants_height
-        constraint_to_distribute_LA = constraint_plants_LA
+        height_to_distribute = increments[time]["Height increment"] 
+        LA_to_distribute = increments[time]["Leaf area increment"] 
         # print(constraint_to_distribute_LA)
     
         # set initial distribution per organ (H: same amount for all organs)
         if nb_of_growing_leaves == 0:
-            constraint_on_each_leaf = 0
+            LA_for_each_leaf = 0
         else:
-            constraint_on_each_leaf = constraint_to_distribute_LA / nb_of_growing_leaves # and internodes = sheath !!!!
+            LA_for_each_leaf = LA_to_distribute / nb_of_growing_leaves # and internodes = sheath !!!!
             # print("Constraint on each leaf:", constraint_on_each_leaf)
 
         if nb_of_growing_internodes == 0:
-            constraint_on_each_internode = 0
+            height_for_each_internode = 0
         else:
-            constraint_on_each_internode = constraint_to_distribute_height / nb_of_growing_internodes
+            height_for_each_internode = height_to_distribute / nb_of_growing_internodes
     
         nb_of_updated_leaves = 0
         nb_of_updated_internodes = 0
 
-        return constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes
+        growth = {"LA_for_each_leaf": LA_for_each_leaf,
+                  "height_for_each_internode": height_for_each_internode,
+                  "LA_to_distribute": LA_to_distribute,
+                  "height_to_distribute": height_to_distribute,
+                  "nb_of_growing_leaves": nb_of_growing_leaves,
+                  "nb_of_growing_internodes": nb_of_growing_internodes,
+                  "nb_of_updated_leaves": nb_of_updated_leaves,
+                  "nb_of_updated_internodes": nb_of_updated_internodes}
+
+        return growth
 
     
-    constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes = distribute_constraint_among_organs(g, time, constraint_plants)
+    growth = distribute_constraint_among_organs(g, time, increments)
 
     cereal_visitor = CerealsVisitorConstrained(False)
     
     
-    def traverse_with_turtle_time(g, vid, time, constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes, visitor=cereal_visitor):
+    def traverse_with_turtle_time(g, vid, time, growth, visitor=cereal_visitor):
         turtle = CerealsTurtle()
 
         def push_turtle(v):
@@ -216,7 +218,7 @@ def mtg_turtle_time_with_constraint(g, time, constraint_plants, update_visitor=N
                 turtle.pop()
 
         if g.node(vid).start_tt <= time:
-            constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes = visitor(g, vid, turtle, time, constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes)
+            growth = visitor(g, vid, turtle, time, growth)
             # turtle.push()
         # plant_id = g.complex_at_scale(vid, scale=1)
 
@@ -226,14 +228,14 @@ def mtg_turtle_time_with_constraint(g, time, constraint_plants, update_visitor=N
             # Done for the leaves
             if g.node(v).start_tt > time:
                 continue
-            constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes = visitor(g, v, turtle, time, constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes)
+            growth = visitor(g, v, turtle, time, growth)
 
         # scene = turtle.getScene()
         return g
 
 
     for plant_id in g.component_roots_at_scale_iter(g.root, scale=max_scale):
-        g = traverse_with_turtle_time(g, plant_id, time, constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes)
+        g = traverse_with_turtle_time(g, plant_id, time, growth)
     return g
 
 
@@ -256,7 +258,4 @@ def grow_plant_with_constraint(g, time, phyllochron, constraint):
     w.wireframe=True
     return w """
 
-# display_in_NB(g, tt_cum[0])
-    
-# max_time = max(g.property('end_tt').values())
-# interact(display_in_NB, g=fixed(g), time=IntSlider(min=min(tt_cum), max=max(tt_cum), step=100, value=tt_cum[10]))
+

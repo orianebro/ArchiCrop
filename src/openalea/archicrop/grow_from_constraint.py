@@ -24,15 +24,6 @@ def read_columns_from_file(filename, separator=';'):
     return columns
 
 
-def distribute_constraint_among_plants(constraints_crop, nb_of_plants):
-    constraint_crop_height = constraints_crop[0]
-    constraint_crop_LAI = constraints_crop[1]
-    constraint_plants_height = constraint_crop_height
-    constraint_plants_LA = constraint_crop_LAI / nb_of_plants
-    constraints_plants = [constraint_plants_height, constraint_plants_LA]
-    return constraints_plants
-
-
 def compute_nb_of_growing_organs(g, time):
 
     nb_of_growing_internodes = 0
@@ -130,9 +121,7 @@ def compute_leaf_length_increment(constraint_LA, leaf):
 
 
 def compute_continuous_element_with_constraint(
-    element_node, time, constraint_on_each_leaf, constraint_on_each_internode, 
-    constraint_to_distribute_LA, constraint_to_distribute_height, 
-    nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes, classic=False
+    element_node, time, growth, classic=False
 ):  # see maybe with *kwarg, **kwds, etc. for time
     """compute geometry of Adel base elements (LeafElement and StemElement)
     element_node should be a mtg node proxy"""
@@ -140,6 +129,20 @@ def compute_continuous_element_with_constraint(
     geom = None
 
     # added by Oriane, for continuous growth with constraint
+
+    # in growth : (names changed)
+    # constraint_on_each_leaf, constraint_on_each_internode, 
+    # constraint_to_distribute_LA, constraint_to_distribute_height, 
+    # nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes
+
+    # update age of organ
+    if n.start_tt <= time:
+        if n.label.startswith("Leaf") or n.label.startswith("Stem"):
+            n.age = time - n.start_tt
+        # update leaf inclination
+        if n.label.startswith("Leaf"):
+            n.
+
     
     # starting from the lowest (oldest) growing organ
     if n.start_tt <= time < n.end_tt and n.visible_length < n.mature_length:  # organ growing
@@ -164,7 +167,7 @@ def compute_continuous_element_with_constraint(
         elif n.label.startswith("Stem"):
             ''' 
             h = n.visible_length
-            radius = n.diameter / 2
+            radius = n.stem_diameter / 2
             sheath_area = 2 * np.pi * radius * h
             '''
             if n.visible_length + constraint_on_each_internode <= n.mature_length:
@@ -219,9 +222,9 @@ def compute_continuous_element_with_constraint(
                 else:
                     geom = addSets(rolled, geom, translate=(0, 0, n.lrolled))
     elif n.label.startswith("Stem"):  # stem element
-        geom = stem_mesh(n.length, n.visible_length, n.diameter, n.diameter, classic)
+        geom = stem_mesh(n.length, n.visible_length, n.stem_diameter, n.stem_diameter, classic)
 
-    return geom, constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes
+    return geom, growth
         
     
 
@@ -229,7 +232,7 @@ class CerealsVisitorConstrained(CerealsVisitor):
     def __init__(self, classic):
         super().__init__(classic)
 
-    def __call__(self, g, v, turtle, time, constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes):
+    def __call__(self, g, v, turtle, time, growth):
         # 1. retrieve the node
         n = g.node(v)
 
@@ -251,7 +254,7 @@ class CerealsVisitorConstrained(CerealsVisitor):
             # if n.length > 0:
             # print(v)
             # nb_of_growing_internodes, nb_of_growing_leaves = compute_nb_of_growing_organs(g, time)
-            mesh, constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes = compute_continuous_element_with_constraint(n, time, constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes, self.classic)
+            mesh, growth = compute_continuous_element_with_constraint(n, time, growth, self.classic)
             if mesh:  # To DO : reset to None if calculated so ?
                 n.geometry = turtle.transform(mesh)
                 n.anchor_point = turtle.getPosition()
@@ -267,7 +270,7 @@ class CerealsVisitorConstrained(CerealsVisitor):
                 turtle.f(n.lrolled)
                 turtle.context.update({"top": turtle.getFrame()})
 
-        return constraint_on_each_leaf, constraint_on_each_internode, constraint_to_distribute_LA, constraint_to_distribute_height, nb_of_growing_leaves, nb_of_updated_leaves, nb_of_growing_internodes, nb_of_updated_internodes
+        return growth
 
 
 def mtg_interpreter_with_constraint(g, classic=False):

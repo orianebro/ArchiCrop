@@ -9,7 +9,6 @@ from oawidgets.plantgl import *
 from .cereals import build_shoot
 from .display import build_scene
 from .stand import agronomic_plot
-from .dynamic import thermal_time, grow_plant_from_constraint
 from .grow_from_constraint import read_columns_from_file, distribute_constraint_among_plants
 from .light_it import compute_light_inter
 from .plant_shape import compute_leaf_area_plant_from_params

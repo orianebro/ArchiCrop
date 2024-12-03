@@ -374,7 +374,7 @@ def update_organ_elements(g, leaves=None, split=False, phyllochron=None):
     senesced_length = g.property("senesced_length")
     azimuth = g.property("azimuth")
     inclination = g.property("inclination")
-    diameter = g.property("diameter")
+    stem_diameter = g.property("stem_diameter")
     sectors = g.property("n_sect")
     mature_length = g.property("mature_length")
     shape_max_width = g.property("shape_max_width")
@@ -391,7 +391,7 @@ def update_organ_elements(g, leaves=None, split=False, phyllochron=None):
                 senesced_length[organ],
                 azimuth[organ],
                 inclination[organ],
-                diameter[organ],
+                stem_diameter[organ],
                 split=split,
             )
         elif labels[organ].startswith("sheath"):
@@ -401,7 +401,7 @@ def update_organ_elements(g, leaves=None, split=False, phyllochron=None):
                 senesced_length[organ],
                 azimuth[organ],
                 inclination[organ],
-                diameter[organ],
+                stem_diameter[organ],
                 split=split,
             )
         elif labels[organ].startswith("blade"):
