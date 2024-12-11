@@ -8,7 +8,7 @@ from itertools import product
 from openalea.mtg.traversal import pre_order2
 
 
-def geometric_dist(height, nb_phy, q=1, u0=None):
+def geometric_dist(height, nb_phy, q, u0=None):
     """returns distances between individual leaves along a geometric model"""
 
     if u0 is None:
@@ -157,6 +157,70 @@ def compute_leaf_area_pot_plant(g):
     return leaf_areas
 
 
+def compute_leaf_area_growing_plant(g):
+    """returns the leaf area of a growing plant from its MTG(t)"""
+
+    def scaled_leaf_shape(s, L, alpha=-2.3):
+        beta = -2 * (alpha + np.sqrt(-alpha))
+        gamma = 2 * np.sqrt(-alpha) + alpha
+        r = alpha * (s / L) ** 2 + beta * (s / L) + gamma
+        return r
+
+    leaf_areas = []
+    # for v in g.vertices():
+    # n=g.node(v)
+    axes = g.vertices(scale=1)
+    metamer_scale = g.max_scale()
+
+    for axis in axes:
+        v = next(g.component_roots_at_scale_iter(axis, scale=metamer_scale))
+        for metamer in pre_order2(g, v):
+            n = g.node(metamer)
+            if n.label is not None:
+                if n.label.startswith("Leaf"):
+                    L = n.mature_length
+                    alpha = -2.3
+                    lower_bound = max(L - n.visible_length, 0.0)
+                    upper_bound = L
+                    blade_area, error = quad(
+                        scaled_leaf_shape, lower_bound, upper_bound, args=(L, alpha)
+                    )
+                    blade_area = 2 * n.shape_max_width * blade_area
+                    leaf_areas.append(blade_area)
+
+                # if n.label.startswith("Stem") and n.grow == True:
+                #     h = n.visible_length
+                #     radius = n.diameter / 2
+                #     sheath_area = 2 * np.pi * radius * h
+                #     leaf_areas.append(sheath_area)
+
+    # filter label
+    # g.property('label')
+
+    # PlantGL surface function
+
+    return leaf_areas
+
+
+def compute_height_growing_plant(g):
+    """returns the height of a growing plant from its MTG(t)"""
+
+    height = 0
+
+    axes = g.vertices(scale=1)
+    metamer_scale = g.max_scale()
+
+    for axis in axes:
+        v = next(g.component_roots_at_scale_iter(axis, scale=metamer_scale))
+        for metamer in pre_order2(g, v):
+            n = g.node(metamer)
+            if n.label is not None:
+                if n.label.startswith("Stem"):
+                    height += n.visible_length
+
+    return height
+
+
 """
 def sr_prevot(nb_segment=100, alpha=-2.3):
     beta = -2 * (alpha + numpy.sqrt(-alpha))
@@ -183,6 +247,8 @@ def compute_leaf_area_plant_from_params(nb_phy,
 
 
     return sum(leaf_areas)
+
+
 
 
 
@@ -223,7 +289,7 @@ def check_LA_range(params, value_range):
         # print(result)
         # Check if the result is within the range
         if min_val <= result <= max_val:
-            results.append((values, result))
+            results.append(values)
     
     return results
 

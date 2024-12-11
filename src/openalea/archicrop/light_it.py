@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from openalea.plantgl.all import (Color3, Material, Vector3)
 from oawidgets.plantgl import *
 from alinea.caribu.CaribuScene import CaribuScene
 from alinea.caribu.data_samples import data_path

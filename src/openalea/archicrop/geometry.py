@@ -248,7 +248,7 @@ def stem_mesh(length, visible_length, stem_diameter, classic=False, slices=24):
         solid = True
         # 6 is the minimal number of slices for a correct computation of star
         #  (percentage error lower than 5)
-        slices = 6
+        slices = 24
         stem = pgl.Tapered(
             stem_diameter / 2.0,
             stem_diameter / 2.0,
@@ -287,7 +287,7 @@ def compute_element(element_node, classic=False):
                 )
             if n.lrolled > 0:
                 rolled = stem_mesh(
-                    n.lrolled, n.lrolled, n.d_rolled, n.d_rolled, classic
+                    n.lrolled, n.lrolled, n.d_rolled, classic
                 )
                 if geom is None:
                     geom = rolled
@@ -359,7 +359,7 @@ class CerealsVisitor:
         # 3. Update the turtle and context
         turtle.setId(v)
         if n.label.startswith("Stem"):
-            if n.length > 0:
+            if n.length > 0:  
                 turtle.f(n.length)
             turtle.context.update({"top": turtle.getFrame()})
         if n.label.startswith("Leaf"):  # noqa: SIM102
@@ -541,18 +541,19 @@ def compute_continuous_element(
                     #  with the tiller positioned with
                     # turtle.down()
                     flipx=True,
+                    inclination=1,
                     stem_diameter=n.stem_diameter,
                 )
             if n.lrolled > 0:
                 rolled = stem_mesh(
-                    n.lrolled, n.lrolled, n.d_rolled, n.d_rolled, classic
+                    n.lrolled, n.lrolled, n.d_rolled, classic
                 )
                 if geom is None:
                     geom = rolled
                 else:
                     geom = addSets(rolled, geom, translate=(0, 0, n.lrolled))
     elif n.label.startswith("Stem"):  # stem element
-        geom = stem_mesh(n.length, n.visible_length, n.diameter, n.diameter, classic)
+        geom = stem_mesh(n.length, n.visible_length, n.stem_diameter, n.stem_diameter, classic)
 
     return geom
 

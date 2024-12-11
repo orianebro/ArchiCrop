@@ -1,9 +1,0 @@
-#     nir.opt  
-# simulation 
-# format e : stem,  leaf adaxial face,  leaf abaxial face
-# nb of species
-n 1
-#1 ESPECES
-s d 0.60
-# espece 1
-e d 1.00  d 0.45 0.35  d 0.45 0.35  
