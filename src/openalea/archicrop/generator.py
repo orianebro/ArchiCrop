@@ -232,14 +232,28 @@ def cereals(json=None, classic=False, seed=None, plant=None):
     # print(dim)
 
     g = MTG()
+    # Add a root vertex for the plant
     vid_plant = g.add_component(g.root, label="Plant", edge_type="/")
+    # Add a plant vertex for the main axis
     vid_axis = g.add_component(vid_plant, label="MainAxis", edge_type="/")
 
-    first_internode = True
+    first = True
 
     for _i, row in dim.iterrows():
+
+        rank = _i
+
+        # # Add a phytomer as a component of the plant
+        # if first:
+        #     vid_phytomer = g.add_component(complex_id=vid_axis, label="Phytomer")
+        # else:
+        #     vid_phytomer = g.add_child(complex_id=vid_phytomer, edge_type="<", label="Phytomer")
+        # g.property('rank')[vid_phytomer] = rank  # Assign rank to the phytomer
+
+        # Add internode as a child of the phytomer
         internode = {
             "label": "Stem",
+            "rank": rank,
             "mature_length": row["L_internode"],
             "length": row["L_internode"],
             "visible_length": row["L_internode"],
@@ -249,22 +263,19 @@ def cereals(json=None, classic=False, seed=None, plant=None):
             "azimuth": row["leaf_azimuth"],
             "grow": False,
             "age": 0.0,
+            "elongation_rate": []
         }
 
-        if first_internode:
-            # vid_metamer = g.add_component(vid_axis)
+        if first:
             vid_internode = g.add_component(vid_axis, **internode)
-            # g.node(vid_metamer).label='Metamer'
-            # g.node(vid_metamer).edge_type='/'
-            first_internode = False
+            first = False
         else:
             vid_internode = g.add_child(vid_internode, edge_type="<", **internode)
-            # vid_internode, vid_metamer = g.add_child_and_complex(vid_internode, edge_type='<', **internode)
-            # g.node(vid_metamer).label='Metamer'
-            # g.node(vid_metamer).edge_type='<'
+
 
         leaf = {
             "label": "Leaf",
+            "rank": rank,
             "shape": leaves[row["ntop"]],
             "mature_length": row["L_blade"],
             "length": row["L_blade"],
@@ -281,6 +292,7 @@ def cereals(json=None, classic=False, seed=None, plant=None):
             "stem_diameter": row["W_internode"],
             "grow": False,
             "age": 0.0,
+            "elongation_rate": []
         }
 
         vid_leaf = g.add_child(vid_internode, edge_type="+", **leaf)  # noqa: F841

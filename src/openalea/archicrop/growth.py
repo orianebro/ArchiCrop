@@ -7,6 +7,7 @@ from .geometry import CerealsTurtle, CerealsVisitor, addSets, TurtleFrame, leaf_
 
 
 
+
 def thermal_time(g, phyllochron, plastochron, leaf_duration, stem_duration, leaf_senescence): # durations 1.6
     """
     Add dynamic properties on the mtg to simulate development
@@ -124,7 +125,7 @@ def distribute_constraint_among_organs(g, time, increments, growth):
 
     # set initial distribution per organ (H: same amount for all organs)
     if nb_of_growing_leaves != 0:
-        LA_for_each_leaf = LA_to_distribute / nb_of_growing_leaves # and internodes = sheath !!!!
+        LA_for_each_leaf = LA_to_distribute / nb_of_growing_leaves 
     else:
         LA_for_each_leaf = 0.0
 
@@ -261,18 +262,14 @@ def compute_continuous_element_with_constraint(
             n.grow = True
             # update age of organ
             n.age = time - n.start_tt
-            # print(n.age)
-            # update leaf inclination
-            # if n.label.startswith("Leaf"):
-            #     n.
         
     
             # starting from the lowest (oldest) growing organ
             if time <= n.end_tt: # if n.start_tt <= time < n.end_tt: # organ growing
-                # update stem diameter 
-                n.stem_diameter = n.mature_stem_diameter - 1 + (time - n.start_tt)/(n.end_tt - n.start_tt)
                 # print("visible length", n.visible_length)
                 # print("mature length", n.mature_length)
+
+                n.stem_diameter = 1.2
 
                 if n.visible_length < n.mature_length:  
 
@@ -287,10 +284,13 @@ def compute_continuous_element_with_constraint(
                             n.visible_length += leaf_length_increment
                             LA_to_distribute = max(LA_to_distribute - LA_for_each_leaf, 0.0)
                             nb_of_updated_leaves += 1
+                            n.elongation_rate.append(leaf_length_increment)
                         else: 
-                            LA_to_distribute -= 2 * (1.51657508881031*n.visible_length**2*n.shape_max_width/n.mature_length - 0.766666666666667*n.visible_length**3*n.shape_max_width/n.mature_length**2)
+                            actual_leaf_length_increment = 2 * (1.51657508881031*n.visible_length**2*n.shape_max_width/n.mature_length - 0.766666666666667*n.visible_length**3*n.shape_max_width/n.mature_length**2)
+                            LA_to_distribute -= actual_leaf_length_increment
                             n.visible_length = n.mature_length
                             nb_of_updated_leaves += 1
+                            n.elongation_rate.append(actual_leaf_length_increment)
                             if nb_of_growing_leaves > nb_of_updated_leaves:
                                 LA_for_each_leaf = LA_to_distribute / (nb_of_growing_leaves - nb_of_updated_leaves)
                             else:
@@ -310,14 +310,14 @@ def compute_continuous_element_with_constraint(
                             nb_of_updated_internodes += 1
                             if nb_of_growing_internodes > nb_of_updated_internodes:
                                 height_for_each_internode = height_to_distribute / (nb_of_growing_internodes - nb_of_updated_internodes)
-                        
+
 
                 # else:
                 #     n.visible_length = n.mature_length
 
                 
             elif time > n.end_tt:
-                # n.stem_diameter = n.mature_stem_diameter
+                n.stem_diameter = min(1.2 + (n.mature_stem_diameter - 1.2)*0.001*time, n.mature_stem_diameter)
                 if n.visible_length < n.mature_length:  # organ reaches maturity below potential 
                     n.visible_length = n.visible_length
                 else:  # organ reaches maturity at potential
@@ -336,6 +336,8 @@ def compute_continuous_element_with_constraint(
     growth["nb_of_growing_internodes"] = nb_of_growing_internodes
     growth["nb_of_updated_leaves"] = nb_of_updated_leaves
     growth["nb_of_updated_internodes"] = nb_of_updated_internodes
+
+    
     
     if n.label.startswith("Leaf"):  # leaf element
         if n.visible_length > 0.0001:  # filter less than 0.001 mm leaves
@@ -472,9 +474,10 @@ def mtg_turtle_time_with_constraint(g, time, increments, growth, update_visitor=
             if g.edge_type(v) == "+":  # noqa: RET503
                 turtle.pop()
 
-        if g.node(vid).start_tt <= time:
-            growth = visitor(g, vid, turtle, time, growth)
-            # turtle.push()
+        if g.node(vid).label.startswith("Leaf") or g.node(vid).label.startswith("Stem"):
+            if g.node(vid).start_tt <= time:
+                growth = visitor(g, vid, turtle, time, growth)
+                # turtle.push()
         # plant_id = g.complex_at_scale(vid, scale=1)
 
         for v in pre_order2_with_filter(g, vid, None, push_turtle, pop_turtle):

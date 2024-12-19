@@ -24,11 +24,13 @@ Build parameters for a leaf
 
 from __future__ import annotations
 
-from archicrop.cereals_leaf import (
+from pytest import approx
+from openalea.archicrop.cereals_leaf import (
     leaf_mesh,
     parametric_leaf,
 )
 
+from openalea.plantgl.all import surface
 
 def leaf_shape():
     """return x, y, s, r values."""
@@ -46,3 +48,22 @@ def simple_leaf(leaf, ratio=0.5):
     s_top = 1.0
 
     return leaf_mesh(leaf, L_shape, Lw_shape, length, s_base, s_top)
+
+def test_leaf_surface():
+    sh = leaf_shape()
+    mesh1 = simple_leaf(sh, ratio=0.001)
+    assert(surface(mesh1) == approx(0., abs=1e-4))
+
+    total_surface = surface(simple_leaf(sh,ratio=1))
+
+    mesh2 = simple_leaf(sh, ratio=1/3)
+    surf2 = surface(mesh2)
+
+    assert(surf2 == approx(0.1566, abs=1e-4))
+    assert(0. <= surf2 <= total_surface)
+
+    mesh3 = simple_leaf(sh, ratio=2/3)
+    surf3 = surface(mesh3)
+
+    assert(surf3 == approx(0.5024, abs=1e-4))
+    assert(0. <= surf3 <= total_surface)

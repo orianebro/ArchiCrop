@@ -133,12 +133,12 @@ class ArchiCrop:
         """
 
         # Loop through time
-        growing_plant = []
+        growing_plant = {}
         growth = init_growth_dict()
         self.g = init_params_for_growth(self.g)
         for v in increments.values():
             gtemp, growth = mtg_turtle_time_with_constraint(self.g, v["Thermal time"], v, growth)
-            growing_plant.append(gtemp)
+            growing_plant[v["Thermal time"]] = gtemp
             self.g = gtemp.copy() # copy
         
         return growing_plant
@@ -159,18 +159,14 @@ class ArchiCrop:
         nplants, positions, domain, domain_area, unit = agronomic_plot(length_plot, width_plot, sowing_density, inter_row, noise=0.1)
         nice_green = Color3((50, 100, 0))
         scene, nump = build_scene([self.g]*nplants, positions, leaf_material=Material(nice_green), stem_material=Material(nice_green))
-
         return scene
 
     def display_plant(self):
         """
         Display a single plant with PlantGL from an MTG.
 
-        :param g: MTG, MTG of a plant
-
         :return: PlantGL scene of a plant
         """
-        # TO DO: copy of MTG where visible_length = mature_length for all organs
         nice_green = Color3((50, 100, 0))
         scene, nump = build_scene(self.g, leaf_material = Material(nice_green), stem_material=Material(nice_green))
         return scene

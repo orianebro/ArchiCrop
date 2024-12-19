@@ -7,7 +7,7 @@ import pandas as pd
 from oawidgets.plantgl import *
 from alinea.caribu.CaribuScene import CaribuScene
 from alinea.caribu.data_samples import data_path
-from alinea.caribu.light import light_sources  # here to avoid import line in notebook
+from alinea.caribu.light import light_sources  
 
 
 def illuminate(scene, light=None, pattern=None, scene_unit="cm", north=0):
@@ -90,10 +90,10 @@ def compute_light_inter(scene):
 
     # Division of sums
     # result = sum_(values_eabs * triangle area) * conv / sum_values_ei if sum_values_ei != 0 else 0
-    result = sum_values_eabs / (Einc*100) if Einc != 0 else 0 # 10000 ?
+    result = sum_values_eabs * 0.0145 / Einc if Einc != 0 else 0 
 
-    if result > 1:
-        PlantGL(scene_eabs, group_by_color=False, property=values_eabs)
+    # if result > 1:
+    #     PlantGL(scene_eabs, group_by_color=False, property=values_eabs)
 
     return result
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import numpy as np
 
 from openalea.mtg import MTG
+from openalea.plantgl.all import *
 
 ## Initialize parameters
 
@@ -75,7 +76,6 @@ for vid in plant_mtg.vertices():
     print("Vertex:", vid, "Label:", plant_mtg.label(vid))
 
 
-from openalea.plantgl.all import *
 
 # Create PlantGL shapes for stem (example)
 stem_geometry = Cylinder(1.0, 5.0)  # Cylinder(radius, height)
@@ -84,7 +84,7 @@ PlantGL_shape_for_stem = stem_geometry  # + stem_material
 
 # Define PlantGL_shape_for_leaf (example)
 # Define vertices and faces for the leaf surface
-leaf_vertices = [(0, 0, 0), (1, 0, 0), (0.5, 1, 0)]  # Example vertices
+leaf_vertices = [(0, 0, 10), (10, 0, 0), (10, 10, 0)]  # Example vertices
 leaf_faces = [(0, 1, 2)]  # Example faces
 
 # Create TriangleSet geometry for the leaf
@@ -104,8 +104,8 @@ leaf_shape = Shape(PlantGL_shape_for_leaf)
 # leaf_shape.appearance = leaf_material
 
 # Position elements based on their coordinates
-stem_shape.setPosition(0, 0, 0)  # Example position for stem
-leaf_shape.setPosition(1, 0, 0)  # Example position for leaf
+# stem_shape.setPosition(0, 0, 0)  # Example position for stem
+# leaf_shape.setPosition(1, 0, 0)  # Example position for leaf
 
 # Create a scene and add shapes to it
 shapes = [stem_shape, leaf_shape]

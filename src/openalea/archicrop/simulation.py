@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from itertools import product
+from scipy.stats import qmc
 
 from openalea.plantgl.all import Color3, Material
 from oawidgets.plantgl import *
@@ -11,6 +12,8 @@ from .cereals import build_shoot
 from .display import build_scene
 from .growth import thermal_time, mtg_turtle_time_with_constraint, init_growth_dict, init_params_for_growth
 from .geometry import addSets, leaf_mesh_for_growth, stem_mesh
+from .archicrop import ArchiCrop
+from .plant_shape import compute_height_growing_plant, compute_leaf_area_growing_plant
 
 
 def dict_ranges_to_all_possible_combinations(d):
@@ -24,6 +27,117 @@ def dict_ranges_to_all_possible_combinations(d):
     parameters_combinations = list(product(*values))
     return parameters_combinations
 
+
+def generate_single_list_dicts(params):
+    """
+    Generate dictionaries where only one parameter remains a list and all others are single values.
+    
+    :param params: dict - The input dictionary containing parameters.
+    :return: list of dict - A list of dictionaries with only one parameter as a list.
+    """
+    single_list_dicts = []
+
+    for key, value in params.items():
+        if isinstance(value, list):  # Only consider keys with list values
+            # Create a base dictionary with single values
+            base_dict = {k: (v[0] if isinstance(v, list) else v) for k, v in params.items()}
+            # Replace the single value with the original list for the current key
+            base_dict[key] = value
+            # Add the dictionary to the results
+            single_list_dicts.append(base_dict)
+    
+    return single_list_dicts
+
+
+def LHS_param_sampling(archi_params, n_samples):
+    """Generate samples from archi_params dictionary, respecting fixed values."""
+    fixed_params = {}
+    sampled_params = []
+
+    l_bounds = []
+    u_bounds = []
+
+    for key, value in archi_params.items():
+        if isinstance(value, (int, float)):  # Fixed parameter
+            fixed_params[key] = value
+        # Parameter distribution in Latin Hypercube
+        elif isinstance(value, list):  # Range to sample
+            l_bounds.append(min(value))
+            u_bounds.append(max(value))
+            
+            sampled_params.append(key)
+
+    
+    # Create a Latin Hypercube sampler
+    sampler = qmc.LatinHypercube(d=len(l_bounds))  # d = number of parameters
+    
+    # Generate normalized samples (0 to 1)
+    lhs_samples = sampler.random(n=n_samples)
+    
+    # Scale samples to parameter bounds
+    scaled_samples = qmc.scale(lhs_samples, l_bounds=l_bounds, u_bounds=u_bounds)
+
+    # Create parameter sets
+    param_sets = []
+    for sample in scaled_samples:
+        # Combine fixed parameters with sampled parameters
+        sampled_dict = {
+            key: int(value) if key == "nb_phy" else value
+            for key, value in zip(sampled_params, sample)
+        }
+        param_sets.append({**fixed_params, **sampled_dict})
+    
+    return param_sets
+
+
+def params_for_curve_fit(param_sets, curves, error_LA=300, error_height=30):
+    '''
+    Select parameters sets for which the model fits the LAI and the height curves of the crop model, with a given error.
+
+    :param param_sets: list of dicts, sets of parameters for ArchiCrop model
+    :param curves: 
+    :param error_LA: float, error accepted to the LA curve (in cm²)
+    :param error_height: float, error accepted to the height curve (in cm)
+
+    :return: dict of lists of parameters, mtg(t), LA(t), height(t) for curve-fitting simulations
+    '''
+    LA_stics = [value["Plant leaf area"] for value in curves.values()]
+    height_stics = [value["Plant height"] for value in curves.values()]
+    
+    fitting_sim = {
+            'params': [],
+            'mtg': [],
+            'LA': [],
+            'height': []
+    }
+
+    
+    for params in param_sets:
+        sorghum = ArchiCrop(max(height_stics), **params)
+        sorghum.generate_potential_plant()
+        sorghum.define_development()
+        growing_plant = sorghum.grow_plant(curves)
+        growing_plant_mtg = list(growing_plant.values())
+    
+        LA_archicrop = [sum(compute_leaf_area_growing_plant(gp)) for gp in growing_plant_mtg] 
+        height_archicrop = [compute_height_growing_plant(gp) for gp in growing_plant_mtg]
+        # --> properties in MTG at plant scale
+        # elongation rate (i.e. list of length / day) as organ scale property --> plot
+    
+        good = True
+        for i,(la,h) in enumerate(zip(LA_archicrop, height_archicrop)):
+            if LA_stics[i]-error_LA <= la <= LA_stics[i]+error_LA and height_stics[i]-error_height <= h <= height_stics[i]+error_height: 
+                good = True
+            else:
+                good = False
+                break
+        if good:
+            fitting_sim['params'].append(params)
+            fitting_sim['mtg'].append(growing_plant_mtg)
+            fitting_sim['LA'].append(LA_archicrop)
+            fitting_sim['height'].append(height_archicrop)
+
+    return fitting_sim
 
 
 def generate_potential_plant(nb_phy,
@@ -204,7 +318,7 @@ def retrieve_stics_dynamics_from_file(filename_outputs, density):
     end = 100 - 23
     # density = 10 # density = 20 plants/m2 = 0.002 plants/cm2
 
-    thermal_time = list(np.cumsum([float(i) for i in data_dict["tmoy(n)"][:end-1]]))
+    thermal_time = list(np.cumsum([float(i) for i in data_dict["tempeff"][:end]]))
 
     leaf_area = [10000*float(i)/density for i in data_dict["lai(n)"][:end]] # from m2/m2 to cm2/plant
     leaf_area_incr = [leaf_area[0]] + [leaf_area[i+1]-leaf_area[i] for i in range(len(leaf_area[1:]))]

@@ -7,29 +7,46 @@ from itertools import product
 
 from openalea.mtg.traversal import pre_order2
 
+def geometric_dist(height, nb_phy, q, u0):
+    """
+    Calculates the heights of leaves'ligules along an axis, according to a geometric series,
+    starting from an offset height (u0) = pseudostem height.
 
-def geometric_dist(height, nb_phy, q, u0=None):
-    """returns distances between individual leaves along a geometric model"""
+    Parameters:
+    - height (float): Total height of the plant.
+    - nb_phy (int): Number of phytomers (leaves).
+    - q (float): Geometric progression factor (controls spacing between leaves).
+    - u0 (float): Offset height to start the geometric distribution.
 
-    if u0 is None:
-        if q == 1:
-            u0 = float(height) / nb_phy
-        else:
-            u0 = height * (1.0 - q) / (1.0 - q ** (nb_phy + 1))
+    Returns:
+    - List[float]: Normalized distances of leaves along the plant's height.
+    """
+    if nb_phy <= 0:
+        raise ValueError("Number of phytomers (nb_phy) must be greater than zero.")
+    if q <= 0:
+        raise ValueError("Geometric progression factor (q) must be positive.")
+    if u0 >= height:
+        raise ValueError("Offset height (u0) must be less than the total height.")
 
-    # print(u0*(1-q**(nb_phy))/(1-q))
+    # Calculate the height available for geometric distribution
+    remaining_height = height - u0
 
-    table_heights = np.array([i * u0 * q**i for i in range(1,nb_phy+1)])
+    # Generate table of heights for geometric distribution
+    table_heights = np.array([i*float(height) / nb_phy if q == 1 else remaining_height * (1 - q**i) / (1 - q**nb_phy) for i in range(1, nb_phy + 1)])
+    
+    # Add the offset height (u0) to each leaf's position
+    normalized_heights = u0 + table_heights
+    
+    return normalized_heights.tolist()
 
 
-    return [i * height / table_heights[-1] for i in table_heights]
 
 def collar_heights_kaitaniemi(height, nb_phy):
     """return collar heights"""
     # coefficient k between height of successive collars : 1,17/(1-2,29*exp(-0,79*i))  and k=1,3 for penultimate and k=1,44 for last
     k = [1.17/(1-2.29*math.exp(-0.79*i)) for i in range(1, nb_phy-2)]
-    k_pelnultinate = 1.3
-    k.append(k_pelnultinate)
+    k_pelnultimate = 1.3
+    k.append(k_pelnultimate)
     k_flag = 1.44
     k.append(k_flag)
 
@@ -63,6 +80,63 @@ def bell_shaped_dist(max_leaf_length, nb_phy, rmax=0.8, skew=0.15):
     # leaf_length = relative_length / relative_length.sum() * max_leaf_length
     leaf_length = relative_length * max_leaf_length
     return leaf_length.tolist()
+
+
+
+
+def sigmoid_growth(time, start_tt, end_tt, mature_stem_diameter):
+    """
+    Sigmoid function for stem diameter growth with inflection at end_tt.
+
+    Parameters:
+    - time (float): Current time.
+    - start_tt (float): Time when growth starts.
+    - end_tt (float): Time when growth reaches the maximum growth rate (inflection point).
+    - mature_stem_diameter (float): Maximum diameter.
+
+    Returns:
+    - float: Stem diameter at the given time.
+    """
+    # Adjust growth rate coefficient based on the interval
+    k = 4 / (end_tt - start_tt)  # Steeper slope if start and end are close
+
+    # Shift the inflection point to `end_tt`
+    t0 = end_tt
+
+    # Compute the sigmoid growth
+    diameter = mature_stem_diameter / (1 + math.exp(-k * (time - t0)))
+    return diameter
+
+
+def asymmetric_logistic_growth_with_offset(t, start_tt, end_tt, mature_stem_diameter, offset_diameter=0.7, alpha=1.5):
+    """
+    Asymmetric logistic growth with an initial offset diameter.
+    
+    Parameters:
+    - t: Current time.
+    - offset_diameter: Initial diameter of the sheath.
+    - mature_stem_diameter: Maximum diameter at maturity.
+    - start_tt: Start time of growth.
+    - end_tt: Time of inflection (inflection point).
+    - alpha: Asymmetry factor (> 1 for slower initiation).
+    
+    Returns:
+    - Stem diameter at time t.
+    """
+    # Ensure offset diameter is less than mature diameter
+    assert offset_diameter < mature_stem_diameter, "Offset diameter must be less than mature diameter."
+    
+    # Calculate growth rate based on time range
+    k = 4 / (end_tt - start_tt)  # Scaled for smooth transition
+    
+    # Asymmetric logistic function
+    inflection_point = end_tt
+    logistic_growth = (1 + np.exp(-k * (t - inflection_point)))**(-alpha)
+    
+    # Scale growth to the range [offset_diameter, mature_stem_diameter]
+    return offset_diameter + (mature_stem_diameter - offset_diameter) * logistic_growth
+
+
 
 
 def compute_leaf_area(g):

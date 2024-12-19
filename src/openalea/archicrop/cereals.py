@@ -61,11 +61,9 @@ def build_shoot(
     pseudostem_height = nb_young_phy * young_phy_height
 
     pseudostem = np.array([young_phy_height*i for i in range(1, nb_young_phy+1)])
-    stem = np.array(
-        geometric_dist(height - pseudostem_height, nb_phy - nb_young_phy, q=stem_q, u0=young_phy_height)
-    )
-    # stem = np.array([pseudostem_height+i*(height - pseudostem_height)/(nb_phy - nb_young_phy) for i in range(nb_young_phy+1,nb_phy+1)])
+    stem = np.array(geometric_dist(height, nb_phy-nb_young_phy, q=stem_q, u0=pseudostem_height))
     insertion_heights = np.concatenate((pseudostem, stem), axis=0)
+    # stem = np.array([pseudostem_height+i*(height - pseudostem_height)/(nb_phy - nb_young_phy) for i in range(nb_young_phy+1,nb_phy+1)])
     # insertion_heights = np.array(geometric_dist(height, nb_phy, q=stem_q)) #, u0=young_phy_height))
     # insertion_heights = np.array(collar_heights_kaitaniemi(height, nb_phy))
 
