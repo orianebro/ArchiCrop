@@ -70,16 +70,21 @@ def collar_heights_kaitaniemi(height, nb_phy):
 
     return collar_heights
 
+# def bell_shaped_dist(max_leaf_length, nb_phy, rmax, skew):
+#     """returns relative leaf area of individual leaves along bell shaped model"""
+#     k = -np.log(skew) * rmax
+#     r = np.linspace(1.0 / nb_phy, 1, nb_phy)
+#     relative_area = np.exp(-k / rmax * (2 * (r - rmax) ** 2 + (r - rmax) ** 3))
+#     return relative_area * max_leaf_length
 
-def bell_shaped_dist(max_leaf_length, nb_phy, rmax=0.8, skew=0.15):
-    """returns leaf area of individual leaves along bell shaped model"""
-
+def bell_shaped_dist(Smax, nb_phy, rmax, skew):
+    """returns relative leaf area of individual leaves along bell shaped model, so that the sum equals Smax"""
     k = -np.log(skew) * rmax
     r = np.linspace(1.0 / nb_phy, 1, nb_phy)
-    relative_length = np.exp(-k / rmax * (2 * (r - rmax) ** 2 + (r - rmax) ** 3))
-    # leaf_length = relative_length / relative_length.sum() * max_leaf_length
-    leaf_length = relative_length * max_leaf_length
-    return leaf_length.tolist()
+    relative_area = np.exp(-k / rmax * (2 * (r - rmax) ** 2 + (r - rmax) ** 3))
+    total_area = sum(relative_area)
+    normalized_leaf_areas = [area / total_area for area in relative_area]
+    return [Smax * la for la in normalized_leaf_areas]
 
 
 
@@ -304,7 +309,7 @@ def sr_prevot(nb_segment=100, alpha=-2.3):
 """
 
 def compute_leaf_area_plant_from_params(nb_phy,
-                                        max_leaf_length,
+                                        Smax,
                                         wl,
                                         rmax,
                                         skew):
@@ -312,7 +317,7 @@ def compute_leaf_area_plant_from_params(nb_phy,
 
     leaf_areas = []
 
-    leaf_lengths = np.array(bell_shaped_dist(max_leaf_length=max_leaf_length, nb_phy=nb_phy, rmax=rmax, skew=skew))
+    leaf_lengths = np.array(bell_shaped_dist(Smax, nb_phy, rmax, skew))
 
     for L in leaf_lengths:
         blade_area = 2 * wl * (1.51657508881031 - 0.766666666666667) * L**2 # 1.5*wl*L**2 # eg 1.5*0.12*70**2
@@ -366,6 +371,31 @@ def check_LA_range(params, value_range):
             results.append(values)
     
     return results
+
+
+def leaf_area(l, L=1, wl=1, alpha=-2.3):
+    return 2*l**2*wl*math.sqrt(-alpha) + 2*alpha*l**3*wl/(3*L)
+    
+def d_leaf_area(l, dl, L=1, wl=1):
+    return leaf_area(l+dl,L,wl) - leaf_area(l,L,wl)
+
+
+def correspondance_dS_dl(wl, L=1):
+
+    dl = 0.0001*L
+
+    l_values = np.arange(0, L, dl)  
+
+    ds_list = []
+    for v in l_values:
+        ds_list.append(d_leaf_area(v,dl,L,wl))
+
+    corres_dl_dS = {}
+    for i,dl in enumerate(l_values):
+        corres_dl_dS[dl] = np.cumsum(ds_list)[i]
+
+    return corres_dl_dS
+
 
 # la_per_plant_stics = max(la_cum)
 # print(la_per_plant_stics)

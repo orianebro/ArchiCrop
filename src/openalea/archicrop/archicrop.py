@@ -16,7 +16,7 @@ class ArchiCrop:
     def __init__(self, 
                  height,
                  nb_phy,
-                 max_leaf_length,
+                 Smax,
                  wl,
                  diam_base,
                  diam_top,
@@ -39,7 +39,7 @@ class ArchiCrop:
 
         :param nb_phy: int, number of phytomers
         :param height: float, height of the main stem (in cm)
-        :param max_leaf_length: float, length of the longest leaf when ligulated (in cm)
+        :param Smax: float, maximal potential leaf area of plant (in cm²)
         :param wl: float, leaf width-to-length ratio
         :param diam_base: float, diameter of the base of the main stem (in cm)
         :param diam_top: float, diameter of the top of the main stem (in cm)
@@ -55,7 +55,7 @@ class ArchiCrop:
         """
         self.nb_phy = nb_phy
         self.height = height
-        self.max_leaf_length = max_leaf_length
+        self.Smax = Smax
         self.wl = wl
         self.diam_base = diam_base
         self.diam_top = diam_top
@@ -83,7 +83,7 @@ class ArchiCrop:
         """
         shoot, self.g = build_shoot(self.nb_phy,
                                self.height,
-                               self.max_leaf_length,
+                               self.Smax,
                                self.wl,
                                self.diam_base,
                                self.diam_top,
@@ -158,7 +158,7 @@ class ArchiCrop:
         """
         nplants, positions, domain, domain_area, unit = agronomic_plot(length_plot, width_plot, sowing_density, inter_row, noise=0.1)
         nice_green = Color3((50, 100, 0))
-        scene, nump = build_scene([self.g]*nplants, positions, leaf_material=Material(nice_green), stem_material=Material(nice_green))
+        scene, _ = build_scene([self.g]*nplants, positions, leaf_material=Material(nice_green), stem_material=Material(nice_green))
         return scene
 
     def display_plant(self):
@@ -168,5 +168,5 @@ class ArchiCrop:
         :return: PlantGL scene of a plant
         """
         nice_green = Color3((50, 100, 0))
-        scene, nump = build_scene(self.g, leaf_material = Material(nice_green), stem_material=Material(nice_green))
+        scene, _ = build_scene(self.g, leaf_material = Material(nice_green), stem_material=Material(nice_green))
         return scene

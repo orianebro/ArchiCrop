@@ -10,6 +10,7 @@ from openalea.mtg import MTG, fat_mtg
 
 from .geometry import mtg_interpreter
 from .plant_design import get_form_factor
+from .plant_shape import correspondance_dS_dl
 
 
 def curvilinear_abscisse(x, y, z=None):
@@ -233,7 +234,11 @@ def cereals(json=None, classic=False, seed=None, plant=None):
 
     g = MTG()
     # Add a root vertex for the plant
-    vid_plant = g.add_component(g.root, label="Plant", edge_type="/")
+    corres_ds_dl = correspondance_dS_dl()
+    plant_properties = {
+        "blade_ds_dl": corres_ds_dl
+    }
+    vid_plant = g.add_component(g.root, label="Plant", edge_type="/", **plant_properties)
     # Add a plant vertex for the main axis
     vid_axis = g.add_component(vid_plant, label="MainAxis", edge_type="/")
 
@@ -281,6 +286,7 @@ def cereals(json=None, classic=False, seed=None, plant=None):
             "length": row["L_blade"],
             "visible_length": row["L_blade"],
             "leaf_area": row["S_blade"],
+            "visible_leaf_area": 0.0,
             "form_factor": row["form_factor"],
             "is_green": True,
             "srb": 0,

@@ -123,6 +123,7 @@ def blade_dimension(
         {
             "plant": plant,
             "ntop": ntop,
+            "wl": wl,
             "L_blade": length,
             "W_blade": width,
             "S_blade": area,

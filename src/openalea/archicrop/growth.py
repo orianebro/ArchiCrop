@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+import numpy as np
 import sympy as sp
 from openalea.mtg.traversal import pre_order2, pre_order2_with_filter
 
@@ -33,7 +35,7 @@ def thermal_time(g, phyllochron, plastochron, leaf_duration, stem_duration, leaf
         # nb_stems = len(stem_ids)
         # nb_sectors = 1
         dtt_stem = phyllochron * stem_duration
-        dtt_leaf = phyllochron * leaf_duration
+        dtt_leaf = plastochron * leaf_duration
 
         for metamer in pre_order2(g, v):
             nm = g.node(metamer)
@@ -73,6 +75,7 @@ def init_params_for_growth(g):
 
     return g
 
+
 def init_growth_dict():
     """Initialize the dictionnary of variables recording growth process"""
 
@@ -89,8 +92,8 @@ def init_growth_dict():
 def compute_nb_of_growing_organs(g, time):
     """Compute the number of growing organs for a given time step"""
 
-    nb_of_growing_internodes = 0
-    nb_of_growing_leaves = 0
+    pot_length_growing_internodes = []
+    pot_area_growing_leaves = []
 
     axes = g.vertices(scale=1)
     metamer_scale = g.max_scale()
@@ -103,36 +106,48 @@ def compute_nb_of_growing_organs(g, time):
             n = g.node(metamer)
             if n.label.startswith("Leaf"):
                 if n.start_tt <= time < n.end_tt: # and n.visible_length < n.mature_length:  # organ growing   
-                    nb_of_growing_leaves += 1 
+                    pot_area_growing_leaves.append(n.leaf_area)
 
             if n.label.startswith("Stem"):
-                if n.start_tt <= time < n.end_tt: # and n.visible_length < n.mature_length:  # organ growing   
-                    nb_of_growing_internodes += 1
+                if n.start_tt <= time < n.end_tt: # and n.visible_length < n.mature_length:  # organ growing  
+                    pot_length_growing_internodes.append(n.mature_length) 
 
-    return nb_of_growing_internodes, nb_of_growing_leaves
+    return pot_length_growing_internodes, pot_area_growing_leaves
 
 
 def distribute_constraint_among_organs(g, time, increments, growth):
     """Fill the dictionnary of variables recording growth process for a give time step"""
 
     # compute number of growing organs
-    nb_of_growing_internodes, nb_of_growing_leaves = compute_nb_of_growing_organs(g, time)
-
+    pot_length_growing_internodes, pot_area_growing_leaves = compute_nb_of_growing_organs(g, time)
+    nb_of_growing_internodes, nb_of_growing_leaves = len(pot_length_growing_internodes), len(pot_area_growing_leaves)
 
     # set initial total amount of growth to distribute among organs
-    height_to_distribute = increments["Height increment"] + growth["height_to_distribute"]
-    LA_to_distribute = increments["Leaf area increment"] + growth["LA_to_distribute"]
+    # height_to_distribute = increments["Height increment"] + growth["height_to_distribute"]
+    # LA_to_distribute = increments["Leaf area increment"] + growth["LA_to_distribute"]
+    height_to_distribute = increments["Height increment"]
+    LA_to_distribute = increments["Leaf area increment"]
 
-    # set initial distribution per organ (H: same amount for all organs)
+    def equal_distribution(ds, ng):
+        '''return initial distribution per organ (H: same amount for all organs)'''
+        return [ds/g] * len(ng)
+    
+    def demand_related_distribution(increment, pot_growing_organs):
+        '''return distribution of increment per organ proportionnal to potential length ou area'''
+        sum_growing_organs = sum(pot_growing_organs)
+        return [increment*p/sum_growing_organs for p in pot_growing_organs]
+    
     if nb_of_growing_leaves != 0:
-        LA_for_each_leaf = LA_to_distribute / nb_of_growing_leaves 
+        # LA_for_each_leaf = equal_distribution(LA_to_distribute, nb_of_growing_leaves)
+        LA_for_each_leaf = demand_related_distribution(LA_to_distribute, pot_area_growing_leaves)
     else:
         LA_for_each_leaf = 0.0
 
     if nb_of_growing_internodes != 0:
-        height_for_each_internode = height_to_distribute / nb_of_growing_internodes
+        # LA_for_each_leaf = equal_distribution(height_to_distribute, nb_of_growing_internodes)
+        height_for_each_internode = demand_related_distribution(height_to_distribute, pot_length_growing_internodes)
     else:
-        height_for_each_internode = 0
+        height_for_each_internode = 0.0
 
     nb_of_updated_leaves = 0
     nb_of_updated_internodes = 0
@@ -149,56 +164,40 @@ def distribute_constraint_among_organs(g, time, increments, growth):
     return growth
 
 
+def leaf_area_function_of_length(l, L, wl, alpha=-2.3):
+    '''returns the current leaf area (i.e. twice the integral of leaf shape) given the current length s
+    
+        function obtained this way : 
+
+        # Define the variable and parameters
+        s = sympy.symbols('l')
+        L, wl, alpha = sympy.symbols('L, wl, alpha') 
+
+        # Define the scaled leaf shape function with parameters
+        # alpha = -2.3
+        beta = -2 * (alpha + sqrt(-alpha))
+        gamma = 2 * sqrt(-alpha) + alpha
+        r = wl * L (alpha * s**2 + beta * s + gamma)
+
+        # Reflect the function to the axis x=0.5 
+        reflected_r = r.subs(s, -s+L).simplify()
+
+        # Find the indefinite integral (primitive)
+        primitive_f = sympy.integrate(reflected_r, s)
+
+        print(2*primitive_f)
+    
+    '''
+
+    return 2*l**2*wl*math.sqrt(-alpha) + 2*alpha*l**3*wl/(3*L)
+
+
 def compute_leaf_length_increment(LA_for_each_leaf, leaf):
     """returns the leaf length given a leaf area"""
-
-    # def scaled_leaf_shape(s, L, alpha=-2.3):
-    #     beta = -2 * (alpha + np.sqrt(-alpha))
-    #     gamma = 2 * np.sqrt(-alpha) + alpha
-    #     r = alpha * (s / L) ** 2 + beta * (s / L) + gamma
-    #     return r
-
 
     L = leaf.mature_length
     current_leaf_length = leaf.visible_length
     wl = leaf.shape_max_width / leaf.mature_length
-
-    # # compute current leaf area
-    # if current_leaf_length == 0:
-    #     current_blade_area = 0
-    # else:
-    #     lower_bound = max(L - current_leaf_length, 0.0)
-    #     upper_bound = L
-    #     current_blade_area, error = quad(
-    #         scaled_leaf_shape, lower_bound, upper_bound, args=(L, alpha)
-    #     )
-    #     current_blade_area = 2 * leaf.shape_max_width * blade_area
-    # print(current_blade_area)
-
-    
-    def leaf_area_function_of_length(s, L, wl):
-        '''returns the current leaf area (i.e. twice the integral of leaf shape) given the current length s
-        
-            function obtained this way : 
-
-            # Define the variable and parameters
-            s = sp.symbols('s')
-            L, wl = sp.symbols('L, wl') 
-
-            # Define the scaled leaf shape function with parameters
-            beta = -2 * (-2.3 + math.sqrt(2.3))
-            gamma = 2 * math.sqrt(2.3) - 2.3
-            r = wl * L * (-2.3 * (s / L) ** 2 + beta * (s / L) + gamma)
-
-            # Reflect the function to the axis x=0.5 
-            reflected_r = r.subs(s, -s+L).simplify()
-
-            # Find the indefinite integral (primitive)
-            primitive_f = sp.integrate(reflected_r, s)
-        
-        '''
-
-        return 2 * (1.51657508881031*s**2*wl - 0.766666666666667*s**3*wl/L)
     
     s = sp.symbols('s')
     
@@ -220,11 +219,29 @@ def compute_leaf_length_increment(LA_for_each_leaf, leaf):
         elif sol > L:
             leaf_length_increment = L - current_leaf_length
     
-    # print("The unique solution is :", unique_solution)
-    # print("The leaf length increment is :", leaf_length_increment)
-    # print("The leaf area increment is :", leaf_area_function_of_length(unique_solution, L) - leaf_area_function_of_length(current_leaf_length, L))
-    
     return leaf_length_increment
+
+
+
+def search_new_dl(d, l, dS_input, L):
+    found_start = False  
+    first = True
+    key_prev = None
+    value_prev = None
+    for key, value in d.items():
+        if key >= l:
+            found_start = True  
+            if first:
+                S_start = value
+                key_prev, value_prev = key, value
+                first = False
+        if found_start:
+            # print(key, value-S_start)
+            if value-S_start >= dS_input:  
+                return key_prev, value_prev 
+            else:
+                key_prev, value_prev = key, value
+    return L, value  # if no match is found --> finished
 
 
 def compute_continuous_element_with_constraint(
@@ -277,40 +294,49 @@ def compute_continuous_element_with_constraint(
                         # print("Time", time, n.label, n.start_tt, n.end_tt)
                         # print("LA_to_distribute", LA_to_distribute)
                         # convert constraint on area for each leaf(t) to leaf length
-                        leaf_length_increment = compute_leaf_length_increment(LA_for_each_leaf, n)
+                        LA_for_this_leaf = LA_for_each_leaf[nb_of_updated_leaves]
                         # print("leaf length increment", leaf_length_increment)
                         
-                        if n.visible_length + leaf_length_increment <= n.mature_length:
+                        if n.visible_leaf_area + LA_for_this_leaf <= n.leaf_area:
+                            n.visible_leaf_area += LA_for_this_leaf
+                            leaf_length_increment = compute_leaf_length_increment(LA_for_this_leaf, n)
                             n.visible_length += leaf_length_increment
-                            LA_to_distribute = max(LA_to_distribute - LA_for_each_leaf, 0.0)
                             nb_of_updated_leaves += 1
-                            n.elongation_rate.append(leaf_length_increment)
+                            n.elongation_rate.append(LA_for_this_leaf)
                         else: 
-                            actual_leaf_length_increment = 2 * (1.51657508881031*n.visible_length**2*n.shape_max_width/n.mature_length - 0.766666666666667*n.visible_length**3*n.shape_max_width/n.mature_length**2)
-                            LA_to_distribute -= actual_leaf_length_increment
+                            LA_rest = LA_for_this_leaf - (n.leaf_area - n.visible_leaf_area)
+                            n.visible_leaf_area = n.leaf_area
+                            next_leaves_to_update = len(LA_for_each_leaf[nb_of_updated_leaves+1:])
+                            for i in range(next_leaves_to_update):
+                                LA_for_each_leaf[nb_of_updated_leaves+1+i] += LA_rest/next_leaves_to_update
                             n.visible_length = n.mature_length
                             nb_of_updated_leaves += 1
-                            n.elongation_rate.append(actual_leaf_length_increment)
-                            if nb_of_growing_leaves > nb_of_updated_leaves:
-                                LA_for_each_leaf = LA_to_distribute / (nb_of_growing_leaves - nb_of_updated_leaves)
-                            else:
-                                LA_for_each_leaf = 0.0
+                            n.elongation_rate.append(n.leaf_area - n.visible_leaf_area)
+                            # if nb_of_growing_leaves > nb_of_updated_leaves:
+                            #     LA_for_each_leaf = LA_to_distribute / (nb_of_growing_leaves - nb_of_updated_leaves)
+                            # else:
+                            #     LA_for_each_leaf = 0.0
                         # print("visible length", n.visible_length)
                         # print("LA_to_distribute", LA_to_distribute)
 
                         
+                
                     elif n.label.startswith("Stem"):
-                        if n.visible_length + height_for_each_internode <= n.mature_length:
-                            n.visible_length += height_for_each_internode
-                            height_to_distribute -= height_for_each_internode
+
+                        height_for_this_internode = height_for_each_internode[nb_of_updated_internodes]
+
+                        if n.visible_length + height_for_this_internode <= n.mature_length:
+                            n.visible_length += height_for_this_internode
                             nb_of_updated_internodes += 1
                         else: 
-                            height_to_distribute -= (n.mature_length - n.visible_length)
+                            height_rest = height_for_this_internode - (n.mature_length - n.visible_length)
+                            next_internodes_to_update = len(height_for_each_internode[nb_of_updated_internodes+1:])
+                            for i in range(next_internodes_to_update):
+                                height_for_each_internode[nb_of_updated_internodes+1+i] += height_rest/next_internodes_to_update
                             n.visible_length = n.mature_length
                             nb_of_updated_internodes += 1
-                            if nb_of_growing_internodes > nb_of_updated_internodes:
-                                height_for_each_internode = height_to_distribute / (nb_of_growing_internodes - nb_of_updated_internodes)
-
+                            # if nb_of_growing_internodes > nb_of_updated_internodes:
+                            #     height_for_each_internode = height_to_distribute / (nb_of_growing_internodes - nb_of_updated_internodes)
 
                 # else:
                 #     n.visible_length = n.mature_length
@@ -372,7 +398,6 @@ def compute_continuous_element_with_constraint(
 
     return geom, growth
         
-    
 
 class CerealsVisitorConstrained(CerealsVisitor):
     def __init__(self, classic):
@@ -417,8 +442,6 @@ class CerealsVisitorConstrained(CerealsVisitor):
                 turtle.context.update({"top": turtle.getFrame()})
 
         return growth
-
-
 
 
 def mtg_turtle_time_with_constraint(g, time, increments, growth, update_visitor=None):
@@ -497,7 +520,6 @@ def mtg_turtle_time_with_constraint(g, time, increments, growth, update_visitor=
     return g, growth
 
 
-
 def mtg_interpreter_with_constraint(g, classic=False):
     """
     Compute/update the geometry on each node of the MTG using Turtle geometry.
@@ -516,13 +538,5 @@ def mtg_interpreter_with_constraint(g, classic=False):
 
     return g
 
-
-
-
-""" def display_in_NB(g, time):
-    g, scene, nump=display_plant(g, time)
-    w=PlantGL(scene, group_by_color=True)
-    w.wireframe=True
-    return w """
 
 

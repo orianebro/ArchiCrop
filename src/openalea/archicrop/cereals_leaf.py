@@ -182,26 +182,6 @@ def parametric_leaf(
     return fitting.fit3(x, y, s, r, nb_points=nb_segment)
 
 
-def parametric_leaf__for_given_LAI(
-    nb_segment=10, insertion_angle=50, scurv=0.5, curvature=50, alpha=-2.3
-):
-    """x,y, sr coordinates of points sampling a leaf midrib placed in a vertical plane (origin = leaf base)
-
-    Parameters
-    ----------
-    insertion_angle: the angle (degree) between stem and leaf at leaf base
-    scurv : the relative position on the midrib where 2/3 of total leaf curvature is achieved
-    curvature : leaf angular curvature (tip angle - insertion angle, degree)
-
-    Returns
-    -------
-    x, y coordinates of nb_segments points sampling the leaf midrib
-    """
-    nseg = min(100, nb_segment)
-    x, y = leaf_shape_perez(insertion_angle, scurv, curvature, nseg)
-    s, r = sr_prevot(nseg, alpha)
-    return fitting.fit3(x, y, s, r, nb_points=nb_segment)
-
 
 def blade_elt_area(s, r, Lshape=1, Lwshape=1, sr_base=0, sr_top=1):
     """surface of a blade element, positioned with two relative curvilinear absisca"""

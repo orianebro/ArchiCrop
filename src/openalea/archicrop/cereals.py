@@ -11,7 +11,7 @@ from .plant_shape import bell_shaped_dist, geometric_dist
 def build_shoot(
     nb_phy,
     height,
-    max_leaf_length,
+    Smax,
     wl,
     diam_base,
     diam_top,
@@ -80,20 +80,12 @@ def build_shoot(
     ## Leaves
 
     # leaf length repartition along axis
-    leaf_lengths_stem = np.array(
-        bell_shaped_dist(
-            max_leaf_length=max_leaf_length, nb_phy=nb_phy - nb_young_phy, rmax=rmax, skew=skew
-        )
-    )
-    leaf_lengths_pseudostem = np.array(
-        bell_shaped_dist(
-            max_leaf_length=leaf_lengths_stem[0], nb_phy=nb_young_phy, rmax=1, skew=1
-        )
-    )
-    leaf_lengths = np.concatenate((leaf_lengths_pseudostem, leaf_lengths_stem), axis=0)
-    # leaf_lengths = np.array(bell_shaped_dist(max_leaf_length=max_leaf_length, nb_phy=nb_phy, rmax=rmax, skew=skew))
+    # leaf_areas_stem = np.array(bell_shaped_dist(Smax, nb_phy, rmax, skew))
+    # leaf_areas_pseudostem = np.array(bell_shaped_dist(Smax, nb_phy, rmax, skew))
+    # leaf_areas = np.concatenate((leaf_areas_pseudostem, leaf_areas_stem), axis=0)
+    leaf_areas = np.array(bell_shaped_dist(Smax, nb_phy, rmax, skew))
 
-    blades = blade_dimension(area=None, length=leaf_lengths, ntop=ntop, wl=wl)
+    blades = blade_dimension(area=leaf_areas, ntop=ntop, wl=wl)
 
     # leaf shapes
     a_leaf = parametric_leaf(
@@ -103,7 +95,7 @@ def build_shoot(
         curvature=curvature,
         alpha=alpha,
     )
-    leaf_shapes = [a_leaf] * nb_phy  # or nb_phy - nb_young_phy ???
+    leaf_shapes = [a_leaf] * nb_phy 
 
     # ff = [get_form_factor(leaf) for leaf in leaf_shapes]
 
