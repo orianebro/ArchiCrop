@@ -269,7 +269,7 @@ def retrieve_stics_dynamics_from_file(filename_outputs, density):
     """Reads a STICS mod_s*.sti output file and builds a dictionary.
     
     :param filename_outputs: str, input file of STICS outputs :
-        - tmoy(n) : daily thermal time (°C.day)
+        - tempeff(n) : daily efficient thermal time (°C.day)
         - lai(n) : canopy LAI (m2/m2)
         - hauteur : canopy height (m)
         - raint : PAR intercepted (actually, PAR absorbed) by canopy (MJ/m2)
@@ -323,6 +323,9 @@ def retrieve_stics_dynamics_from_file(filename_outputs, density):
     leaf_area = [10000*float(i)/density for i in data_dict["lai(n)"][:end]] # from m2/m2 to cm2/plant
     leaf_area_incr = [leaf_area[0]] + [leaf_area[i+1]-leaf_area[i] for i in range(len(leaf_area[1:]))]
 
+    sen_leaf_area = [10000*float(i)/density for i in data_dict["lai(n)"][:end]] # from m2/m2 to cm2/plant
+    sen_leaf_area_incr = [sen_leaf_area[0]] + [sen_leaf_area[i+1]-sen_leaf_area[i] for i in range(len(sen_leaf_area[1:]))]
+
     height = [float(i)*100 for i in data_dict["hauteur"][:end]] # from m to cm
     height_incr = [height[0]] + [height[i+1]-height[i] for i in range(len(height[1:]))]
 
@@ -332,6 +335,8 @@ def retrieve_stics_dynamics_from_file(filename_outputs, density):
         i: {"Thermal time": round(thermal_time[i],4),
             "Plant leaf area": round(leaf_area[i],4), 
             "Leaf area increment": round(leaf_area_incr[i],4), 
+            "Senescent leaf area": round(sen_leaf_area[i],4),
+            "Senescent leaf area increment": round(sen_leaf_area_incr[i],4),
             "Plant height": round(height[i],4), 
             "Height increment": round(height_incr[i],4), 
             "Absorbed PAR": round(par_abs[i],4)}

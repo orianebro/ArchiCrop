@@ -263,19 +263,15 @@ def compute_continuous_element_with_constraint(
     nb_of_updated_leaves = growth["nb_of_updated_leaves"]
     nb_of_updated_internodes = growth["nb_of_updated_internodes"]
 
-    # print("growing leaves", nb_of_growing_leaves)
-    # print("growing internodes", nb_of_growing_internodes)
 
     if n.label.startswith("Leaf") or n.label.startswith("Stem"):
-        # print("Time", time, n.label, n.start_tt, n.end_tt)
-        # print("visible length", n.visible_length, "; mature length", n.mature_length)
+
         if time < n.start_tt:  # organ not yet appeared
             n.visible_length = 0.0
             # n.stem_diameter = 0.0
             n.grow = False
     
         elif n.start_tt <= time:
-            # print(time, "growing organ")
             n.grow = True
             # update age of organ
             n.age = time - n.start_tt
@@ -283,19 +279,14 @@ def compute_continuous_element_with_constraint(
     
             # starting from the lowest (oldest) growing organ
             if time <= n.end_tt: # if n.start_tt <= time < n.end_tt: # organ growing
-                # print("visible length", n.visible_length)
-                # print("mature length", n.mature_length)
 
                 n.stem_diameter = 1.2
 
                 if n.visible_length < n.mature_length:  
 
                     if n.label.startswith("Leaf"):
-                        # print("Time", time, n.label, n.start_tt, n.end_tt)
-                        # print("LA_to_distribute", LA_to_distribute)
                         # convert constraint on area for each leaf(t) to leaf length
                         LA_for_this_leaf = LA_for_each_leaf[nb_of_updated_leaves]
-                        # print("leaf length increment", leaf_length_increment)
                         
                         if n.visible_leaf_area + LA_for_this_leaf <= n.leaf_area:
                             n.visible_leaf_area += LA_for_this_leaf
@@ -316,8 +307,6 @@ def compute_continuous_element_with_constraint(
                             #     LA_for_each_leaf = LA_to_distribute / (nb_of_growing_leaves - nb_of_updated_leaves)
                             # else:
                             #     LA_for_each_leaf = 0.0
-                        # print("visible length", n.visible_length)
-                        # print("LA_to_distribute", LA_to_distribute)
 
                         
                 
@@ -393,8 +382,6 @@ def compute_continuous_element_with_constraint(
     elif n.label.startswith("Stem"):  # stem element
         geom = stem_mesh(n.length, n.visible_length, n.stem_diameter, n.stem_diameter, classic)
 
-    # print("updated leaves", nb_of_updated_leaves)
-    # print("updated internodes", nb_of_updated_internodes)
 
     return geom, growth
         

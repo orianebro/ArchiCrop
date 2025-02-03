@@ -107,7 +107,7 @@ def blade_dimension(
         # adjust length/width if one is  None or overwrite width if all are set
         if length is None:
             if width is None:
-                length = np.sqrt(area / form_factor / wl)
+                length = np.sqrt(area / form_factor / wl) # do with scaled max curvilinear abscissa ?
                 width = length * wl
             else:
                 width = np.array(width)

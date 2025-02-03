@@ -178,7 +178,8 @@ def parametric_leaf(
     """
     nseg = min(100, nb_segment)
     x, y = leaf_shape_perez(insertion_angle, scurv, curvature, nseg)
-    s, r = sr_prevot(nseg, alpha)
+    # s, r = sr_prevot(nseg, alpha)
+    s, r = sr_dornbush(nb_segment=nseg, klig=0.6, swmax=0.55, f1=0.64, f2=0.92)
     return fitting.fit3(x, y, s, r, nb_points=nb_segment)
 
 

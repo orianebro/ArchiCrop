@@ -10,7 +10,7 @@ from openalea.mtg import MTG, fat_mtg
 
 from .geometry import mtg_interpreter
 from .plant_design import get_form_factor
-from .plant_shape import correspondance_dS_dl
+# from .plant_shape import correspondance_dS_dl
 
 
 def curvilinear_abscisse(x, y, z=None):
@@ -170,7 +170,7 @@ def as_plant(json):
         df.hins
     )
     df["ff"] = [get_form_factor(leaves[r]) for r in df.index]
-    df["area"] = df.l_leaf * df.w_leaf * df.ff
+    df["area"] = df.l_leaf * df.w_leaf * df.ff ##########################
     stem = [0, *df.hins.tolist()]
     df["internode"] = np.diff(stem)
     df["ntop"] = df.index.max() - df.index + 1
@@ -234,11 +234,11 @@ def cereals(json=None, classic=False, seed=None, plant=None):
 
     g = MTG()
     # Add a root vertex for the plant
-    corres_ds_dl = correspondance_dS_dl()
-    plant_properties = {
-        "blade_ds_dl": corres_ds_dl
-    }
-    vid_plant = g.add_component(g.root, label="Plant", edge_type="/", **plant_properties)
+    # corres_ds_dl = correspondance_dS_dl()
+    # plant_properties = {
+    #     "blade_ds_dl": corres_ds_dl
+    # }
+    vid_plant = g.add_component(g.root, label="Plant", edge_type="/") # , **plant_properties)
     # Add a plant vertex for the main axis
     vid_axis = g.add_component(vid_plant, label="MainAxis", edge_type="/")
 
