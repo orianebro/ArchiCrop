@@ -2,7 +2,6 @@ name: ArchiCrop
 channels:
   - openalea3
   - conda-forge
-  - defaults
 dependencies:
   - alinea.astk
   - alinea.caribu
