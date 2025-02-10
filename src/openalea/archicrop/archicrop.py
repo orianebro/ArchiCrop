@@ -23,7 +23,7 @@ class ArchiCrop:
                  insertion_angle,
                  scurv,
                  curvature,
-                 alpha,
+                 klig, swmax, f1, f2,
                  stem_q,
                  rmax,
                  skew,
@@ -46,7 +46,7 @@ class ArchiCrop:
         :param insertion_angle: float, insertion angle of the leaf (i.e. between the stem and the tangent line at the base of the leaf) (in °)
         :param scurv: float, curvilinear abscissa of inflexion point for leaf curvature (in [0,1])
         :param curvature: float, curvature angle (i.e. angle between insertion angle and the tangent line at the tip of the leaf) (in °)
-        :param alpha: float, parameter of the polynom defining leaf shape
+        # :param alpha: float, parameter of the polynom defining leaf shape
         :param stem_q: float, common ratio of the geometric series defining internode lengths for a given height (cf partition of unit)
         :param rmax: float, proportion of the total number of leaves corresponding to the position of the longest leaf, from the base of the stem, according to a bell-shaped distribution of leaf lengths along the stem (in [0,1])
         :param skem: float, parameter describing the asymmetry of the bell-shaped distribution of leaf lengths along the stem
@@ -62,7 +62,11 @@ class ArchiCrop:
         self.insertion_angle = insertion_angle
         self.scurv = scurv
         self.curvature = curvature
-        self.alpha = alpha
+        # self.alpha = alpha
+        self.klig = klig 
+        self.swmax = swmax 
+        self.f1 = f1 
+        self.f2 = f2
         self.stem_q = stem_q
         self.rmax = rmax
         self.skew = skew
@@ -90,7 +94,11 @@ class ArchiCrop:
                                self.insertion_angle,
                                self.scurv,
                                self.curvature,
-                               self.alpha,
+                            #    self.alpha,
+                               self.klig, 
+                               self.swmax, 
+                               self.f1, 
+                               self.f2,
                                self.stem_q,
                                self.rmax,
                                self.skew,

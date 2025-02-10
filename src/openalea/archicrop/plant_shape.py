@@ -4,6 +4,8 @@ import math
 import numpy as np
 from scipy.integrate import quad
 from itertools import product
+from scipy.integrate import cumulative_simpson
+from scipy.interpolate import splrep
 
 from openalea.mtg.traversal import pre_order2
 
@@ -111,36 +113,6 @@ def sigmoid_growth(time, start_tt, end_tt, mature_stem_diameter):
     # Compute the sigmoid growth
     diameter = mature_stem_diameter / (1 + math.exp(-k * (time - t0)))
     return diameter
-
-
-def asymmetric_logistic_growth_with_offset(t, start_tt, end_tt, mature_stem_diameter, offset_diameter=0.7, alpha=1.5):
-    """
-    Asymmetric logistic growth with an initial offset diameter.
-    
-    Parameters:
-    - t: Current time.
-    - offset_diameter: Initial diameter of the sheath.
-    - mature_stem_diameter: Maximum diameter at maturity.
-    - start_tt: Start time of growth.
-    - end_tt: Time of inflection (inflection point).
-    - alpha: Asymmetry factor (> 1 for slower initiation).
-    
-    Returns:
-    - Stem diameter at time t.
-    """
-    # Ensure offset diameter is less than mature diameter
-    assert offset_diameter < mature_stem_diameter, "Offset diameter must be less than mature diameter."
-    
-    # Calculate growth rate based on time range
-    k = 4 / (end_tt - start_tt)  # Scaled for smooth transition
-    
-    # Asymmetric logistic function
-    inflection_point = end_tt
-    logistic_growth = (1 + np.exp(-k * (t - inflection_point)))**(-alpha)
-    
-    # Scale growth to the range [offset_diameter, mature_stem_diameter]
-    return offset_diameter + (mature_stem_diameter - offset_diameter) * logistic_growth
-
 
 
 
@@ -300,13 +272,6 @@ def compute_height_growing_plant(g):
     return height
 
 
-"""
-def sr_prevot(nb_segment=100, alpha=-2.3):
-    beta = -2 * (alpha + numpy.sqrt(-alpha))
-    gamma = 2 * numpy.sqrt(-alpha) + alpha
-    s = numpy.linspace(0, 1, nb_segment + 1)
-    r = alpha * s**2 + beta * s + gamma
-"""
 
 def compute_leaf_area_plant_from_params(nb_phy,
                                         Smax,
@@ -395,6 +360,15 @@ def correspondance_dS_dl(wl, L=1):
         corres_dl_dS[dl] = np.cumsum(ds_list)[i]
 
     return corres_dl_dS
+
+
+def shape_to_surface(a_leaf, wl):
+    _,_,s,r = a_leaf
+    r = r[::-1]*wl
+    S = cumulative_simpson(x=s, y=r, initial=0)
+    S_norm = S/S[-1]
+    tck = splrep(x=S_norm, y=s, k=3, task=0)
+    return tck
 
 
 # la_per_plant_stics = max(la_cum)

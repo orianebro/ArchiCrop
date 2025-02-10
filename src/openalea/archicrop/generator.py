@@ -170,7 +170,7 @@ def as_plant(json):
         df.hins
     )
     df["ff"] = [get_form_factor(leaves[r]) for r in df.index]
-    df["area"] = df.l_leaf * df.w_leaf * df.ff ##########################
+    df["area"] = df.l_leaf * df.w_leaf * df.ff 
     stem = [0, *df.hins.tolist()]
     df["internode"] = np.diff(stem)
     df["ntop"] = df.index.max() - df.index + 1
@@ -234,11 +234,7 @@ def cereals(json=None, classic=False, seed=None, plant=None):
 
     g = MTG()
     # Add a root vertex for the plant
-    # corres_ds_dl = correspondance_dS_dl()
-    # plant_properties = {
-    #     "blade_ds_dl": corres_ds_dl
-    # }
-    vid_plant = g.add_component(g.root, label="Plant", edge_type="/") # , **plant_properties)
+    vid_plant = g.add_component(g.root, label="Plant", edge_type="/") 
     # Add a plant vertex for the main axis
     vid_axis = g.add_component(vid_plant, label="MainAxis", edge_type="/")
 
@@ -268,7 +264,7 @@ def cereals(json=None, classic=False, seed=None, plant=None):
             "azimuth": row["leaf_azimuth"],
             "grow": False,
             "age": 0.0,
-            "elongation_rate": []
+            "lengths": []
         }
 
         if first:
@@ -288,6 +284,8 @@ def cereals(json=None, classic=False, seed=None, plant=None):
             "leaf_area": row["S_blade"],
             "visible_leaf_area": 0.0,
             "form_factor": row["form_factor"],
+            "wl": row["wl"],
+            # "tck": (row["tck"]),
             "is_green": True,
             "srb": 0,
             "srt": 1,
@@ -298,7 +296,7 @@ def cereals(json=None, classic=False, seed=None, plant=None):
             "stem_diameter": row["W_internode"],
             "grow": False,
             "age": 0.0,
-            "elongation_rate": []
+            "lengths": []
         }
 
         vid_leaf = g.add_child(vid_internode, edge_type="+", **leaf)  # noqa: F841

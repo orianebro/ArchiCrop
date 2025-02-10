@@ -3,9 +3,11 @@ from __future__ import annotations
 import math
 import numpy as np
 import sympy as sp
+from scipy.interpolate import splev
 from openalea.mtg.traversal import pre_order2, pre_order2_with_filter
 
 from .geometry import CerealsTurtle, CerealsVisitor, addSets, TurtleFrame, leaf_mesh_for_growth, stem_mesh
+from .plant_shape import shape_to_surface
 
 
 
@@ -244,6 +246,7 @@ def search_new_dl(d, l, dS_input, L):
     return L, value  # if no match is found --> finished
 
 
+
 def compute_continuous_element_with_constraint(
     element_node, time, growth, classic=False
 ):  # see maybe with *kwarg, **kwds, etc. for time
@@ -290,10 +293,11 @@ def compute_continuous_element_with_constraint(
                         
                         if n.visible_leaf_area + LA_for_this_leaf <= n.leaf_area:
                             n.visible_leaf_area += LA_for_this_leaf
-                            leaf_length_increment = compute_leaf_length_increment(LA_for_this_leaf, n)
-                            n.visible_length += leaf_length_increment
-                            nb_of_updated_leaves += 1
-                            n.elongation_rate.append(LA_for_this_leaf)
+                            # leaf_length_increment = compute_leaf_length_increment(LA_for_this_leaf, n)
+                            # n.visible_length += leaf_length_increment
+                            percent_of_progression_in_area = n.visible_leaf_area / n.leaf_area
+                            tck = shape_to_surface(n.shape, n.wl)
+                            n.visible_length = splev(x=percent_of_progression_in_area, tck=tck)
                         else: 
                             LA_rest = LA_for_this_leaf - (n.leaf_area - n.visible_leaf_area)
                             n.visible_leaf_area = n.leaf_area
@@ -301,8 +305,8 @@ def compute_continuous_element_with_constraint(
                             for i in range(next_leaves_to_update):
                                 LA_for_each_leaf[nb_of_updated_leaves+1+i] += LA_rest/next_leaves_to_update
                             n.visible_length = n.mature_length
-                            nb_of_updated_leaves += 1
-                            n.elongation_rate.append(n.leaf_area - n.visible_leaf_area)
+                        nb_of_updated_leaves += 1
+                        n.lengths.append(n.visible_length)
                             # if nb_of_growing_leaves > nb_of_updated_leaves:
                             #     LA_for_each_leaf = LA_to_distribute / (nb_of_growing_leaves - nb_of_updated_leaves)
                             # else:
@@ -316,14 +320,13 @@ def compute_continuous_element_with_constraint(
 
                         if n.visible_length + height_for_this_internode <= n.mature_length:
                             n.visible_length += height_for_this_internode
-                            nb_of_updated_internodes += 1
                         else: 
                             height_rest = height_for_this_internode - (n.mature_length - n.visible_length)
                             next_internodes_to_update = len(height_for_each_internode[nb_of_updated_internodes+1:])
                             for i in range(next_internodes_to_update):
                                 height_for_each_internode[nb_of_updated_internodes+1+i] += height_rest/next_internodes_to_update
                             n.visible_length = n.mature_length
-                            nb_of_updated_internodes += 1
+                        nb_of_updated_internodes += 1
                             # if nb_of_growing_internodes > nb_of_updated_internodes:
                             #     height_for_each_internode = height_to_distribute / (nb_of_growing_internodes - nb_of_updated_internodes)
 
@@ -337,10 +340,21 @@ def compute_continuous_element_with_constraint(
                     n.visible_length = n.visible_length
                 else:  # organ reaches maturity at potential
                     n.visible_length = n.mature_length
+
+                #
+                #
+                #
+                #
+
                 if n.label.startswith("Leaf"):
                     if n.senescence <= time:
                         n.visible_length = 0.0
                         n.grow = False
+                
+                #
+                #
+                #
+                #
 
     # update growth dict
     growth["LA_for_each_leaf"] = LA_for_each_leaf
@@ -368,7 +382,7 @@ def compute_continuous_element_with_constraint(
                     #  with the tiller positioned with
                     # turtle.down()
                     flipx=True,
-                    inclination=1 + 0.4*(time - n.start_tt) / (n.end_tt - n.start_tt),
+                    inclination=0.5 + 0.5*(time - n.start_tt) / (n.end_tt - n.start_tt),
                     stem_diameter=n.stem_diameter,
                 )
             if n.lrolled > 0:

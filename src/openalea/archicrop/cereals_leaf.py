@@ -162,7 +162,7 @@ def leaf_morpho_rel(nb_segment=10, w0=0.5, lm=0.5):
 
 
 def parametric_leaf(
-    nb_segment=10, insertion_angle=50, scurv=0.5, curvature=50, alpha=-2.3
+    nb_segment=10, insertion_angle=50, scurv=0.5, curvature=50, klig=0.6, swmax=0.55, f1=0.64, f2=0.92
 ):
     """x,y, sr coordinates of points sampling a leaf midrib placed in a vertical plane (origin = leaf base)
 
@@ -179,7 +179,7 @@ def parametric_leaf(
     nseg = min(100, nb_segment)
     x, y = leaf_shape_perez(insertion_angle, scurv, curvature, nseg)
     # s, r = sr_prevot(nseg, alpha)
-    s, r = sr_dornbush(nb_segment=nseg, klig=0.6, swmax=0.55, f1=0.64, f2=0.92)
+    s, r = sr_dornbush(nb_segment=nseg, klig=klig, swmax=swmax, f1=f1, f2=f2)
     return fitting.fit3(x, y, s, r, nb_points=nb_segment)
 
 

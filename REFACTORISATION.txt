@@ -1,0 +1,16 @@
+leaf_shape*
+stem_shape*
+repro_shape*
+plant_shape*
+3d_fitting
+plant_generator*
+development/pheno*
+growth
+configuration/stand
+light
+display
+
+ArchiCrop (calls plant_generator, development, growth)
+
+*some specific functions (use ENUM) in 1 file? or 1 file / species?
++ growth (ex: different bending of tillers dipending on tiller emission process)

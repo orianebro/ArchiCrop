@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import numpy as np
+from scipy.integrate import cumulative_simpson
+from scipy.interpolate import splrep
 
 from .cereals_leaf import parametric_leaf
 from .generator import cereals as cereals_generator
 from .plant_design import blade_dimension, leaf_azimuth, stem_dimension
-from .plant_shape import bell_shaped_dist, geometric_dist
+from .plant_shape import bell_shaped_dist, geometric_dist, shape_to_surface
+
 
 
 def build_shoot(
@@ -18,7 +21,8 @@ def build_shoot(
     insertion_angle,
     scurv,
     curvature,
-    alpha,
+    # alpha,
+    klig, swmax, f1, f2,
     stem_q,
     rmax,
     skew,
@@ -85,7 +89,6 @@ def build_shoot(
     # leaf_areas = np.concatenate((leaf_areas_pseudostem, leaf_areas_stem), axis=0)
     leaf_areas = np.array(bell_shaped_dist(Smax, nb_phy, rmax, skew))
 
-    blades = blade_dimension(area=leaf_areas, ntop=ntop, wl=wl)
 
     # leaf shapes
     a_leaf = parametric_leaf(
@@ -93,9 +96,14 @@ def build_shoot(
         insertion_angle=insertion_angle,
         scurv=scurv,
         curvature=curvature,
-        alpha=alpha,
+        klig=klig, swmax=swmax, f1=f1, f2=f2
     )
+
     leaf_shapes = [a_leaf] * nb_phy 
+
+    blades = blade_dimension(area=leaf_areas, ntop=ntop, wl=wl)
+
+    # tck = shape_to_surface(a_leaf, wl)
 
     # ff = [get_form_factor(leaf) for leaf in leaf_shapes]
 
@@ -114,6 +122,8 @@ def build_shoot(
     df["leaf_azimuth"] = leaf_azimuths
     df["leaf_rank"] = ranks
     df["leaf_shape"] = [leaf_shapes[n - 1] for n in df.leaf_rank]
+    df["wl"] = [wl for _ in df.leaf_rank]
+    # df["leaf_tck"] = [(tck) for _ in df.leaf_rank]
     return df, cereals_generator(plant=df)
 
 
