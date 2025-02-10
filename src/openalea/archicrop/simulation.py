@@ -12,7 +12,7 @@ from .cereals import build_shoot
 from .display import build_scene
 from .growth import thermal_time, mtg_turtle_time_with_constraint, init_growth_dict, init_params_for_growth
 from .geometry import addSets, leaf_mesh_for_growth, stem_mesh
-from .ArchiCrop import ArchiCrop
+from .archicrop import ArchiCrop
 from .plant_shape import compute_height_growing_plant, compute_leaf_area_growing_plant
 
 
