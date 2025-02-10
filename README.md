@@ -5,7 +5,7 @@
 Installation: 
 - Clone ArchiCrop repo on your own device : git clone
 https://github.com/orianebro/ArchiCrop.git
-- cd ./ArchiCrop/
+- ```cd ./ArchiCrop/```
 - Create appropriate conda environment :
   ```conda env create -f oa3.yml ```
 - Install in develop mode
