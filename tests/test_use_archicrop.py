@@ -1,7 +1,6 @@
 from openalea.archicrop.ArchiCrop import ArchiCrop
 from openalea.archicrop.simulation import retrieve_stics_dynamics_from_file
-from openalea.archicrop.display import build_scene
-from openalea.plantgl.all import Viewer
+from openalea.archicrop.display import build_scene, display_scene
 
 stics_output_file = 'mod_ssorghum.sti'
 sowing_density = 10
@@ -30,7 +29,7 @@ sorghum.define_development()
 growing_plant = sorghum.grow_plant(stics_output_data)
 
 scene = build_scene(growing_plant[time[-1]])
-Viewer.display(scene)
+display_scene(scene)
 
 # %gui qt
 # %run test_use_archicrop.py
