@@ -62,6 +62,14 @@ def leaf_area(leaf, length=1, mature_length=1, width_max=1, form_factor=None):
     return blade_elt_area(s, r, mature_length, width_max, sr_base=sr_b, sr_top=1)
 
 
+def leaf_area_plant(g):
+    S = 0
+    for k,leaf in g.properties()["shape"].items():
+        S += leaf_area(leaf, g.properties()["visible_length"][k], g.properties()["mature_length"][k], g.properties()["shape_max_width"][k])
+    return S
+    # return sum(g.properties()["visible_leaf_area"].values())
+
+
 def mesh_area(mesh):
     if mesh:
         sc = pgl.SurfComputer(pgl.Discretizer())

@@ -57,18 +57,22 @@ def thermal_time(g, phyllochron, plastochron, leaf_duration, stem_duration, leaf
 
 def init_params_for_growth(g):
     """Initialize leaf and stem lengths and stem diameters"""
+
+    for k in g.properties()["visible_length"].keys():
+        g.properties()["visible_length"][k] = 0.0
+
     
-    axes = g.vertices(scale=1)
-    metamer_scale = g.max_scale()
+    # axes = g.vertices(scale=1)
+    # metamer_scale = g.max_scale()
 
-    for axis in axes:
-        v = next(g.component_roots_at_scale_iter(axis, scale=metamer_scale))
+    # for axis in axes:
+    #     v = next(g.component_roots_at_scale_iter(axis, scale=metamer_scale))
 
-        for metamer in pre_order2(g, v):
-            nm = g.node(metamer)
+    #     for metamer in pre_order2(g, v):
+    #         nm = g.node(metamer)
 
-            if nm.label.startswith("Leaf") or nm.label.startswith("Stem"):
-                nm.visible_length = 0.0
+    #         if nm.label.startswith("Leaf") or nm.label.startswith("Stem"):
+    #             nm.visible_length = 0.0
                 # nm.stem_diameter = 0.0
                 
     # for id in g.vertices():
@@ -273,6 +277,7 @@ def compute_continuous_element_with_constraint(
             n.visible_length = 0.0
             # n.stem_diameter = 0.0
             n.grow = False
+            n.lengths.append(0.0)
     
         elif n.start_tt <= time:
             n.grow = True
@@ -283,7 +288,7 @@ def compute_continuous_element_with_constraint(
             # starting from the lowest (oldest) growing organ
             if time <= n.end_tt: # if n.start_tt <= time < n.end_tt: # organ growing
 
-                n.stem_diameter = 1.2
+                # n.stem_diameter = 1.2
 
                 if n.visible_length < n.mature_length:  
 
@@ -297,7 +302,7 @@ def compute_continuous_element_with_constraint(
                             # n.visible_length += leaf_length_increment
                             percent_of_progression_in_area = n.visible_leaf_area / n.leaf_area
                             tck = shape_to_surface(n.shape, n.wl)
-                            n.visible_length = splev(x=percent_of_progression_in_area, tck=tck)
+                            n.visible_length = float(splev(x=percent_of_progression_in_area, tck=tck)) * n.mature_length
                         else: 
                             LA_rest = LA_for_this_leaf - (n.leaf_area - n.visible_leaf_area)
                             n.visible_leaf_area = n.leaf_area
@@ -327,6 +332,7 @@ def compute_continuous_element_with_constraint(
                                 height_for_each_internode[nb_of_updated_internodes+1+i] += height_rest/next_internodes_to_update
                             n.visible_length = n.mature_length
                         nb_of_updated_internodes += 1
+                        n.lengths.append(n.visible_length)
                             # if nb_of_growing_internodes > nb_of_updated_internodes:
                             #     height_for_each_internode = height_to_distribute / (nb_of_growing_internodes - nb_of_updated_internodes)
 
@@ -335,11 +341,12 @@ def compute_continuous_element_with_constraint(
 
                 
             elif time > n.end_tt:
-                n.stem_diameter = min(1.2 + (n.mature_stem_diameter - 1.2)*0.001*time, n.mature_stem_diameter)
+                # n.stem_diameter = min(1.2 + (n.mature_stem_diameter - 1.2)*0.001*time, n.mature_stem_diameter)
                 if n.visible_length < n.mature_length:  # organ reaches maturity below potential 
                     n.visible_length = n.visible_length
                 else:  # organ reaches maturity at potential
                     n.visible_length = n.mature_length
+                n.lengths.append(n.visible_length)
 
                 #
                 #
