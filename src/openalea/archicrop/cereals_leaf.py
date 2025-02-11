@@ -5,7 +5,7 @@ from __future__ import annotations
 from math import cos, pi, radians, sin
 
 import numpy as np
-from scipy.integrate import trapz
+from scipy.integrate import trapezoid
 from scipy.optimize import brentq
 
 import openalea.plantgl.all as pgl
@@ -198,7 +198,7 @@ def blade_elt_area(s, r, Lshape=1, Lwshape=1, sr_base=0, sr_top=1):
         snew = [sr_base, sr_top]
         rnew = [np.interp(sr_base, s, r), np.interp(sr_top, s, r)]
 
-    S = trapz(rnew, snew) * Lshape * Lwshape
+    S = trapezoid(rnew, snew) * Lshape * Lwshape
 
     return S
 

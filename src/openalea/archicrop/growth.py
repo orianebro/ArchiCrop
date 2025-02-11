@@ -301,7 +301,7 @@ def compute_continuous_element_with_constraint(
                             # leaf_length_increment = compute_leaf_length_increment(LA_for_this_leaf, n)
                             # n.visible_length += leaf_length_increment
                             percent_of_progression_in_area = n.visible_leaf_area / n.leaf_area
-                            tck = shape_to_surface(n.shape, n.wl)
+                            tck = shape_to_surface(n.shape, n.wl) # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                             n.visible_length = float(splev(x=percent_of_progression_in_area, tck=tck)) * n.mature_length
                         else: 
                             LA_rest = LA_for_this_leaf - (n.leaf_area - n.visible_leaf_area)

@@ -7,7 +7,7 @@ from itertools import cycle
 
 import numpy as np
 import pandas as pd
-from scipy.integrate import simps
+from scipy.integrate import simpson
 from scipy.interpolate import interp1d
 
 
@@ -29,7 +29,7 @@ def get_form_factor(leaf):
     return form factor for a x,y,s,r tuple referencing a leaf
     """
     _, _, s, r = leaf
-    return simps(r, s)
+    return simpson(r, s)
 
 
 def truncate_leaf(leaf, fraction=0.1):
