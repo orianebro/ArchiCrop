@@ -2,16 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from itertools import product
 from scipy.stats import qmc
-
-from openalea.plantgl.all import Color3, Material
-from oawidgets.plantgl import *
-from openalea.mtg.traversal import pre_order2
+import xml.etree.ElementTree as ET
 
 # from archicrop
-from .cereals import build_shoot
-from .display import build_scene
-from .growth import thermal_time, mtg_turtle_time_with_constraint, init_growth_dict, init_params_for_growth
-from .geometry import addSets, leaf_mesh_for_growth, stem_mesh
 from .archicrop import ArchiCrop
 from .plant_shape import compute_height_growing_plant, compute_leaf_area_growing_plant
 
@@ -140,137 +133,36 @@ def params_for_curve_fit(param_sets, curves, error_LA=300, error_height=30):
     return fitting_sim
 
 
-def generate_potential_plant(nb_phy,
-                            height,
-                            max_leaf_length,
-                            wl,
-                            diam_base,
-                            diam_top,
-                            insertion_angle,
-                            scurv,
-                            curvature,
-                            alpha,
-                            stem_q,
-                            rmax,
-                            skew,
-                            phyllotactic_angle,
-                            phyllotactic_deviation):
+
+def read_xml_file(file_xml, params):
+    """
+    Parses an XML file and retrieves the values of the specified parameters.
+
+    :param file_xml: Path to the XML file.
+    :param params: List of parameter names to extract.
+    :return: Dictionary with parameter names as keys and extracted values.
+    """
+    tree = ET.parse(file_xml)
+    root = tree.getroot()
     
-    shoot, g = build_shoot(nb_phy,
-                            height,
-                            max_leaf_length,
-                            wl,
-                            diam_base,
-                            diam_top,
-                            insertion_angle,
-                            scurv,
-                            curvature,
-                            alpha,
-                            stem_q,
-                            rmax,
-                            skew,
-                            phyllotactic_angle,
-                            phyllotactic_deviation)
-    return g
-
-def display_plant(g):
-    nice_green = Color3((50, 100, 0))
-    scene, nump = build_scene(
-        g, leaf_material = Material(nice_green), stem_material=Material(nice_green)
-    )
-    w=PlantGL(scene, group_by_color=True)
-    return w 
-
-def generate_and_display_plant(nb_phy,
-                                height,
-                                max_leaf_length,
-                                wl,
-                                diam_base,
-                                diam_top,
-                                insertion_angle,
-                                scurv,
-                                curvature,
-                                alpha,
-                                stem_q,
-                                rmax,
-                                skew,
-                                phyllotactic_angle,
-                                phyllotactic_deviation):
-    shoot, g = build_shoot(nb_phy,
-                            height,
-                            max_leaf_length,
-                            wl,
-                            diam_base,
-                            diam_top,
-                            insertion_angle,
-                            scurv,
-                            curvature,
-                            alpha,
-                            stem_q,
-                            rmax,
-                            skew,
-                            phyllotactic_angle,
-                            phyllotactic_deviation)
+    result = {}
     
-    # print("LA plant = ", compute_leaf_area_plant_from_params(nb_phy,
-    #                                         max_leaf_length,
-    #                                         wl,
-    #                                         rmax,
-    #                                         skew))
-
-    axes = g.vertices(scale=1)
-    metamer_scale = g.max_scale()
-
-    for axis in axes:
-        v = next(g.component_roots_at_scale_iter(axis, scale=metamer_scale))
-
-        for metamer in pre_order2(g, v):
-            
-            n = g.node(metamer)
-            n.visible_length = n.mature_length
-
-            if n.label.startswith("Leaf"):  # leaf element
-                if n.visible_length > 0.0001:  # filter less than 0.001 mm leaves
-                    if n.shape is not None and n.srb is not None:
-                        geom = leaf_mesh_for_growth(
-                            n.shape,
-                            n.mature_length,
-                            n.shape_max_width,
-                            n.visible_length,
-                            n.srb,
-                            n.srt,
-                            # flipx allows x-> -x to place the shape along
-                            #  with the tiller positioned with
-                            # turtle.down()
-                            flipx=True,
-                            inclination=1,
-                            stem_diameter=n.stem_diameter,
-                        )
-                    if n.lrolled > 0:
-                        rolled = stem_mesh(
-                            n.lrolled, n.lrolled, n.d_rolled, classic=False
-                        )
-                        if geom is None:
-                            geom = rolled
-                        else:
-                            geom = addSets(rolled, geom, translate=(0, 0, n.lrolled))
-            elif n.label.startswith("Stem"):  # stem element
-                geom = stem_mesh(n.length, n.visible_length, n.stem_diameter, n.stem_diameter)
+    # Search for all 'param' and 'colonne' elements in the XML
+    for elem in root.findall(".//param") + root.findall(".//colonne"):
+        param_name = elem.get("nom")  # Get the name attribute
+        if param_name in params:
+            result[param_name] = elem.text.strip() if elem.text else None
     
-    nice_green = Color3((50, 100, 0))
-    scene, nump = build_scene(
-        g, leaf_material = Material(nice_green), stem_material=Material(nice_green), soil_material=Material(Color3((150,100,50)))
-    )
-    w=PlantGL(scene, group_by_color=True)
-    return w 
+    return result
 
 
-def retrieve_stics_dynamics_from_file(filename_outputs, density):
+def read_sti_file(file_sti, density):
     """Reads a STICS mod_s*.sti output file and builds a dictionary.
     
-    :param filename_outputs: str, input file of STICS outputs :
+    :param file: str, input file of STICS outputs :
         - tempeff(n) : daily efficient thermal time (°C.day)
-        - lai(n) : canopy LAI (m2/m2)
+        - laimax : canopy max LAI (m2/m2)
+        - laisen(n) : senescent LAI (m2/m2)
         - hauteur : canopy height (m)
         - raint : PAR intercepted (actually, PAR absorbed) by canopy (MJ/m2)
         - trg(n) : global radiation (MJ/m2)
@@ -283,56 +175,68 @@ def retrieve_stics_dynamics_from_file(filename_outputs, density):
         - "Absorbed PAR" (float): absorbed PAR at a given thermal time (in MJ/m²)"""
     
     data_dict = {}
-    start_column_index = 5
-    filter_column = "lai(n)"
+    # start_column_index = 5
+    # filter_column = "laimax"
 
-    with open(filename_outputs, "r") as file:
+    with open(file_sti, "r") as file:
         # Read the header line to get column names
         header = file.readline().strip().split(";")
         # Strip whitespace from column names
-        stripped_header = [col.strip() for col in header]
+        stripped_header = [col.strip() for col in header if col != 'pla']
         # Select column names starting from the given index
-        selected_columns = stripped_header[start_column_index:]
+        # selected_columns = stripped_header
         
         # Check if the filter column exists in the selected columns
-        if filter_column not in selected_columns:
-            raise ValueError(f"Filter column '{filter_column}' not found in the selected columns.")
+        # if filter_column not in selected_columns:
+        #     raise ValueError(f"Filter column '{filter_column}' not found in the selected columns.")
         
         # Initialize empty lists for each selected column in the dictionary
-        data_dict = {col.strip(): [] for col in selected_columns}
+        data_dict = {col.strip(): [] for col in stripped_header}
         
         # Read the rest of the lines (data rows)
         for line in file:
             # Split the line into columns and select only the relevant part
-            values = line.strip().split(";")[start_column_index:]
+            values = line.strip().split(";") #[start_column_index:]
+            values = values[:4] + values[5:]
             # Convert the values to floats
-            row = {col.strip(): float(value) for col, value in zip(selected_columns, values)}
+            row = {col.strip(): float(value) for col, value in zip(stripped_header, values)}
             # Apply the filter condition
-            if row[filter_column] != 0:
-                # Append values to the corresponding lists in the dictionary
-                for col in selected_columns:
-                    data_dict[col.strip()].append(row[col.strip()])
+            # if row[filter_column] != 0:
+            # Append values to the corresponding lists in the dictionary
+            for col in stripped_header:
+                data_dict[col.strip()].append(row[col.strip()])
     
 
     # start = 21 # 23
-    end = 100 - 23
+    # end = 100 - 23
     # density = 10 # density = 20 plants/m2 = 0.002 plants/cm2
 
-    thermal_time = list(np.cumsum([float(i) for i in data_dict["tempeff"][:end]]))
+    # Thermal time
+    thermal_time = list(np.cumsum([float(i) for i in data_dict["tempeff"][:100]]))
 
-    leaf_area = [10000*float(i)/density for i in data_dict["lai(n)"][:end]] # from m2/m2 to cm2/plant
+    # Green LAI
+    leaf_area = [10000*float(i)/density for i in data_dict["laimax"][:100]] # from m2/m2 to cm2/plant
     leaf_area_incr = [leaf_area[0]] + [leaf_area[i+1]-leaf_area[i] for i in range(len(leaf_area[1:]))]
 
-    sen_leaf_area = [10000*float(i)/density for i in data_dict["lai(n)"][:end]] # from m2/m2 to cm2/plant
+    # Senescent LAI
+    sen_leaf_area = [10000*float(i)/density for i in data_dict["laisen(n)"][:100]] # from m2/m2 to cm2/plant
     sen_leaf_area_incr = [sen_leaf_area[0]] + [sen_leaf_area[i+1]-sen_leaf_area[i] for i in range(len(sen_leaf_area[1:]))]
 
-    height = [float(i)*100 for i in data_dict["hauteur"][:end]] # from m to cm
+    # Phenology
+    emergence = data_dict["ilevs"][-1] - data_dict["jul"][0]
+    end_juv = data_dict["iamfs"][-1] - data_dict["jul"][0]
+    max_lai = data_dict["ilaxs"][-1] - data_dict["jul"][0]
+
+    # Height
+    height = [float(i)*100 for i in data_dict["hauteur"][:100]] # from m to cm
     height_incr = [height[0]] + [height[i+1]-height[i] for i in range(len(height[1:]))]
 
-    par_abs = [float(i)/(0.95*0.48*float(j)) for i, j in zip(data_dict["raint"][:end], data_dict["trg(n)"][:end])] # to % of light intercepted, in MJ/m^2
+    # Absorbed PAR
+    par_abs = [float(i)/(0.95*0.48*float(j)) for i, j in zip(data_dict["raint"][:100], data_dict["trg(n)"][:100])] # to % of light intercepted, in MJ/m^2
 
-    data = {
-        i: {"Thermal time": round(thermal_time[i],4),
+    return {
+        i+1: {"Thermal time": round(thermal_time[i],4),
+            "Phenology": 'germination' if i+1 <= emergence else 'juvenile' if emergence < i+1 <= end_juv else 'exponential' if end_juv < i+1 <= max_lai else 'repro',
             "Plant leaf area": round(leaf_area[i],4), 
             "Leaf area increment": round(leaf_area_incr[i],4), 
             "Senescent leaf area": round(sen_leaf_area[i],4),
@@ -343,84 +247,7 @@ def retrieve_stics_dynamics_from_file(filename_outputs, density):
         for i in range(len(thermal_time))
     }
 
-    return data
 
-
-
-def model(nb_phy,
-            max_leaf_length,
-            wl,
-            diam_base,
-            diam_top,
-            insertion_angle,
-            scurv,
-            curvature,
-            alpha,
-            stem_q,
-            rmax,
-            skew,
-            phyllotactic_angle,
-            phyllotactic_deviation,
-            sowing_density, 
-            filename_outputs):
-    
-    nice_green = Color3((50, 100, 0))
-
-    # Retrieve STICS dynamics from files 
-    stics_output_data = retrieve_stics_dynamics_from_file(filename_outputs, sowing_density)
-    height_potential_plant = max(value["Plant height"] for value in stics_output_data.values())
-
-    # Extract only the increments
-    increments = {
-        k: {
-            "Thermal time": v["Thermal time"],
-            "Leaf area increment": v["Leaf area increment"],
-            "Height increment": v["Height increment"],
-        }
-        for k, v in stics_output_data.items()
-    }
-
-
-    # Generate potential plant
-    g = generate_potential_plant(nb_phy,
-                                height_potential_plant,
-                                max_leaf_length,
-                                wl,
-                                diam_base,
-                                diam_top,
-                                insertion_angle,
-                                scurv,
-                                curvature,
-                                alpha,
-                                stem_q,
-                                rmax,
-                                skew,
-                                phyllotactic_angle,
-                                phyllotactic_deviation)
-
-    # Grow population of plants with constraint from crop model
-    # and compute light interception for all time steps
-    # Add development 
-    g = thermal_time(g, phyllochron=50.0, plastochron=40.0, leaf_duration=1.6, stem_duration=1.6)
-
-    # Loop through time
-    growing_plant = []
-    growth = init_growth_dict()
-    g = init_params_for_growth(g)
-    for v in increments.values():
-        g, growth = mtg_turtle_time_with_constraint(g, v["Thermal time"], v, growth)
-        scene, nump = build_scene(
-            g, leaf_material = Material(nice_green), stem_material=Material(nice_green)
-        )
-        growing_plant.append(scene)
-    
-    # plt.plot(tt_cum[1:], par_caribu, color='orange', label='PAR Caribu')
-    # plt.plot(tt_cum[1:], par_stics[1:-1], color='black', label='PAR STICS')
-    # plt.xlabel('Thermal time')
-    # plt.ylabel('PAR')
-    # plt.show()
-
-    return growing_plant
 
 
 # def grow_pop(g, constraints_crop, sowing_density, inter_row, tt_cum):
@@ -498,7 +325,7 @@ def model(nb_phy,
 #             filename_outputs):
     
 #     # Retrieve STICS dynamics from files 
-#     stics_output_data = retrieve_stics_dynamics_from_file(filename_outputs, sowing_density)
+#     stics_output_data = read_sti_file(filename_outputs, sowing_density)
 #     height_potential_plant = max(value["Plant height"] for value in stics_output_data.values())
 
 

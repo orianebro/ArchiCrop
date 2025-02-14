@@ -37,7 +37,7 @@ def leaf_shape():
     return parametric_leaf()
 
 
-def simple_leaf(leaf, ratio=0.5):
+def simple_leaf(leaf, ratio=1):
     total_length = 3
     lw_ratio = 8.0
 
@@ -67,3 +67,5 @@ def test_leaf_surface():
 
     assert(surf3 == approx(0.5024, abs=1e-4))
     assert(0. <= surf3 <= total_surface)
+
+test_leaf_surface()

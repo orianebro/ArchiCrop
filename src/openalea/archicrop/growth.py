@@ -12,7 +12,7 @@ from .plant_shape import shape_to_surface
 
 
 
-def thermal_time(g, phyllochron, plastochron, leaf_duration, stem_duration, leaf_senescence): # durations 1.6
+def thermal_time(g, phyllochron, plastochron, leaf_duration, stem_duration): # durations 1.6
     """
     Add dynamic properties on the mtg to simulate development
 
@@ -50,7 +50,8 @@ def thermal_time(g, phyllochron, plastochron, leaf_duration, stem_duration, leaf
                 nm.start_tt = tt_leaf
                 nm.end_tt = tt_leaf + dtt_leaf
                 tt_leaf += plastochron
-                nm.senescence = nm.end_tt + leaf_senescence
+
+                nm.senescence = nm.end_tt + 1000 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     return g
 
@@ -355,7 +356,7 @@ def compute_continuous_element_with_constraint(
 
                 if n.label.startswith("Leaf"):
                     if n.senescence <= time:
-                        n.visible_length = 0.0
+                        # n.visible_length = 0.0
                         n.grow = False
                 
                 #
@@ -389,7 +390,7 @@ def compute_continuous_element_with_constraint(
                     #  with the tiller positioned with
                     # turtle.down()
                     flipx=True,
-                    inclination=0.5 + 0.5*(time - n.start_tt) / (n.end_tt - n.start_tt),
+                    inclination=min(0.5 + 0.5*(time - n.start_tt) / (n.end_tt - n.start_tt),1.5), # !!!!!!!!!!!!!!!!!
                     stem_diameter=n.stem_diameter,
                 )
             if n.lrolled > 0:

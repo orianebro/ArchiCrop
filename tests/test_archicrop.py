@@ -1,18 +1,18 @@
 from openalea.archicrop.archicrop import ArchiCrop
-from openalea.archicrop.simulation import retrieve_stics_dynamics_from_file
+from openalea.archicrop.simulation import read_sti_file
 from openalea.archicrop.display import build_scene, display_scene
 
 stics_output_file = 'mod_ssorghum.sti'
 sowing_density = 10
 inter_row = 0.4
-stics_output_data = retrieve_stics_dynamics_from_file(stics_output_file, sowing_density)
+stics_output_data = read_sti_file(stics_output_file, sowing_density)
 time = [value["Thermal time"] for value in stics_output_data.values()]
 LA_stics = [value["Plant leaf area"] for value in stics_output_data.values()]
 height_stics = [value["Plant height"] for value in stics_output_data.values()]
 
-sorghum = ArchiCrop(height=height_stics[-1], 
+sorghum = ArchiCrop(height=max(height_stics), 
                     nb_phy=10,
-                    Smax=LA_stics[-1],
+                    Smax=max(LA_stics),
                     wl=0.12, diam_base=2.5, diam_top=1.5, 
                     insertion_angle=30, scurv=0.7, curvature=130, 
                     klig=0.6, swmax=0.55, f1=0.64, f2=0.92, 
@@ -22,10 +22,11 @@ sorghum = ArchiCrop(height=height_stics[-1],
                     phyllochron=58, 
                     plastochron=58, 
                     leaf_duration=2, 
-                    stem_duration=2, 
-                    leaf_senescence=1000)
+                    stem_duration=2)
 sorghum.generate_potential_plant()
+# print("Potential plant generated")
 sorghum.define_development()
+# print("Development defined")
 growing_plant = sorghum.grow_plant(stics_output_data)
 
 
