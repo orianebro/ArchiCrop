@@ -18,7 +18,7 @@ height_stics = [value["Plant height"] for value in stics_output_data.values()]
 
 height=height_stics[-1]
 Smax=LA_stics[-1]
-nb_phy=12
+nb_phy=15
 wl=0.12
 diam_base=2.5 
 diam_top=1.5
@@ -72,9 +72,9 @@ for phy in phyllochrons:
     print("")
     # LA theo =/= real !!!!
 
-    ax[0].plot(range(1,nb_phy+1), growing_plant[time[-1]].properties()["visible_leaf_area"].values(), color="green", alpha=min(1,1/leaf_duration))
+    ax[0].plot(range(1,nb_phy+1), growing_plant[time[-1]].properties()["visible_leaf_area"].values(), color="green", alpha=min(1,1/leaf_duration), label=f"{phyllochron}")
     # ax[0].plot(range(1,nb_phy+1), [surface(geom) for vid, geom in growing_plant[time[-1]].properties()["geometry"].items() if vid in growing_plant[time[-1]].properties()["visible_leaf_area"]], color="green", alpha=min(1,1/leaf_duration))
-    ax[1].plot(time, [sum(growing_plant[t].properties()["visible_leaf_area"].values()) for t in time], color="green", alpha=min(1,1/leaf_duration))
+    ax[1].plot(time, [sum(growing_plant[t].properties()["visible_leaf_area"].values()) for t in time], color="green", alpha=min(1,1/leaf_duration), label=f"{phyllochron}")
     # ax[1].plot(time, [sum([surface(geom) for vid, geom in growing_plant[t].properties()["geometry"].items() if vid in growing_plant[time[-1]].properties()["visible_leaf_area"]]) for t in time], color="green", alpha=min(1,1/leaf_duration))
 
 ax[0].plot(range(1,nb_phy+1), bell_shaped_dist(Smax, nb_phy, rmax, skew), color="orange", alpha=0.5, label="Weibull law")

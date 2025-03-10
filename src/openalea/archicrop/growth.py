@@ -12,7 +12,7 @@ from .plant_shape import shape_to_surface
 
 
 
-def thermal_time(g, phyllochron, plastochron, leaf_duration, stem_duration): # durations 1.6
+def thermal_time(g, phyllochron, plastochron, leaf_duration, stem_duration, leaf_lifespan): # durations 1.6
     """
     Add dynamic properties on the mtg to simulate development
 
@@ -21,7 +21,7 @@ def thermal_time(g, phyllochron, plastochron, leaf_duration, stem_duration): # d
     :param plastochron: float, plastochron, i.e. leaf appearance rate (in °C.day/leaf)
     :param leaf_duration: float, phyllochronic time for a leaf to develop from tip appearance to collar appearance (/phyllochron)
     :param stem_duration: float, phyllochronic time for a stem to develop from base to top (/phyllochron)
-    # falling_rate (degrees / phyllochron) is the rate at which leaves fall after colar appearance
+
 
     :return: MTG
     """
@@ -51,34 +51,16 @@ def thermal_time(g, phyllochron, plastochron, leaf_duration, stem_duration): # d
                 nm.end_tt = tt_leaf + dtt_leaf
                 tt_leaf += plastochron
 
-                nm.senescence = nm.end_tt + 1000 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                nm.senescence = nm.start_tt + leaf_lifespan # + check in which pheno stage is start_tt to know which value of lifespan to use
 
     return g
 
 
-def init_params_for_growth(g):
-    """Initialize leaf and stem lengths and stem diameters"""
+def init_visible_variables(g):
+    """Initialize leaf and stem visible lengths"""
 
     for k in g.properties()["visible_length"].keys():
         g.properties()["visible_length"][k] = 0.0
-
-    
-    # axes = g.vertices(scale=1)
-    # metamer_scale = g.max_scale()
-
-    # for axis in axes:
-    #     v = next(g.component_roots_at_scale_iter(axis, scale=metamer_scale))
-
-    #     for metamer in pre_order2(g, v):
-    #         nm = g.node(metamer)
-
-    #         if nm.label.startswith("Leaf") or nm.label.startswith("Stem"):
-    #             nm.visible_length = 0.0
-                # nm.stem_diameter = 0.0
-                
-    # for id in g.vertices():
-    #     print(g[id])
-    # print(" ")
 
     return g
 
@@ -86,173 +68,128 @@ def init_params_for_growth(g):
 def init_growth_dict():
     """Initialize the dictionnary of variables recording growth process"""
 
-    return {"LA_for_each_leaf": 0.0,
+    return {"height_to_distribute": 0.0,
             "height_for_each_internode": 0.0,
             "LA_to_distribute": 0.0,
-            "height_to_distribute": 0.0,
+            "LA_for_each_leaf": 0.0,
+            "sen_LA_to_distribute": 0.0,
+            "sen_LA_for_each_leaf": 0.0,
             "nb_of_growing_leaves": 0,
             "nb_of_growing_internodes": 0,
-            "nb_of_updated_leaves": 0,
-            "nb_of_updated_internodes": 0}
+            "nb_of_senescent_leaves": 0,
+            "nb_of_updated_growing_leaves": 0,
+            "nb_of_updated_internodes": 0,
+            "nb_of_updated_senescent_leaves": 0}
 
 
 def compute_nb_of_growing_organs(g, time):
-    """Compute the number of growing organs for a given time step"""
+    """Compute the number of growing organs at a given time"""
 
     pot_length_growing_internodes = []
     pot_area_growing_leaves = []
 
-    axes = g.vertices(scale=1)
-    metamer_scale = g.max_scale()
+    for vid, la in g.properties()["leaf_area"].items(): 
+        n = g.node(vid)
+        if n.start_tt <= time < n.end_tt:
+            pot_area_growing_leaves.append(la)
 
-    for axis in axes:
-        v = next(g.component_roots_at_scale_iter(axis, scale=metamer_scale))
+    for vid, ml in g.properties()["mature_length"].items(): 
+        n = g.node(vid)
+        if n.label.startswith("Stem") and n.start_tt <= time < n.end_tt:
+            pot_length_growing_internodes.append(ml)
 
-        for metamer in pre_order2(g, v):
+    # axes = g.vertices(scale=1)
+    # metamer_scale = g.max_scale()
+
+    # for axis in axes:
+    #     v = next(g.component_roots_at_scale_iter(axis, scale=metamer_scale))
+
+    #     for metamer in pre_order2(g, v):
             
-            n = g.node(metamer)
-            if n.label.startswith("Leaf"):
-                if n.start_tt <= time < n.end_tt: # and n.visible_length < n.mature_length:  # organ growing   
-                    pot_area_growing_leaves.append(n.leaf_area)
+    #         n = g.node(metamer)
+    #         if n.label.startswith("Leaf"):
+    #             if n.start_tt <= time < n.end_tt: # and n.visible_length < n.mature_length:  # organ growing   
+    #                 pot_area_growing_leaves.append(n.leaf_area)
 
-            if n.label.startswith("Stem"):
-                if n.start_tt <= time < n.end_tt: # and n.visible_length < n.mature_length:  # organ growing  
-                    pot_length_growing_internodes.append(n.mature_length) 
+    #         if n.label.startswith("Stem"):
+    #             if n.start_tt <= time < n.end_tt: # and n.visible_length < n.mature_length:  # organ growing  
+    #                 pot_length_growing_internodes.append(n.mature_length) 
 
     return pot_length_growing_internodes, pot_area_growing_leaves
 
+def compute_nb_of_senescent_organs(g, time):
+    """Compute the number of senescent organs at a given time"""
+
+    nb_of_senescent_leaves = 0
+    for vid in g.properties()["leaf_area"].keys(): 
+        n = g.node(vid)
+        if n.senescence <= time and n.srt > 0: 
+            nb_of_senescent_leaves += 1
+    return nb_of_senescent_leaves
+
+def equal_distribution(ds, nb):
+    '''return initial distribution per organ (H: same amount for all organs)'''
+    return [ds/nb] * nb
+
+def demand_related_distribution(increment, pot_growing_organs):
+    '''return distribution of increment per organ proportionnal to potential length or area'''
+    sum_growing_organs = sum(pot_growing_organs)
+    return [increment*p/sum_growing_organs for p in pot_growing_organs]
 
 def distribute_constraint_among_organs(g, time, increments, growth):
-    """Fill the dictionnary of variables recording growth process for a give time step"""
+    """Fill the dictionnary of variables recording growth process at a given time"""
 
     # compute number of growing organs
     pot_length_growing_internodes, pot_area_growing_leaves = compute_nb_of_growing_organs(g, time)
     nb_of_growing_internodes, nb_of_growing_leaves = len(pot_length_growing_internodes), len(pot_area_growing_leaves)
 
-    # set initial total amount of growth to distribute among organs
-    # height_to_distribute = increments["Height increment"] + growth["height_to_distribute"]
-    # LA_to_distribute = increments["Leaf area increment"] + growth["LA_to_distribute"]
-    height_to_distribute = increments["Height increment"]
-    LA_to_distribute = increments["Leaf area increment"]
+    # Compute number of senscent organs
+    nb_of_senescent_leaves = compute_nb_of_senescent_organs(g, time)
 
-    def equal_distribution(ds, ng):
-        '''return initial distribution per organ (H: same amount for all organs)'''
-        return [ds/g] * len(ng)
+    # set initial total amount of growth to distribute among organs
+    height_to_distribute = increments["Height increment"] # + growth["height_to_distribute"]
+    LA_to_distribute = increments["Leaf area increment"] # + growth["LA_to_distribute"]
+    sen_LA_to_distribute = increments["Senescent leaf area increment"]
     
-    def demand_related_distribution(increment, pot_growing_organs):
-        '''return distribution of increment per organ proportionnal to potential length ou area'''
-        sum_growing_organs = sum(pot_growing_organs)
-        return [increment*p/sum_growing_organs for p in pot_growing_organs]
-    
-    if nb_of_growing_leaves != 0:
+    if nb_of_growing_leaves > 0 and LA_to_distribute > 0:
         # LA_for_each_leaf = equal_distribution(LA_to_distribute, nb_of_growing_leaves)
         LA_for_each_leaf = demand_related_distribution(LA_to_distribute, pot_area_growing_leaves)
     else:
-        LA_for_each_leaf = 0.0
+        LA_for_each_leaf = None
 
-    if nb_of_growing_internodes != 0:
+    if nb_of_growing_internodes > 0 and height_to_distribute > 0.0:
         # LA_for_each_leaf = equal_distribution(height_to_distribute, nb_of_growing_internodes)
         height_for_each_internode = demand_related_distribution(height_to_distribute, pot_length_growing_internodes)
     else:
-        height_for_each_internode = 0.0
+        height_for_each_internode = None
 
-    nb_of_updated_leaves = 0
+    if nb_of_senescent_leaves > 0 and sen_LA_to_distribute > 0.0:
+        sen_LA_for_each_leaf = equal_distribution(sen_LA_to_distribute, nb_of_senescent_leaves)
+    else:
+        sen_LA_for_each_leaf = None
+
+    nb_of_updated_growing_leaves = 0
     nb_of_updated_internodes = 0
+    nb_of_updated_senescent_leaves = 0
 
-    growth = {"LA_for_each_leaf": LA_for_each_leaf,
+    growth = {"height_to_distribute": height_to_distribute,
               "height_for_each_internode": height_for_each_internode,
               "LA_to_distribute": LA_to_distribute,
-              "height_to_distribute": height_to_distribute,
+              "LA_for_each_leaf": LA_for_each_leaf,
+              "sen_LA_to_distribute": sen_LA_to_distribute,
+              "sen_LA_for_each_leaf": sen_LA_for_each_leaf,
               "nb_of_growing_leaves": nb_of_growing_leaves,
               "nb_of_growing_internodes": nb_of_growing_internodes,
-              "nb_of_updated_leaves": nb_of_updated_leaves,
-              "nb_of_updated_internodes": nb_of_updated_internodes}
+              "nb_of_senescent_leaves": nb_of_senescent_leaves,
+              "nb_of_updated_growing_leaves": nb_of_updated_growing_leaves,
+              "nb_of_updated_internodes": nb_of_updated_internodes,
+              "nb_of_updated_senescent_leaves": nb_of_updated_senescent_leaves}
 
     return growth
 
 
-def leaf_area_function_of_length(l, L, wl, alpha=-2.3):
-    '''returns the current leaf area (i.e. twice the integral of leaf shape) given the current length s
-    
-        function obtained this way : 
 
-        # Define the variable and parameters
-        s = sympy.symbols('l')
-        L, wl, alpha = sympy.symbols('L, wl, alpha') 
-
-        # Define the scaled leaf shape function with parameters
-        # alpha = -2.3
-        beta = -2 * (alpha + sqrt(-alpha))
-        gamma = 2 * sqrt(-alpha) + alpha
-        r = wl * L (alpha * s**2 + beta * s + gamma)
-
-        # Reflect the function to the axis x=0.5 
-        reflected_r = r.subs(s, -s+L).simplify()
-
-        # Find the indefinite integral (primitive)
-        primitive_f = sympy.integrate(reflected_r, s)
-
-        print(2*primitive_f)
-    
-    '''
-
-    return 2*l**2*wl*math.sqrt(-alpha) + 2*alpha*l**3*wl/(3*L)
-
-
-def compute_leaf_length_increment(LA_for_each_leaf, leaf):
-    """returns the leaf length given a leaf area"""
-
-    L = leaf.mature_length
-    current_leaf_length = leaf.visible_length
-    wl = leaf.shape_max_width / leaf.mature_length
-    
-    s = sp.symbols('s')
-    
-    # Define the equation
-    equation = LA_for_each_leaf + leaf_area_function_of_length(current_leaf_length, L, wl) - leaf_area_function_of_length(s, L, wl)
-    # print ("LA_for_each_leaf", LA_for_each_leaf)
-
-    # Solve the equation, restricting the domain to real numbers
-    real_solutions = sp.solveset(equation, s, domain=sp.S.Reals)
-    # print("Sol", real_solutions)
-    # print(real_solutions)
-    for sol in real_solutions:
-        if current_leaf_length < sol <= L:
-            unique_solution = sol
-            leaf_length_increment = unique_solution - current_leaf_length
-            break
-        elif sol <= current_leaf_length:
-            leaf_length_increment = 0.0
-        elif sol > L:
-            leaf_length_increment = L - current_leaf_length
-    
-    return leaf_length_increment
-
-
-
-def search_new_dl(d, l, dS_input, L):
-    found_start = False  
-    first = True
-    key_prev = None
-    value_prev = None
-    for key, value in d.items():
-        if key >= l:
-            found_start = True  
-            if first:
-                S_start = value
-                key_prev, value_prev = key, value
-                first = False
-        if found_start:
-            # print(key, value-S_start)
-            if value-S_start >= dS_input:  
-                return key_prev, value_prev 
-            else:
-                key_prev, value_prev = key, value
-    return L, value  # if no match is found --> finished
-
-
-
-def compute_continuous_element_with_constraint(
+def compute_organ(
     element_node, time, growth, classic=False
 ):  # see maybe with *kwarg, **kwds, etc. for time
     """compute geometry of Adel base elements (LeafElement and StemElement)
@@ -260,120 +197,132 @@ def compute_continuous_element_with_constraint(
     n = element_node
     geom = None
 
-    # added by Oriane, for continuous constrained growth 
-
     LA_for_each_leaf = growth["LA_for_each_leaf"]
     height_for_each_internode = growth["height_for_each_internode"]
+    sen_LA_for_each_leaf = growth["sen_LA_for_each_leaf"]
     LA_to_distribute = growth["LA_to_distribute"]
     height_to_distribute = growth["height_to_distribute"]
     nb_of_growing_leaves = growth["nb_of_growing_leaves"]
     nb_of_growing_internodes = growth["nb_of_growing_internodes"]
-    nb_of_updated_leaves = growth["nb_of_updated_leaves"]
+    nb_of_senescent_leaves = growth["nb_of_senescent_leaves"]
+    nb_of_updated_growing_leaves = growth["nb_of_updated_growing_leaves"]
     nb_of_updated_internodes = growth["nb_of_updated_internodes"]
+    nb_of_updated_senescent_leaves = growth["nb_of_updated_senescent_leaves"]
 
 
     if n.label.startswith("Leaf") or n.label.startswith("Stem"):
 
-        if time < n.start_tt:  # organ not yet appeared
+        # organ not yet appeared --> never the case because only apeared organs go through this function
+        if time < n.start_tt:  
             n.visible_length = 0.0
-            # n.stem_diameter = 0.0
             n.grow = False
-            n.lengths.append(0.0)
+            if n.label.startswith("Leaf"):
+                n.leaf_lengths.append(0.0)
+            elif n.label.startswith("Stem"):
+                n.stem_lengths.append(0.0)
     
+        # organ appeared
         elif n.start_tt <= time:
             n.grow = True
-            # update age of organ
-            n.age = time - n.start_tt
+            n.age = time - n.start_tt # update age of organ
         
-    
             # starting from the lowest (oldest) growing organ
             if time <= n.end_tt: # if n.start_tt <= time < n.end_tt: # organ growing
 
-                # n.stem_diameter = 1.2
-
                 if n.visible_length < n.mature_length:  
 
-                    if n.label.startswith("Leaf"):
+                    # for growing blades
+                    if n.label.startswith("Leaf") and LA_for_each_leaf is not None:
                         # convert constraint on area for each leaf(t) to leaf length
-                        LA_for_this_leaf = LA_for_each_leaf[nb_of_updated_leaves]
+                        LA_for_this_leaf = LA_for_each_leaf[nb_of_updated_growing_leaves]
                         
                         if n.visible_leaf_area + LA_for_this_leaf <= n.leaf_area:
                             n.visible_leaf_area += LA_for_this_leaf
                             # leaf_length_increment = compute_leaf_length_increment(LA_for_this_leaf, n)
                             # n.visible_length += leaf_length_increment
-                            percent_of_progression_in_area = n.visible_leaf_area / n.leaf_area
+                            relative_visible_area = n.visible_leaf_area / n.leaf_area
                             tck = shape_to_surface(n.shape, n.wl) # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                            n.visible_length = float(splev(x=percent_of_progression_in_area, tck=tck)) * n.mature_length
-                        else: 
+                            n.visible_length = float(splev(x=relative_visible_area, tck=tck)) * n.mature_length
+                        
+                        else: # too much area distributed according to potential
                             LA_rest = LA_for_this_leaf - (n.leaf_area - n.visible_leaf_area)
                             n.visible_leaf_area = n.leaf_area
-                            next_leaves_to_update = len(LA_for_each_leaf[nb_of_updated_leaves+1:])
+                            next_leaves_to_update = len(LA_for_each_leaf[nb_of_updated_growing_leaves+1:])
                             for i in range(next_leaves_to_update):
-                                LA_for_each_leaf[nb_of_updated_leaves+1+i] += LA_rest/next_leaves_to_update
+                                LA_for_each_leaf[nb_of_updated_growing_leaves+1+i] += LA_rest/next_leaves_to_update
                             n.visible_length = n.mature_length
-                        nb_of_updated_leaves += 1
-                        n.lengths.append(n.visible_length)
-                            # if nb_of_growing_leaves > nb_of_updated_leaves:
-                            #     LA_for_each_leaf = LA_to_distribute / (nb_of_growing_leaves - nb_of_updated_leaves)
-                            # else:
-                            #     LA_for_each_leaf = 0.0
 
+                        nb_of_updated_growing_leaves += 1
+                        n.leaf_lengths.append(n.visible_length)
+                        n.senescent_lengths.append(0.0)
                         
-                
-                    elif n.label.startswith("Stem"):
-
+                    # for growing stem elements
+                    elif n.label.startswith("Stem") and height_for_each_internode is not None:
                         height_for_this_internode = height_for_each_internode[nb_of_updated_internodes]
 
                         if n.visible_length + height_for_this_internode <= n.mature_length:
                             n.visible_length += height_for_this_internode
-                        else: 
+                        
+                        else: # too much length distributed according to potential
                             height_rest = height_for_this_internode - (n.mature_length - n.visible_length)
                             next_internodes_to_update = len(height_for_each_internode[nb_of_updated_internodes+1:])
                             for i in range(next_internodes_to_update):
                                 height_for_each_internode[nb_of_updated_internodes+1+i] += height_rest/next_internodes_to_update
                             n.visible_length = n.mature_length
-                        nb_of_updated_internodes += 1
-                        n.lengths.append(n.visible_length)
-                            # if nb_of_growing_internodes > nb_of_updated_internodes:
-                            #     height_for_each_internode = height_to_distribute / (nb_of_growing_internodes - nb_of_updated_internodes)
 
-                # else:
-                #     n.visible_length = n.mature_length
+                        nb_of_updated_internodes += 1
+                        n.stem_lengths.append(n.visible_length)
 
                 
+            # organ reaches maturity according to defined development
             elif time > n.end_tt:
-                # n.stem_diameter = min(1.2 + (n.mature_stem_diameter - 1.2)*0.001*time, n.mature_stem_diameter)
                 if n.visible_length < n.mature_length:  # organ reaches maturity below potential 
                     n.visible_length = n.visible_length
                 else:  # organ reaches maturity at potential
                     n.visible_length = n.mature_length
-                n.lengths.append(n.visible_length)
-
-                #
-                #
-                #
-                #
-
                 if n.label.startswith("Leaf"):
+                    n.leaf_lengths.append(n.visible_length)
+                    n.senescent_lengths.append(0.0)
+                elif n.label.startswith("Stem"):
+                    n.stem_lengths.append(n.visible_length)
+
+                # blade senescence
+                if n.label.startswith("Leaf") and sen_LA_for_each_leaf is not None:
                     if n.senescence <= time:
-                        # n.visible_length = 0.0
-                        n.grow = False
+                        n.grow = False # ?
+                        sen_LA_for_this_leaf = sen_LA_for_each_leaf[nb_of_updated_senescent_leaves]
+                        
+                        if n.senescent_area + sen_LA_for_this_leaf < n.leaf_area:
+                            n.senescent_area += sen_LA_for_this_leaf
+                            relative_visible_area = n.visible_leaf_area / n.leaf_area
+                            tck = shape_to_surface(n.shape, n.wl) # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                            n.srt = 1 - float(splev(x=relative_visible_area, tck=tck))
+                            n.senescent_length = (1 - n.srt) * n.mature_length
+
+                        else: # too much senescent area distributed according to potential
+                            n.senescent_area = n.leaf_area
+                            n.senescent_length = n.mature_length
+                            sen_LA_rest = sen_LA_for_this_leaf - (n.leaf_area - n.senescent_area)
+                            next_senescent_leaves_to_update = len(sen_LA_for_each_leaf[nb_of_updated_senescent_leaves+1:])
+                            for i in range(next_senescent_leaves_to_update):
+                                sen_LA_for_each_leaf[nb_of_updated_senescent_leaves+1+i] += sen_LA_rest/next_senescent_leaves_to_update
+
+                        n.senescent_lengths.append(n.senescent_length)
+                        nb_of_updated_senescent_leaves += 1
                 
-                #
-                #
-                #
-                #
 
     # update growth dict
     growth["LA_for_each_leaf"] = LA_for_each_leaf
     growth["height_for_each_internode"] = height_for_each_internode
+    growth["sen_LA_for_each_leaf"] = sen_LA_for_each_leaf
     growth["LA_to_distribute"] = LA_to_distribute
     growth["height_to_distribute"] = height_to_distribute
     growth["nb_of_growing_leaves"] = nb_of_growing_leaves
     growth["nb_of_growing_internodes"] = nb_of_growing_internodes
-    growth["nb_of_updated_leaves"] = nb_of_updated_leaves
+    growth["nb_of_senescent_leaves"] = nb_of_senescent_leaves
+    growth["nb_of_updated_growing_leaves"] = nb_of_updated_growing_leaves
     growth["nb_of_updated_internodes"] = nb_of_updated_internodes
-
+    growth["nb_of_updated_senescent_leaves"] = nb_of_updated_senescent_leaves
     
     
     if n.label.startswith("Leaf"):  # leaf element
@@ -434,7 +383,7 @@ class CerealsVisitorConstrained(CerealsVisitor):
             # if n.length > 0:
             # print(v)
             # nb_of_growing_internodes, nb_of_growing_leaves = compute_nb_of_growing_organs(g, time)
-            mesh, growth = compute_continuous_element_with_constraint(n, time, growth, self.classic)
+            mesh, growth = compute_organ(n, time, growth, self.classic)
             if mesh:  # To DO : reset to None if calculated so ?
                 n.geometry = turtle.transform(mesh)
                 n.anchor_point = turtle.getPosition()
@@ -548,4 +497,84 @@ def mtg_interpreter_with_constraint(g, classic=False):
     return g
 
 
+
+
+# def leaf_area_function_of_length(l, L, wl, alpha=-2.3):
+#     '''returns the current leaf area (i.e. twice the integral of leaf shape) given the current length s
+    
+#         function obtained this way : 
+
+#         # Define the variable and parameters
+#         s = sympy.symbols('l')
+#         L, wl, alpha = sympy.symbols('L, wl, alpha') 
+
+#         # Define the scaled leaf shape function with parameters
+#         # alpha = -2.3
+#         beta = -2 * (alpha + sqrt(-alpha))
+#         gamma = 2 * sqrt(-alpha) + alpha
+#         r = wl * L (alpha * s**2 + beta * s + gamma)
+
+#         # Reflect the function to the axis x=0.5 
+#         reflected_r = r.subs(s, -s+L).simplify()
+
+#         # Find the indefinite integral (primitive)
+#         primitive_f = sympy.integrate(reflected_r, s)
+
+#         print(2*primitive_f)
+    
+#     '''
+
+#     return 2*l**2*wl*math.sqrt(-alpha) + 2*alpha*l**3*wl/(3*L)
+
+
+# def compute_leaf_length_increment(LA_for_each_leaf, leaf):
+#     """returns the leaf length given a leaf area"""
+
+#     L = leaf.mature_length
+#     current_leaf_length = leaf.visible_length
+#     wl = leaf.shape_max_width / leaf.mature_length
+    
+#     s = sp.symbols('s')
+    
+#     # Define the equation
+#     equation = LA_for_each_leaf + leaf_area_function_of_length(current_leaf_length, L, wl) - leaf_area_function_of_length(s, L, wl)
+#     # print ("LA_for_each_leaf", LA_for_each_leaf)
+
+#     # Solve the equation, restricting the domain to real numbers
+#     real_solutions = sp.solveset(equation, s, domain=sp.S.Reals)
+#     # print("Sol", real_solutions)
+#     # print(real_solutions)
+#     for sol in real_solutions:
+#         if current_leaf_length < sol <= L:
+#             unique_solution = sol
+#             leaf_length_increment = unique_solution - current_leaf_length
+#             break
+#         elif sol <= current_leaf_length:
+#             leaf_length_increment = 0.0
+#         elif sol > L:
+#             leaf_length_increment = L - current_leaf_length
+    
+#     return leaf_length_increment
+
+
+
+# def search_new_dl(d, l, dS_input, L):
+#     found_start = False  
+#     first = True
+#     key_prev = None
+#     value_prev = None
+#     for key, value in d.items():
+#         if key >= l:
+#             found_start = True  
+#             if first:
+#                 S_start = value
+#                 key_prev, value_prev = key, value
+#                 first = False
+#         if found_start:
+#             # print(key, value-S_start)
+#             if value-S_start >= dS_input:  
+#                 return key_prev, value_prev 
+#             else:
+#                 key_prev, value_prev = key, value
+#     return L, value  # if no match is found --> finished
 

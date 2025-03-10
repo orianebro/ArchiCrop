@@ -208,31 +208,31 @@ def read_sti_file(file_sti, density):
     
 
     # start = 21 # 23
-    # end = 100 - 23
+    end = 140
     # density = 10 # density = 20 plants/m2 = 0.002 plants/cm2
 
     # Thermal time
-    thermal_time = list(np.cumsum([float(i) for i in data_dict["tempeff"][:100]]))
+    thermal_time = list(np.cumsum([float(i) for i in data_dict["tempeff"][:end]]))
 
     # Green LAI
-    leaf_area = [10000*float(i)/density for i in data_dict["laimax"][:100]] # from m2/m2 to cm2/plant
+    leaf_area = [10000*float(i)/density for i in data_dict["laimax"][:end]] # from m2/m2 to cm2/plant
     leaf_area_incr = [leaf_area[0]] + [leaf_area[i+1]-leaf_area[i] for i in range(len(leaf_area[1:]))]
 
     # Senescent LAI
-    sen_leaf_area = [10000*float(i)/density for i in data_dict["laisen(n)"][:100]] # from m2/m2 to cm2/plant
+    sen_leaf_area = [10000*float(i)/density for i in data_dict["laisen(n)"][:end]] # from m2/m2 to cm2/plant
     sen_leaf_area_incr = [sen_leaf_area[0]] + [sen_leaf_area[i+1]-sen_leaf_area[i] for i in range(len(sen_leaf_area[1:]))]
 
     # Phenology
-    emergence = data_dict["ilevs"][-1] - data_dict["jul"][0]
+    emergence = data_dict["ilevs"][-1] - data_dict["jul"][0] # from pseudo julian day (from the beginning of the year) to day from begining of the simulation
     end_juv = data_dict["iamfs"][-1] - data_dict["jul"][0]
     max_lai = data_dict["ilaxs"][-1] - data_dict["jul"][0]
 
     # Height
-    height = [float(i)*100 for i in data_dict["hauteur"][:100]] # from m to cm
+    height = [float(i)*100 for i in data_dict["hauteur"][:end]] # from m to cm
     height_incr = [height[0]] + [height[i+1]-height[i] for i in range(len(height[1:]))]
 
     # Absorbed PAR
-    par_abs = [float(i)/(0.95*0.48*float(j)) for i, j in zip(data_dict["raint"][:100], data_dict["trg(n)"][:100])] # to % of light intercepted, in MJ/m^2
+    par_abs = [float(i)/(0.95*0.48*float(j)) for i, j in zip(data_dict["raint"][:end], data_dict["trg(n)"][:end])] # to % of light intercepted, in MJ/m^2
 
     return {
         i+1: {"Thermal time": round(thermal_time[i],4),
