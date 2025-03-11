@@ -4,7 +4,7 @@ from oawidgets.plantgl import *
 from openalea.plantgl.all import Material, Color3, Shape, Scene, Viewer, Translated, AxisRotated
 
 from .cereals import build_shoot
-from .growth import thermal_time, mtg_turtle_time_with_constraint, init_growth_dict, init_visible_variables
+from .growth import thermal_time, mtg_turtle_time_with_constraint, init_visible_variables, Growth
 from .stand import agronomic_plot
 from .display import build_scene
 
@@ -142,10 +142,9 @@ class ArchiCrop:
 
         # Loop through time
         growing_plant = {}
-        growth = init_growth_dict()
         self.g = init_visible_variables(self.g)
         for v in increments.values():
-            gtemp, growth = mtg_turtle_time_with_constraint(self.g, v["Thermal time"], v, growth)
+            gtemp = mtg_turtle_time_with_constraint(self.g, v["Thermal time"], v)
             growing_plant[v["Thermal time"]] = gtemp
             self.g = gtemp.copy() # copy
         

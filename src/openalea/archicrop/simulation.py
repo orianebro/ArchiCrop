@@ -246,6 +246,7 @@ def read_sti_file(file_sti, density):
             "Absorbed PAR": round(par_abs[i],4)}
         for i in range(len(thermal_time))
     }
+# dict of dict to object !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 

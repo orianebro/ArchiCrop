@@ -65,125 +65,127 @@ def init_visible_variables(g):
     return g
 
 
-def init_growth_dict():
-    """Initialize the dictionnary of variables recording growth process"""
+class Growth:
 
-    return {"height_to_distribute": 0.0,
-            "height_for_each_internode": 0.0,
-            "LA_to_distribute": 0.0,
-            "LA_for_each_leaf": 0.0,
-            "sen_LA_to_distribute": 0.0,
-            "sen_LA_for_each_leaf": 0.0,
-            "nb_of_growing_leaves": 0,
-            "nb_of_growing_internodes": 0,
-            "nb_of_senescent_leaves": 0,
-            "nb_of_updated_growing_leaves": 0,
-            "nb_of_updated_internodes": 0,
-            "nb_of_updated_senescent_leaves": 0}
+    def __init__(self, height_to_distribute: float, height_for_each_internode: dict[int,float], LA_to_distribute: float, LA_for_each_leaf: dict[int,float], 
+                 sen_LA_to_distribute: float, sen_LA_for_each_leaf: dict[int,float]) -> None:
+        self.height_to_distribute = height_to_distribute
+        self.height_for_each_internode = height_for_each_internode
+        self.LA_to_distribute = LA_to_distribute
+        self.LA_for_each_leaf = LA_for_each_leaf
+        self.sen_LA_to_distribute = sen_LA_to_distribute
+        self.sen_LA_for_each_leaf = sen_LA_for_each_leaf
 
 
-def compute_nb_of_growing_organs(g, time):
-    """Compute the number of growing organs at a given time"""
+def equal_dist(increment, nb):
+    '''return initial distribution per organ (H: same amount for all organs)'''
+    return [increment/nb] * nb
 
-    pot_length_growing_internodes = []
-    pot_area_growing_leaves = []
+
+def demand_dist(increment, growing_organs):
+    '''return distribution of increment per organ proportionnal to potential length or area'''
+    sum_growing_organs = sum(growing_organs.values())
+    return {vid: increment*values["potential"]/sum_growing_organs for vid, values in growing_organs.items()}
+
+
+def get_growing_organs_potential_visible(g, time):
+    """Identify growing organs and their potential at a given time"""
+
+    growing_internodes = {}
+    growing_leaves = {}
 
     for vid, la in g.properties()["leaf_area"].items(): 
         n = g.node(vid)
         if n.start_tt <= time < n.end_tt:
-            pot_area_growing_leaves.append(la)
+            growing_leaves[vid] = {"potential": la, "visible": n.visible_leaf_area}
 
     for vid, ml in g.properties()["mature_length"].items(): 
         n = g.node(vid)
         if n.label.startswith("Stem") and n.start_tt <= time < n.end_tt:
-            pot_length_growing_internodes.append(ml)
+            growing_internodes[vid] = {"potential": ml, "visible": n.visible_length}
 
-    # axes = g.vertices(scale=1)
-    # metamer_scale = g.max_scale()
+    return growing_internodes, growing_leaves
 
-    # for axis in axes:
-    #     v = next(g.component_roots_at_scale_iter(axis, scale=metamer_scale))
 
-    #     for metamer in pre_order2(g, v):
-            
-    #         n = g.node(metamer)
-    #         if n.label.startswith("Leaf"):
-    #             if n.start_tt <= time < n.end_tt: # and n.visible_length < n.mature_length:  # organ growing   
-    #                 pot_area_growing_leaves.append(n.leaf_area)
+def get_growing_organs(g, time):
+    """Identify growing organs and their potential at a given time"""
 
-    #         if n.label.startswith("Stem"):
-    #             if n.start_tt <= time < n.end_tt: # and n.visible_length < n.mature_length:  # organ growing  
-    #                 pot_length_growing_internodes.append(n.mature_length) 
+    growing_internodes = []
+    growing_leaves = []
 
-    return pot_length_growing_internodes, pot_area_growing_leaves
+    for vid in g.properties()["leaf_area"].keys(): 
+        n = g.node(vid)
+        if n.start_tt <= time < n.end_tt:
+            growing_leaves.append(vid)
 
-def compute_nb_of_senescent_organs(g, time):
-    """Compute the number of senescent organs at a given time"""
+    for vid in g.properties()["mature_length"].keys(): 
+        n = g.node(vid)
+        if n.label.startswith("Stem") and n.start_tt <= time < n.end_tt:
+            growing_internodes.append(vid)
 
-    nb_of_senescent_leaves = 0
+    return growing_internodes, growing_leaves
+
+
+def get_senescing_organs(g, time):
+    """Identify senescing blades at a given time"""
+
+    senescing_leaves = []
     for vid in g.properties()["leaf_area"].keys(): 
         n = g.node(vid)
         if n.senescence <= time and n.srt > 0: 
-            nb_of_senescent_leaves += 1
-    return nb_of_senescent_leaves
+            senescing_leaves.append(vid)
+    return senescing_leaves
 
-def equal_distribution(ds, nb):
-    '''return initial distribution per organ (H: same amount for all organs)'''
-    return [ds/nb] * nb
 
-def demand_related_distribution(increment, pot_growing_organs):
-    '''return distribution of increment per organ proportionnal to potential length or area'''
-    sum_growing_organs = sum(pot_growing_organs)
-    return [increment*p/sum_growing_organs for p in pot_growing_organs]
 
-def distribute_constraint_among_organs(g, time, increments, growth):
+
+
+def distribute_among_organs(g, time, increments):
     """Fill the dictionnary of variables recording growth process at a given time"""
 
     # compute number of growing organs
-    pot_length_growing_internodes, pot_area_growing_leaves = compute_nb_of_growing_organs(g, time)
-    nb_of_growing_internodes, nb_of_growing_leaves = len(pot_length_growing_internodes), len(pot_area_growing_leaves)
+    growing_internodes, growing_leaves = get_growing_organs_potential_visible(g, time)
 
-    # Compute number of senscent organs
-    nb_of_senescent_leaves = compute_nb_of_senescent_organs(g, time)
+    # compute number of senscent organs
+    senescing_leaves = get_senescing_organs(g, time)
 
-    # set initial total amount of growth to distribute among organs
-    height_to_distribute = increments["Height increment"] # + growth["height_to_distribute"]
-    LA_to_distribute = increments["Leaf area increment"] # + growth["LA_to_distribute"]
+    # set amount of growth to distribute among organs
+    height_to_distribute = increments["Height increment"] 
+    LA_to_distribute = increments["Leaf area increment"] 
     sen_LA_to_distribute = increments["Senescent leaf area increment"]
     
-    if nb_of_growing_leaves > 0 and LA_to_distribute > 0:
-        # LA_for_each_leaf = equal_distribution(LA_to_distribute, nb_of_growing_leaves)
-        LA_for_each_leaf = demand_related_distribution(LA_to_distribute, pot_area_growing_leaves)
-    else:
-        LA_for_each_leaf = None
+    height_for_each_internode = {vid: 0.0 for vid in growing_internodes}
+    LA_for_each_leaf = {vid: 0.0 for vid in growing_leaves}
+    sen_LA_for_each_leaf = {vid: 0.0 for vid in senescing_leaves}
 
-    if nb_of_growing_internodes > 0 and height_to_distribute > 0.0:
-        # LA_for_each_leaf = equal_distribution(height_to_distribute, nb_of_growing_internodes)
-        height_for_each_internode = demand_related_distribution(height_to_distribute, pot_length_growing_internodes)
-    else:
-        height_for_each_internode = None
+    if len(growing_leaves) > 0 and LA_to_distribute > 0.0: # generic --> to function ???
+        LA_for_each_leaf = demand_dist(LA_to_distribute, growing_leaves)
 
-    if nb_of_senescent_leaves > 0 and sen_LA_to_distribute > 0.0:
-        sen_LA_for_each_leaf = equal_distribution(sen_LA_to_distribute, nb_of_senescent_leaves)
-    else:
-        sen_LA_for_each_leaf = None
+        LA_to_distribute = 0.0
+        for vid in LA_for_each_leaf.keys():
+            if LA_for_each_leaf[vid] + growing_leaves[vid]["visible"] > growing_leaves[vid]["potential"]:
+                remaining = LA_for_each_leaf[vid] + growing_leaves[vid]["visible"] - growing_leaves[vid]["potential"]
+                LA_to_distribute += remaining
+                LA_for_each_leaf[vid] -= remaining
+            growing_leaves[vid]["visible"] += LA_for_each_leaf[vid]
 
-    nb_of_updated_growing_leaves = 0
-    nb_of_updated_internodes = 0
-    nb_of_updated_senescent_leaves = 0
+        # demand_dist
+
+        # filter growing_leaves
+        
+
+    if len(growing_internodes) > 0 and height_to_distribute > 0.0:
+        height_for_each_internode = demand_dist(height_to_distribute, growing_internodes)
+
+    if len(senescing_leaves) > 0 and sen_LA_to_distribute > 0.0:
+        sen_LA_for_each_leaf = equal_dist(sen_LA_to_distribute, len(senescing_leaves))
 
     growth = {"height_to_distribute": height_to_distribute,
               "height_for_each_internode": height_for_each_internode,
               "LA_to_distribute": LA_to_distribute,
               "LA_for_each_leaf": LA_for_each_leaf,
               "sen_LA_to_distribute": sen_LA_to_distribute,
-              "sen_LA_for_each_leaf": sen_LA_for_each_leaf,
-              "nb_of_growing_leaves": nb_of_growing_leaves,
-              "nb_of_growing_internodes": nb_of_growing_internodes,
-              "nb_of_senescent_leaves": nb_of_senescent_leaves,
-              "nb_of_updated_growing_leaves": nb_of_updated_growing_leaves,
-              "nb_of_updated_internodes": nb_of_updated_internodes,
-              "nb_of_updated_senescent_leaves": nb_of_updated_senescent_leaves}
+              "sen_LA_for_each_leaf": sen_LA_for_each_leaf}
 
     return growth
 
@@ -204,10 +206,10 @@ def compute_organ(
     height_to_distribute = growth["height_to_distribute"]
     nb_of_growing_leaves = growth["nb_of_growing_leaves"]
     nb_of_growing_internodes = growth["nb_of_growing_internodes"]
-    nb_of_senescent_leaves = growth["nb_of_senescent_leaves"]
+    nb_of_sen_leaves = growth["nb_of_sen_leaves"]
     nb_of_updated_growing_leaves = growth["nb_of_updated_growing_leaves"]
     nb_of_updated_internodes = growth["nb_of_updated_internodes"]
-    nb_of_updated_senescent_leaves = growth["nb_of_updated_senescent_leaves"]
+    nb_of_updated_sen_leaves = growth["nb_of_updated_sen_leaves"]
 
 
     if n.label.startswith("Leaf") or n.label.startswith("Stem"):
@@ -244,7 +246,7 @@ def compute_organ(
                             tck = shape_to_surface(n.shape, n.wl) # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                             n.visible_length = float(splev(x=relative_visible_area, tck=tck)) * n.mature_length
                         
-                        else: # too much area distributed according to potential
+                        else: # too much area distributed according to potential # in distribute !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                             LA_rest = LA_for_this_leaf - (n.leaf_area - n.visible_leaf_area)
                             n.visible_leaf_area = n.leaf_area
                             next_leaves_to_update = len(LA_for_each_leaf[nb_of_updated_growing_leaves+1:])
@@ -290,7 +292,9 @@ def compute_organ(
                 if n.label.startswith("Leaf") and sen_LA_for_each_leaf is not None:
                     if n.senescence <= time:
                         n.grow = False # ?
-                        sen_LA_for_this_leaf = sen_LA_for_each_leaf[nb_of_updated_senescent_leaves]
+                        print(nb_of_updated_sen_leaves)
+                        print(len(sen_LA_for_each_leaf))
+                        sen_LA_for_this_leaf = sen_LA_for_each_leaf[nb_of_updated_sen_leaves]
                         
                         if n.senescent_area + sen_LA_for_this_leaf < n.leaf_area:
                             n.senescent_area += sen_LA_for_this_leaf
@@ -303,12 +307,12 @@ def compute_organ(
                             n.senescent_area = n.leaf_area
                             n.senescent_length = n.mature_length
                             sen_LA_rest = sen_LA_for_this_leaf - (n.leaf_area - n.senescent_area)
-                            next_senescent_leaves_to_update = len(sen_LA_for_each_leaf[nb_of_updated_senescent_leaves+1:])
-                            for i in range(next_senescent_leaves_to_update):
-                                sen_LA_for_each_leaf[nb_of_updated_senescent_leaves+1+i] += sen_LA_rest/next_senescent_leaves_to_update
+                            next_sen_leaves_to_update = len(sen_LA_for_each_leaf[nb_of_updated_sen_leaves+1:])
+                            for i in range(next_sen_leaves_to_update):
+                                sen_LA_for_each_leaf[nb_of_updated_sen_leaves+1+i] += sen_LA_rest/next_sen_leaves_to_update
 
                         n.senescent_lengths.append(n.senescent_length)
-                        nb_of_updated_senescent_leaves += 1
+                        nb_of_updated_sen_leaves += 1
                 
 
     # update growth dict
@@ -319,10 +323,10 @@ def compute_organ(
     growth["height_to_distribute"] = height_to_distribute
     growth["nb_of_growing_leaves"] = nb_of_growing_leaves
     growth["nb_of_growing_internodes"] = nb_of_growing_internodes
-    growth["nb_of_senescent_leaves"] = nb_of_senescent_leaves
+    growth["nb_of_sen_leaves"] = nb_of_sen_leaves
     growth["nb_of_updated_growing_leaves"] = nb_of_updated_growing_leaves
     growth["nb_of_updated_internodes"] = nb_of_updated_internodes
-    growth["nb_of_updated_senescent_leaves"] = nb_of_updated_senescent_leaves
+    growth["nb_of_updated_sen_leaves"] = nb_of_updated_sen_leaves
     
     
     if n.label.startswith("Leaf"):  # leaf element
@@ -382,7 +386,7 @@ class CerealsVisitorConstrained(CerealsVisitor):
             # update geometry of elements
             # if n.length > 0:
             # print(v)
-            # nb_of_growing_internodes, nb_of_growing_leaves = compute_nb_of_growing_organs(g, time)
+            # nb_of_growing_internodes, nb_of_growing_leaves = growing_organs(g, time)
             mesh, growth = compute_organ(n, time, growth, self.classic)
             if mesh:  # To DO : reset to None if calculated so ?
                 n.geometry = turtle.transform(mesh)
@@ -402,15 +406,11 @@ class CerealsVisitorConstrained(CerealsVisitor):
         return growth
 
 
-def mtg_turtle_time_with_constraint(g, time, increments, growth, update_visitor=None):
+def mtg_turtle_time_with_constraint(g, time, increments, update_visitor=None):
     """Compute the geometry on each node of the MTG using Turtle geometry.
 
     Update_visitor is a function called on each node in a pre order (parent before children).
     This function allow to update the parameters and state variables of the vertices.
-
-    :Example:
-
-        >>> def grow(node, time):
 
     """
 
@@ -419,7 +419,7 @@ def mtg_turtle_time_with_constraint(g, time, increments, growth, update_visitor=
 
     max_scale = g.max_scale()
 
-    growth = distribute_constraint_among_organs(g, time, increments, growth)
+    growth = distribute_among_organs(g, time, increments)
 
     cereal_visitor = CerealsVisitorConstrained(False)
 
@@ -475,7 +475,7 @@ def mtg_turtle_time_with_constraint(g, time, increments, growth, update_visitor=
 
     for plant_id in g.component_roots_at_scale_iter(g.root, scale=max_scale):
         g = traverse_with_turtle_time(g, plant_id, time, growth)
-    return g, growth
+    return g
 
 
 def mtg_interpreter_with_constraint(g, classic=False):
