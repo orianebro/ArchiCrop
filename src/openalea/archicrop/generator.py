@@ -297,6 +297,7 @@ def cereals(json=None, classic=False, seed=None, plant=None):
             "mature_stem_diameter": row["W_internode"],
             "stem_diameter": row["W_internode"],
             "grow": False,
+            "dead": False,
             "age": 0.0,
             "leaf_lengths": [0.0],
             "senescent_lengths": [0.0]
