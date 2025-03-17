@@ -322,6 +322,8 @@ def compute_organ(
     
     if n.label.startswith("Leaf"):  # leaf element
         if n.visible_length > 0.0001:  # filter less than 0.001 mm leaves
+            # TODO : test if senesc or not
+            # if senesc : create a mesh in green and a mesh with senesc
             if n.shape is not None and n.srb is not None:
                 geom = leaf_mesh_for_growth(
                     n.shape,

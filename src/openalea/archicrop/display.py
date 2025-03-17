@@ -21,6 +21,8 @@ def build_scene(
     stem_material=None,
     soil_material=None,
     colors=None,
+    senescence_material=None,
+    senescence=False,
 ):
     """
     Returns a plantgl scene from an mtg.
@@ -38,6 +40,8 @@ def build_scene(
             stem_material = Material(Color3(0, 130, 0))
         if soil_material is None:
             soil_material = Material(Color3(170, 85, 0))
+        if senescence_material is None:
+            senescence_material = Material(Color3(170, 170, 0)) # Yellow
             # colors = g.property('color')
 
     scene = Scene()
