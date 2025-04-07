@@ -1,3 +1,4 @@
+import math
 import matplotlib.pyplot as plt
 
 from openalea.archicrop.archicrop import ArchiCrop
@@ -16,15 +17,25 @@ height_stics = [value["Plant height"] for value in stics_output_data.values()]
 # print(stics_output_data)
 
 file_xml = 'proto_sorghum_plt.xml'
-params = ['durvieF', 'ratiodurvieI']
+params_sen = ['durvieF', 'ratiodurvieI']
 
-print(read_xml_file(file_xml, params))
+sen_stics = read_xml_file(file_xml, params_sen)
+print(sen_stics)
+lifespan = sen_stics['durvieF']
+lifespan_early = sen_stics['ratiodurvieI'] * lifespan
 
 
+for key, value in stics_output_data.items():
+    if value["Phenology"] == 'exponential':
+        next_key = key + 1
+        if next_key in stics_output_data and stics_output_data[next_key]["Phenology"] == 'repro':
+            time_end_veg = value["Thermal time"]
+            break
 
-height=height_stics[-1]
-Smax=LA_stics[-1]
-nb_phy=14
+
+height=max(height_stics)
+Smax=max(LA_stics)
+nb_phy=12
 wl=0.12
 diam_base=2.5 
 diam_top=1.5
@@ -40,11 +51,12 @@ rmax=0.8
 skew=0.0005
 phyllotactic_angle=180
 phyllotactic_deviation=0
-phyllochron=40
+phyllochron=38
 plastochron=phyllochron
-leaf_duration=time[-1]/phyllochron-nb_phy # !!!!!!!!!!!!!!!!!!!
+leaf_duration=time_end_veg/phyllochron-nb_phy 
+print(leaf_duration)
 stem_duration=leaf_duration
-leaf_lifespan=500
+leaf_lifespan=[lifespan_early, lifespan]
 
 sorghum = ArchiCrop(height, 
                     nb_phy,
@@ -61,7 +73,7 @@ sorghum = ArchiCrop(height,
                     stem_duration,
                     leaf_lifespan)
 sorghum.generate_potential_plant()
-sorghum.define_development()
+sorghum.define_development(stics_output_data)
 growing_plant = sorghum.grow_plant(stics_output_data)
 
 # for val in growing_plant[time[-1]].properties()["senescent_lengths"].values():
@@ -70,16 +82,18 @@ growing_plant = sorghum.grow_plant(stics_output_data)
 # Pylab plot
 # organ dynamics
 def plot2d():
+    fig, ax1 = plt.subplots()
+    # ax2 = ax1.twinx()
     for l in range(len(growing_plant[time[-1]].properties()["leaf_lengths"].values())):
         # print(list(growing_plant[time[-1]].properties()["senescent_lengths"].values())[l])
-        # plt.plot(time[1:], [list(growing_plant[t].properties()["leaf_lengths"].values())[l][-1] for t in time[1:]])
-        plt.plot(time[1:], [list(growing_plant[t].properties()["leaf_lengths"].values())[l][-1] - list(growing_plant[t].properties()["senescent_lengths"].values())[l][-1] for t in time[1:]])
-        plt.plot(time[1:], [la  for la, sen in zip(LA_stics[1:], sen_LA_stics[1:])])
-        plt.plot(time[1:], [sen  for la, sen in zip(LA_stics[1:], sen_LA_stics[1:])])
-        plt.plot(time[1:], [la - sen for la, sen in zip(LA_stics[1:], sen_LA_stics[1:])])
+        # ax1.plot(time[1:], [list(growing_plant[t].properties()["leaf_lengths"].values())[l][-1] for t in time[1:]], color=(0, 1/math.sqrt(l+1), 0))
+        # ax1.plot(time[1:], [list(growing_plant[t].properties()["senescent_lengths"].values())[l][-1] for t in time[1:]], color=(0, 1/math.sqrt(l+1), 0))
+        ax1.plot(time[1:], [list(growing_plant[t].properties()["leaf_lengths"].values())[l][-1] - list(growing_plant[t].properties()["senescent_lengths"].values())[l][-1] for t in time[1:]])
+        # ax2.plot(time[1:], [la - sen for la, sen in zip(LA_stics[1:], sen_LA_stics[1:])])
         
-    plt.xlabel("Thermal time")
-    plt.ylabel("Leaf length")
+    ax1.set_xlabel("Thermal time")
+    ax1.set_ylabel("Individual leaf lengths")
+    # ax2.set_ylabel("LAI from STICS")
     # plt.legend(loc="upper left")
 
     plt.show()
@@ -89,8 +103,8 @@ def plot3d(growing_plant=growing_plant):
     scene, _ = build_scene(growing_plant[time[tt]], senescence=True)
     display_scene(scene)
 
-#plot2d()
-plot3d()
+plot2d()
+#plot3d()
 
 # print(growing_plant[time[-1]].property_names())
 # print(growing_plant[time[-1]].properties()['geometry'])

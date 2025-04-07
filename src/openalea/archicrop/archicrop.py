@@ -107,7 +107,7 @@ class ArchiCrop:
         # return self.g
 
     
-    def define_development(self):
+    def define_development(self, increments):
         """
         Define the development of the plant, by setting a start and an end thermal time for the growth of each organ.
 
@@ -119,7 +119,14 @@ class ArchiCrop:
 
         :return: MTG of a plant
         """
-        self.g = thermal_time(self.g, self.phyllochron, self.plastochron, self.leaf_duration, self.stem_duration, self.leaf_lifespan)
+        for key, value in increments.items():
+            if value["Phenology"] == 'juvenile':
+                next_key = key + 1
+                if next_key in increments and increments[next_key]["Phenology"] == 'exponential':
+                    end_juv = value["Thermal time"]
+                    break
+                
+        self.g = thermal_time(self.g, self.phyllochron, self.plastochron, self.leaf_duration, self.stem_duration, self.leaf_lifespan, end_juv)
 
         # return self.g
     

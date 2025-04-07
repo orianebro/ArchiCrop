@@ -151,7 +151,7 @@ def read_xml_file(file_xml, params):
     for elem in root.findall(".//param") + root.findall(".//colonne"):
         param_name = elem.get("nom")  # Get the name attribute
         if param_name in params:
-            result[param_name] = elem.text.strip() if elem.text else None
+            result[param_name] = float(elem.text.strip()) if elem.text else None
     
     return result
 
