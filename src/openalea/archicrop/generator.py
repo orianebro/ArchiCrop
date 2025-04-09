@@ -202,10 +202,19 @@ def as_plant(json):
     return blades, stem, leaves
 
 
+####################################################
+# TODO : copy and modify the function from the tests
 
-
-
-
+def add_tiller(g, vid, time, phyllochrone=1, tiller_delay=1):
+    """ Add a tiller to the plant at the given time
+    Args:
+        g: the MTG
+        vid: the vertex id of the plant
+        time: the time of the tiller
+        phyllochrone: the phyllochrone of the plant
+        tiller_delay: the delay of the tiller
+    """
+    pass
 
 
 def cereals(json=None, classic=False, seed=None, plant=None):
