@@ -2,7 +2,7 @@ from openalea.mtg import *
 from openalea.mtg.traversal import pre_order
 
 
-def test_axis(n=10):
+def main_axis(n=10):
     """
     Create a MTG as an axis.
     """
@@ -61,14 +61,14 @@ def add_tiller(g, vid, start_time, phyllochrone=1, tiller_delay=1):
 
     
 
-def test_full_plant(nb_leaves=10, nb_tillers=10, phyllochrone=1, tiller_delay=1):
+def generate_full_plant(nb_leaves=10, nb_tillers=10, phyllochrone=1, tiller_delay=1):
     """
     Create a MTG as a full plant.
     """
     # Here we consider that the list is sorted by the time
     tiller_points = []
     # Create a simple MTG
-    g = test_axis(n=nb_leaves)
+    g = main_axis(n=nb_leaves)
     max_scale = g.max_scale()
     root_id = next(g.component_roots_at_scale_iter(g.root, scale=max_scale))
 
@@ -93,3 +93,40 @@ def test_full_plant(nb_leaves=10, nb_tillers=10, phyllochrone=1, tiller_delay=1)
 
 
     return g
+
+# tests
+# g=generate_full_plant(nb_leaves=10, nb_tillers=1)
+# g=generate_full_plant(nb_leaves=10, nb_tillers=2)
+# g=generate_full_plant(nb_leaves=15, nb_tillers=40)
+# g.display()
+
+def nb_ramifs(g):
+    max_scale = g.max_scale()
+    ramifs = [v for v in g.vertices_iter(scale=max_scale-1) if g.edge_type(v)=='+']
+    return len(ramifs)
+
+
+
+def test_main_axis():
+    """
+    Test the main_axis function.
+    """
+    g = generate_full_plant(nb_leaves=10, nb_tillers=0)
+    assert len(g) == 13
+    assert g.root == 0
+    assert g.scale(3) == 3
+
+    assert nb_ramifs(g) == 0
+
+def test_t1():
+    g=generate_full_plant(nb_leaves=10, nb_tillers=1)
+    assert nb_ramifs(g) == 1
+
+def test_t5():
+    g=generate_full_plant(nb_leaves=10, nb_tillers=5)
+    assert nb_ramifs(g) == 5
+
+def test_t40():
+    g=generate_full_plant(nb_leaves=20, nb_tillers=40)
+    assert nb_ramifs(g) == 40
+
