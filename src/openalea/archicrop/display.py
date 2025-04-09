@@ -41,12 +41,12 @@ def build_scene(
         if soil_material is None:
             soil_material = Material(Color3(170, 85, 0))
         if senescence_material is None:
-            senescence_material = Material(Color3(170, 170, 0)) # Yellow
+            senescence_material = Material(Color3(170, 0, 0)) # Yellow no RED
             # colors = g.property('color')
 
     scene = Scene()
 
-    def geom2shape(vid, mesh, scene, colors, position, orientation, shape_id=None):
+    def geom2shape(vid, mesh, scene, colors, position, orientation, shape_id=None, is_senescent=False):
         shape = None
         if shape_id is None:
             shape_id = vid
@@ -62,7 +62,9 @@ def build_scene(
         label = labels.get(vid)
         is_green = greeness.get(vid)
         mesh = Translated(position, AxisRotated((0, 0, 1), orientation, mesh))
-        if colors:
+        if is_senescent:
+            shape = Shape(mesh, senescence_material)
+        elif colors:
             shape = Shape(mesh, Material(Color3(*colors.get(vid, [0, 0, 0]))))
         elif not greeness:
             if not shape:
@@ -87,6 +89,13 @@ def build_scene(
         for vid, mesh in geometries.items():
             geom2shape(vid, mesh, scene, colors, p, o, vid + count)
             nump.append(i)
+
+        if senescence:
+            sen_geometries = g.property("geometry_senescent")
+            for vid, mesh in sen_geometries.items():
+                geom2shape(vid, mesh, scene, colors, p, o, vid + count, is_senescent=True)
+                nump.append(i)
+
         count += len(g)
 
     return scene, nump

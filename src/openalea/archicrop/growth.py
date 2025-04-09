@@ -414,6 +414,27 @@ def compute_organ(vid, element_node, time, growth, classic=False):
                     inclination=min(0.5 + 0.5*(time - n.start_tt) / (n.end_tt - n.start_tt),1.5), # !!!!!!!!!!!!!!!!!
                     stem_diameter=n.stem_diameter,
                 )
+
+            ### Add a mesh that is senescent
+            if n.senescent_length > 0.0001:
+                if n.shape is not None and n.srb is not None:
+                    geom_senescent = leaf_mesh_for_growth(
+                        n.shape,
+                        n.mature_length,
+                        n.shape_max_width,
+                        n.visible_length,
+                        n.srt,
+                        1.,
+                        # flipx allows x-> -x to place the shape along
+                        #  with the tiller positioned with
+                        # turtle.down()
+                        flipx=True,
+                        inclination=min(0.5 + 0.5*(time - n.start_tt) / (n.end_tt - n.start_tt),1.5), # !!!!!!!!!!!!!!!!!
+                        stem_diameter=n.stem_diameter,
+                    )
+                    n.geometry_senescent = geom_senescent
+
+
             if n.lrolled > 0:
                 rolled = stem_mesh(
                     n.lrolled, n.lrolled, n.d_rolled, classic
@@ -482,6 +503,7 @@ class CerealsVisitorConstrained(CerealsVisitor):
 
     def __call__(self, g, v, turtle, time, growth):
         # 1. retrieve the node
+        geoms_senesc = g.property("geometry_senescent")
         n = g.node(v)
 
         # Go to plant position if first plant element
@@ -506,6 +528,8 @@ class CerealsVisitorConstrained(CerealsVisitor):
             if mesh:  # To DO : reset to None if calculated so ?
                 n.geometry = turtle.transform(mesh)
                 n.anchor_point = turtle.getPosition()
+            if v in geoms_senesc:
+                geoms_senesc[v] = turtle.transform(geoms_senesc[v])
 
         # 3. Update the turtle and context
         turtle.setId(v)
@@ -519,6 +543,9 @@ class CerealsVisitorConstrained(CerealsVisitor):
                 turtle.context.update({"top": turtle.getFrame()})
 
         return growth
+    
+
+        
 
 
 def mtg_turtle_time_with_constraint(g, time, increments, update_visitor=None):
