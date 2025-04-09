@@ -44,3 +44,22 @@ def add_tiller(g, vid):
     assert(tid==tid2)
     return g
 
+
+
+def tiller_position(g, nb_tillers=6, max_tiller_rank=4):
+    '''
+    Find position of n tillers in a MTG
+    Args:
+        g: MTG (1 main axis)
+        nb_tillers: nb of tillers in MTG
+        max_tiller_rank: maximum rank for tillering
+    Return: list of IDs of internodes that are tiller origins
+    '''
+
+    nb_tillers_to_place = nb_tillers
+
+    axis = g.vertices(scale=1)
+    metamer_scale = g.max_scale()
+    v = next(g.component_roots_at_scale_iter(axis, scale=metamer_scale))
+
+    

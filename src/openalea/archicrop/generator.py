@@ -202,6 +202,12 @@ def as_plant(json):
     return blades, stem, leaves
 
 
+
+
+
+
+
+
 def cereals(json=None, classic=False, seed=None, plant=None):
     """
     Generate a 'geometric-based' MTG representation of cereals
@@ -304,6 +310,11 @@ def cereals(json=None, classic=False, seed=None, plant=None):
         }
 
         vid_leaf = g.add_child(vid_internode, edge_type="+", **leaf)  # noqa: F841
+
+
+
+
+
 
     g = fat_mtg(g)
 
