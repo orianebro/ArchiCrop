@@ -34,9 +34,9 @@ def illuminate(scene, light=None, pattern=None, scene_unit="cm", north=0):
     return cs, raw["Ei"], pd.DataFrame(agg)
 
 
-def compute_light_inter(scene):
+def compute_light_inter(scene, sky):
     
-    sky = str(data_path('Turtle16soc.light'))
+    # sky = str(data_path('Turtle16soc.light'))
     # zenith = str(data_path('zenith.light'))
     # opts = str(data_path('par_sorghum.opt'))
     # opts = list(map(str, [data_path('par_sorghum.opt'), data_path('nir_sorghum.opt')]))
