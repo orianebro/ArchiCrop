@@ -148,7 +148,7 @@ def get_senescing_organs(g, time):
 def distribute_to_potential(growing_organs, increment_to_distribute, distribution_function):
     "Distribute increment among growing organs up to potential of each organ"
 
-    increment_for_each_organ = {vid: 0.0 for vid in growing_organs.keys()}
+    increment_for_each_organ = {vid: 0.0 for vid in growing_organs}
 
     while len(growing_organs) > 0 and increment_to_distribute > 1e-4: 
         incr_temp = distribution_function(increment_to_distribute, growing_organs)
@@ -157,7 +157,7 @@ def distribute_to_potential(growing_organs, increment_to_distribute, distributio
         for vid, val in incr_temp.items():
         #     increment_for_each_organ[vid] += val # added here
         # for vid in increment_for_each_organ.keys():
-            if vid in growing_organs.keys():
+            if vid in growing_organs:
                 potential_increment = min(val, growing_organs[vid]["potential"] - growing_organs[vid]["visible"])
                 increment_for_each_organ[vid] += potential_increment
                 growing_organs[vid]["visible"] += potential_increment
