@@ -69,11 +69,13 @@ sorghum.generate_potential_plant()
 sorghum.define_development()
 growing_plant = sorghum.grow_plant()
 
-for i, t in enumerate(time):
-    if i and i%5 == 0:
-        scene, _ = build_scene(growing_plant[t])
-        display_scene(scene)
-        n = input('next')
+times = time[-20:-10]
+mean_time = sum(times) / len(times)
+
+positions = [ (0, 3*(t-mean_time), 0) for t in times]
+
+scene, _ = build_scene(list(growing_plant.values())[-20:-10], position=positions, senescence=True)
+display_scene(scene)
 
 # %gui qt
 # %run test_use_archicrop.py
