@@ -63,9 +63,8 @@ for phy in phyllochrons:
                         phyllotactic_deviation,
                         phyllochron, 
                         plastochron, 
-                        leaf_duration, 
-                        stem_duration,
-                        leaf_lifespan)
+                        leaf_lifespan,
+                        stics_output_data)
     sorghum.generate_potential_plant()
     sorghum.define_development()
     growing_plant = sorghum.grow_plant(stics_output_data)

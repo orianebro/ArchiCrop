@@ -20,12 +20,12 @@ lifespan = sen_stics['durvieF']
 lifespan_early = sen_stics['ratiodurvieI'] * lifespan
 
 
-for key, value in stics_output_data.items():
-    if value["Phenology"] == 'exponential':
-        next_key = key + 1
-        if next_key in stics_output_data and stics_output_data[next_key]["Phenology"] == 'repro':
-            time_end_veg = value["Thermal time"]
-            break
+# for key, value in stics_output_data.items():
+#     if value["Phenology"] == 'exponential':
+#         next_key = key + 1
+#         if next_key in stics_output_data and stics_output_data[next_key]["Phenology"] == 'repro':
+#             time_end_veg = value["Thermal time"]
+#             break
 
 
 height=max(height_stics)
@@ -48,8 +48,8 @@ phyllotactic_angle=180
 phyllotactic_deviation=0
 phyllochron=38
 plastochron=phyllochron
-leaf_duration=time_end_veg/phyllochron-nb_phy 
-stem_duration=leaf_duration
+# leaf_duration=time_end_veg/phyllochron-nb_phy 
+# stem_duration=leaf_duration
 leaf_lifespan=[lifespan_early, lifespan]
 
 sorghum = ArchiCrop(height, 
@@ -63,12 +63,11 @@ sorghum = ArchiCrop(height,
                     phyllotactic_deviation,
                     phyllochron, 
                     plastochron, 
-                    leaf_duration, 
-                    stem_duration,
-                    leaf_lifespan)
+                    leaf_lifespan,
+                    stics_output_data)
 sorghum.generate_potential_plant()
-sorghum.define_development(stics_output_data)
-growing_plant = sorghum.grow_plant(stics_output_data)
+sorghum.define_development()
+growing_plant = sorghum.grow_plant()
 
 for i, t in enumerate(time):
     if i and i%5 == 0:

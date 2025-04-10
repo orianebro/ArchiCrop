@@ -1,5 +1,6 @@
 from openalea.mtg import *
 from openalea.mtg.traversal import pre_order
+from openalea.mtg.turtle import traverse_with_turtle
 
 
 def main_axis(n=10):
@@ -130,3 +131,16 @@ def test_t40():
     g=generate_full_plant(nb_leaves=20, nb_tillers=40)
     assert nb_ramifs(g) == 40
 
+
+def visitor(g, v, turtle):
+    if g.edge_type(v) == '+':
+        angle = 60 if g.order(v) == 1 else 30
+        turtle.down(angle)
+    turtle.setId(v)
+    turtle.F(1)
+    turtle.rollL()
+
+def plot(g):
+    # Viewer.display(plot(g))
+    scene = traverse_with_turtle(g, 3, visitor=visitor, gc=True)
+    return scene

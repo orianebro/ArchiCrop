@@ -69,9 +69,8 @@ sorghum = ArchiCrop(height,
                     phyllotactic_deviation,
                     phyllochron, 
                     plastochron, 
-                    leaf_duration, 
-                    stem_duration,
-                    leaf_lifespan)
+                    leaf_lifespan,
+                    stics_output_data)
 sorghum.generate_potential_plant()
 sorghum.define_development(stics_output_data)
 growing_plant = sorghum.grow_plant(stics_output_data)

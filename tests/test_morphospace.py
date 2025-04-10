@@ -1,5 +1,5 @@
 from openalea.archicrop.archicrop import ArchiCrop
-from openalea.archicrop.simulation import read_sti_file
+from openalea.archicrop.simulation import read_sti_file, read_xml_file
 from openalea.archicrop.display import build_scene, display_scene
 
 stics_output_file = 'mod_ssorghum.sti'
@@ -9,6 +9,14 @@ stics_output_data = read_sti_file(stics_output_file, sowing_density)
 time = [value["Thermal time"] for value in stics_output_data.values()]
 LA_stics = [value["Plant leaf area"] for value in stics_output_data.values()]
 height_stics = [value["Plant height"] for value in stics_output_data.values()]
+
+file_xml = 'proto_sorghum_plt.xml'
+params_sen = ['durvieF', 'ratiodurvieI']
+
+sen_stics = read_xml_file(file_xml, params_sen)
+lifespan = sen_stics['durvieF']
+lifespan_early = sen_stics['ratiodurvieI'] * lifespan
+leaf_lifespan = [lifespan_early, lifespan]
 
 scenes = []
 
@@ -35,8 +43,8 @@ for nb_phy in [10,15,20]:
                                 phyllotactic_deviation=15,
                                 phyllochron=phyllochron, 
                                 plastochron=plastochron, 
-                                leaf_duration=leaf_duration, 
-                                stem_duration=stem_duration)
+                                leaf_lifespan=leaf_lifespan,
+                                increments=stics_output_data)
             sorghum.generate_potential_plant()
             # print("Potential plant generated")
             sorghum.define_development()

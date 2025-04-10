@@ -54,11 +54,14 @@ def LHS_param_sampling(archi_params, n_samples):
         if isinstance(value, (int, float)):  # Fixed parameter
             fixed_params[key] = value
         # Parameter distribution in Latin Hypercube
-        elif isinstance(value, list):  # Range to sample
+        elif isinstance(value, list) and key not in {"leaf_lifespan", "increments"}:  # Range to sample
             l_bounds.append(min(value))
             u_bounds.append(max(value))
             
             sampled_params.append(key)
+
+        elif key in {"leaf_lifespan", "increments"}:
+            fixed_params[key] = value
 
     
     # Create a Latin Hypercube sampler
@@ -106,10 +109,10 @@ def params_for_curve_fit(param_sets, curves, error_LA=300, error_height=30):
 
     
     for params in param_sets:
-        sorghum = ArchiCrop(max(height_stics), **params)
+        sorghum = ArchiCrop(height = max(height_stics), Smax = max(LA_stics), **params)
         sorghum.generate_potential_plant()
         sorghum.define_development()
-        growing_plant = sorghum.grow_plant(curves)
+        growing_plant = sorghum.grow_plant()
         growing_plant_mtg = list(growing_plant.values())
     
         LA_archicrop = [sum(compute_leaf_area_growing_plant(gp)) for gp in growing_plant_mtg] 
