@@ -4,6 +4,8 @@ from itertools import product
 from scipy.stats import qmc
 import xml.etree.ElementTree as ET
 
+from openalea.plantgl.all import surface
+
 # from archicrop
 from .archicrop import ArchiCrop
 from .plant_shape import compute_height_growing_plant, compute_leaf_area_growing_plant
@@ -73,15 +75,31 @@ def LHS_param_sampling(archi_params, n_samples):
     # Scale samples to parameter bounds
     scaled_samples = qmc.scale(lhs_samples, l_bounds=l_bounds, u_bounds=u_bounds)
 
+    # Retrieve phenology
+    for key, value in archi_params["increments"].items():
+        if value["Phenology"] == 'juvenile':
+            next_key = key + 1
+            if next_key in archi_params["increments"] and archi_params["increments"][next_key]["Phenology"] == 'exponential':
+                end_juv = value["Thermal time"]
+
+        elif value["Phenology"] == 'exponential':
+            next_key = key + 1
+            if next_key in archi_params["increments"] and archi_params["increments"][next_key]["Phenology"] == 'repro':
+                end_veg = value["Thermal time"]
+                break
+
     # Create parameter sets
     param_sets = []
     for sample in scaled_samples:
         # Combine fixed parameters with sampled parameters
-        sampled_dict = {
-            key: int(value) if key == "nb_phy" else value
-            for key, value in zip(sampled_params, sample)
-        }
-        param_sets.append({**fixed_params, **sampled_dict})
+        phi = sample[sampled_params.index("phyllochron")]
+        nb = sample[sampled_params.index("nb_phy")]
+        if end_veg/phi-nb >= 1:
+            sampled_dict = {
+                key: int(value) if key == "nb_phy" else value
+                for key, value in zip(sampled_params, sample)
+            }
+            param_sets.append({**fixed_params, **sampled_dict})
     
     return param_sets
 
@@ -98,6 +116,7 @@ def params_for_curve_fit(param_sets, curves, error_LA=300, error_height=30):
     :return: dict of lists of parameters, mtg(t), LA(t), height(t) for curve-fitting simulations
     '''
     LA_stics = [value["Plant leaf area"] for value in curves.values()]
+    sen_LA_stics = [value["Senescent leaf area"] for value in curves.values()]
     height_stics = [value["Plant height"] for value in curves.values()]
     
     fitting_sim = {
@@ -115,14 +134,16 @@ def params_for_curve_fit(param_sets, curves, error_LA=300, error_height=30):
         growing_plant = sorghum.grow_plant()
         growing_plant_mtg = list(growing_plant.values())
     
-        LA_archicrop = [sum(compute_leaf_area_growing_plant(gp)) for gp in growing_plant_mtg] 
-        height_archicrop = [compute_height_growing_plant(gp) for gp in growing_plant_mtg]
+        LA_archicrop = [sum(la - sen for la, sen in zip(gp.properties()["visible_leaf_area"].values(), gp.properties()["senescent_area"].values())) for gp in growing_plant_mtg]
+        # print(LA_archicrop)
+        height_archicrop = [sum([vl for vid, vl in gp.properties()["visible_length"].items() if gp.node(vid).label.startswith("Stem")]) for gp in growing_plant_mtg]
         # --> properties in MTG at plant scale
         # elongation rate (i.e. list of length / day) as organ scale property --> plot
     
         good = True
         for i,(la,h) in enumerate(zip(LA_archicrop, height_archicrop)):
-            if LA_stics[i]-error_LA <= la <= LA_stics[i]+error_LA and height_stics[i]-error_height <= h <= height_stics[i]+error_height: 
+            LA_theo = LA_stics[i] - sen_LA_stics[i]
+            if LA_theo*(1-error_LA) <= la <= LA_theo*(1+error_LA) and height_stics[i]*(1-error_height) <= h <= height_stics[i]*(1+error_height): 
                 good = True
             else:
                 good = False
@@ -178,51 +199,47 @@ def read_sti_file(file_sti, density):
         - "Absorbed PAR" (float): absorbed PAR at a given thermal time (in MJ/m²)"""
     
     data_dict = {}
-    # start_column_index = 5
-    # filter_column = "laimax"
+    non_zero_height_encountered = False
 
     with open(file_sti, "r") as file:
         # Read the header line to get column names
         header = file.readline().strip().split(";")
         # Strip whitespace from column names
         stripped_header = [col.strip() for col in header if col != 'pla']
-        # Select column names starting from the given index
-        # selected_columns = stripped_header
-        
-        # Check if the filter column exists in the selected columns
-        # if filter_column not in selected_columns:
-        #     raise ValueError(f"Filter column '{filter_column}' not found in the selected columns.")
-        
+
         # Initialize empty lists for each selected column in the dictionary
         data_dict = {col.strip(): [] for col in stripped_header}
-        
+
         # Read the rest of the lines (data rows)
         for line in file:
             # Split the line into columns and select only the relevant part
-            values = line.strip().split(";") #[start_column_index:]
+            values = line.strip().split(";")
             values = values[:4] + values[5:]
             # Convert the values to floats
             row = {col.strip(): float(value) for col, value in zip(stripped_header, values)}
-            # Apply the filter condition
-            # if row[filter_column] != 0:
-            # Append values to the corresponding lists in the dictionary
-            for col in stripped_header:
-                data_dict[col.strip()].append(row[col.strip()])
-    
+            # Check if the height is 0 and break the loop if true, but only after encountering a non-zero height
+            if row["hauteur"] != 0.0:
+                non_zero_height_encountered = True
+                # Append values to the corresponding lists in the dictionary
+                for col in stripped_header:
+                    data_dict[col.strip()].append(row[col.strip()])
+            if non_zero_height_encountered and (row["hauteur"] == 0.0): # or row["laisen(n)"] == 0.0):
+                break 
 
     # start = 21 # 23
-    end = 140
+    # end = 140
     # density = 10 # density = 20 plants/m2 = 0.002 plants/cm2
 
     # Thermal time
-    thermal_time = list(np.cumsum([float(i) for i in data_dict["tempeff"][:end]]))
+    thermal_time = list(np.cumsum([float(i) for i in data_dict["tempeff"]]))
+    # thermal_time = list(np.cumsum([float(i) for i in data_dict["tmoy(n)"][:end]]))
 
     # Green LAI
-    leaf_area = [10000*float(i)/density for i in data_dict["laimax"][:end]] # from m2/m2 to cm2/plant
+    leaf_area = [10000*float(i)/density for i in data_dict["laimax"]] # from m2/m2 to cm2/plant
     leaf_area_incr = [leaf_area[0]] + [leaf_area[i+1]-leaf_area[i] for i in range(len(leaf_area[1:]))]
 
     # Senescent LAI
-    sen_leaf_area = [10000*float(i)/density for i in data_dict["laisen(n)"][:end]] # from m2/m2 to cm2/plant
+    sen_leaf_area = [10000*float(i)/density for i in data_dict["laisen(n)"]] # from m2/m2 to cm2/plant
     sen_leaf_area_incr = [sen_leaf_area[0]] + [sen_leaf_area[i+1]-sen_leaf_area[i] for i in range(len(sen_leaf_area[1:]))]
 
     # Phenology
@@ -231,11 +248,11 @@ def read_sti_file(file_sti, density):
     max_lai = data_dict["ilaxs"][-1] - data_dict["jul"][0]
 
     # Height
-    height = [float(i)*100 for i in data_dict["hauteur"][:end]] # from m to cm
+    height = [float(i)*100 for i in data_dict["hauteur"]] # from m to cm
     height_incr = [height[0]] + [height[i+1]-height[i] for i in range(len(height[1:]))]
 
     # Absorbed PAR
-    par_abs = [float(i)/(0.95*0.48*float(j)) for i, j in zip(data_dict["raint"][:end], data_dict["trg(n)"][:end])] # to % of light intercepted, in MJ/m^2
+    par_abs = [float(i)/(0.95*0.48*float(j)) for i, j in zip(data_dict["raint"], data_dict["trg(n)"])] # to % of light intercepted, in MJ/m^2
 
     return {
         i+1: {"Thermal time": round(thermal_time[i],4),

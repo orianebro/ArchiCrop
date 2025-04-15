@@ -93,7 +93,7 @@ def demand_dist(increment, growing_organs):
             for vid, values in growing_organs.items()}
 
 
-def get_growing_and_senescing_organs_potential_visible(g, time):
+def get_growing_and_senescing_organs_potential_visible(g, time, prev_time):
     """Identify growing organs and their potential at a given time"""
 
     growing_internodes = {}
@@ -102,20 +102,20 @@ def get_growing_and_senescing_organs_potential_visible(g, time):
 
     for vid, la in g.properties()["leaf_area"].items(): 
         n = g.node(vid)
-        if n.start_tt <= time < n.end_tt:
+        if n.start_tt <= time <= n.end_tt or prev_time < n.end_tt < time:
             growing_leaves[vid] = {"potential": la, "visible": n.visible_leaf_area}
         elif n.senescence <= time and not n.dead: # and n.srt > 0: 
             senescing_leaves[vid] = {"potential": n.visible_leaf_area, "visible": n.senescent_area}
 
     for vid, ml in g.properties()["mature_length"].items(): 
         n = g.node(vid)
-        if n.label.startswith("Stem") and n.start_tt <= time < n.end_tt:
+        if n.label.startswith("Stem") and (n.start_tt <= time < n.end_tt or prev_time < n.end_tt < time):
             growing_internodes[vid] = {"potential": ml, "visible": n.visible_length}
 
     return growing_internodes, growing_leaves, senescing_leaves
 
 
-def get_growing_organs(g, time):
+def get_growing_organs(g, time, prev_time):
     """Identify growing organs and their potential at a given time"""
 
     growing_internodes = []
@@ -123,12 +123,12 @@ def get_growing_organs(g, time):
 
     for vid in g.properties()["leaf_area"].keys(): 
         n = g.node(vid)
-        if n.start_tt <= time < n.end_tt:
+        if n.start_tt <= time <= n.end_tt or prev_time < n.end_tt < time:
             growing_leaves.append(vid)
 
     for vid in g.properties()["mature_length"].keys(): 
         n = g.node(vid)
-        if n.label.startswith("Stem") and n.start_tt <= time < n.end_tt:
+        if n.label.startswith("Stem") and (n.start_tt <= time < n.end_tt or prev_time < n.end_tt < time):
             growing_internodes.append(vid)
 
     return growing_internodes, growing_leaves
@@ -177,11 +177,11 @@ def distribute_to_potential(growing_organs, increment_to_distribute, distributio
 
 
 
-def distribute_among_organs(g, time, increments):
+def distribute_among_organs(g, time, prev_time, increments):
     """Fill the dictionnary of variables recording growth process at a given time"""
 
     # compute number of growing organs
-    growing_internodes, growing_leaves, senescing_leaves = get_growing_and_senescing_organs_potential_visible(g, time)
+    growing_internodes, growing_leaves, senescing_leaves = get_growing_and_senescing_organs_potential_visible(g, time, prev_time)
 
     # compute number of senscent organs
     # senescing_leaves = get_senescing_organs(g, time)
@@ -387,7 +387,7 @@ def compute_organ(vid, element_node, time, growth, classic=False):
                         update_stem_growth(n, height_for_this_internode)
             elif time > n.end_tt:
                 if n.label.startswith("Leaf") and growth["sen_LA_to_distribute"] > 0.0:
-                    if n.senescence <= time and not n.dead:
+                    if n.senescence <= time and not n.dead and vid in growth["sen_LA_for_each_leaf"]:
                         sen_LA_for_this_leaf = growth["sen_LA_for_each_leaf"][vid]
                         update_leaf_senescence(n, sen_LA_for_this_leaf)
                     else:
@@ -411,13 +411,13 @@ def compute_organ(vid, element_node, time, growth, classic=False):
                     #  with the tiller positioned with
                     # turtle.down()
                     flipx=True,
-                    inclination=min(0.5 + 0.5*(time - n.start_tt) / (n.end_tt - n.start_tt),1.5), # !!!!!!!!!!!!!!!!!
+                    inclination=min(1.5*(time - n.start_tt) / (n.end_tt - n.start_tt),2), # !!!!!!!!!!!!!!!!!
                     stem_diameter=n.stem_diameter,
                 )
 
             ### Add a mesh that is senescent
             if n.senescent_length > 0.0001:
-                if n.shape is not None and n.srb is not None:
+                if n.shape is not None and n.srt is not None:
                     geom_senescent = leaf_mesh_for_growth(
                         n.shape,
                         n.mature_length,
@@ -429,7 +429,7 @@ def compute_organ(vid, element_node, time, growth, classic=False):
                         #  with the tiller positioned with
                         # turtle.down()
                         flipx=True,
-                        inclination=min(0.5 + 0.5*(time - n.start_tt) / (n.end_tt - n.start_tt),1.5), # !!!!!!!!!!!!!!!!!
+                        inclination=min(1.5*(time - n.start_tt) / (n.end_tt - n.start_tt),2), # !!!!!!!!!!!!!!!!!
                         stem_diameter=n.stem_diameter,
                     )
                     n.geometry_senescent = geom_senescent
@@ -528,7 +528,7 @@ class CerealsVisitorConstrained(CerealsVisitor):
             if mesh:  # To DO : reset to None if calculated so ?
                 n.geometry = turtle.transform(mesh)
                 n.anchor_point = turtle.getPosition()
-            if v in geoms_senesc:
+            if v in geoms_senesc and geoms_senesc[v] is not None:
                 geoms_senesc[v] = turtle.transform(geoms_senesc[v])
 
         # 3. Update the turtle and context
@@ -548,7 +548,7 @@ class CerealsVisitorConstrained(CerealsVisitor):
         
 
 
-def mtg_turtle_time_with_constraint(g, time, increments, update_visitor=None):
+def mtg_turtle_time_with_constraint(g, time, prev_time, increments, update_visitor=None):
     """Compute the geometry on each node of the MTG using Turtle geometry.
 
     Update_visitor is a function called on each node in a pre order (parent before children).
@@ -561,7 +561,7 @@ def mtg_turtle_time_with_constraint(g, time, increments, update_visitor=None):
 
     max_scale = g.max_scale()
 
-    growth = distribute_among_organs(g, time, increments)
+    growth = distribute_among_organs(g, time, prev_time, increments)
 
     cereal_visitor = CerealsVisitorConstrained(False)
 

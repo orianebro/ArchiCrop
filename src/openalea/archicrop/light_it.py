@@ -90,7 +90,8 @@ def compute_light_inter(scene, sky):
 
     # Division of sums
     # result = sum_(values_eabs * triangle area) * conv / sum_values_ei if sum_values_ei != 0 else 0
-    result = sum_values_eabs * 0.0145 / Einc if Einc != 0 else 0 
+    # result = sum_values_eabs * 0.0145 / Einc if Einc != 0 else 0 
+    result = sum_values_eabs * 0.00145 / Einc if Einc != 0 else 0 
 
     # if result > 1:
     #     PlantGL(scene_eabs, group_by_color=False, property=values_eabs)

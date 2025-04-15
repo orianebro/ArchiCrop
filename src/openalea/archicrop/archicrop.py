@@ -11,7 +11,7 @@ from .display import build_scene
 
 class ArchiCrop:
 
-    g = None 
+    # g = None 
 
     def __init__(self, 
                  height,
@@ -66,8 +66,8 @@ class ArchiCrop:
                     break
 
         self.nb_phy = nb_phy
-        self.height = height
-        self.Smax = Smax
+        self.height = 2*height
+        self.Smax = 2*Smax
         self.wl = wl
         self.diam_base = diam_base
         self.diam_top = diam_top
@@ -160,10 +160,12 @@ class ArchiCrop:
         # Loop through time
         growing_plant = {}
         self.g = init_visible_variables(self.g)
+        prev_time = 0.0
         for v in self.increments.values():
-            gtemp = mtg_turtle_time_with_constraint(self.g, v["Thermal time"], v)
+            gtemp = mtg_turtle_time_with_constraint(self.g, v["Thermal time"], prev_time, v)
             growing_plant[v["Thermal time"]] = gtemp
             self.g = gtemp.copy() # copy
+            prev_time = v["Thermal time"]
         
         return growing_plant
     

@@ -59,7 +59,7 @@ def build_shoot(
     # nb_young_phy = int(
     #     round((nb_phy - 1.95) / 1.84 / 1.3)
     # )
-    nb_short_phy = 5
+    nb_short_phy = 4
     short_phy_height = 2
 
     pseudostem_height = nb_short_phy * short_phy_height
