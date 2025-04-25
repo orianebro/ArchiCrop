@@ -240,7 +240,8 @@ def add_tiller(g, vid, start_time, phyllochron, plastochron,
     tid = g.add_child(parent=axis_id, edge_type='+', label='Axis')
 
     # Extract characteristics of homologous vertex on main stem
-
+    # TOOD
+    stem = {}
 
     vid_stem, tid2 = g.add_child_and_complex(parent=vid, complex=tid, edge_type='+', **stem)
 
@@ -248,6 +249,8 @@ def add_tiller(g, vid, start_time, phyllochron, plastochron,
     g.node(vid_stem).end_tt = tt_stem + dtt_stem
     tt_stem += phyllochron
 
+    # TODO
+    leaf ={}
     vid_leaf = g.add_child(vid_stem, edge_type="+", **leaf)
 
     g.node(vid_leaf).start_tt = tt_leaf
