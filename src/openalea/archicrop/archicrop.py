@@ -66,8 +66,8 @@ class ArchiCrop:
                     break
 
         self.nb_phy = nb_phy
-        self.height = 2*height
-        self.Smax = 2*Smax
+        self.height = height
+        self.Smax = Smax
         self.wl = wl
         self.diam_base = diam_base
         self.diam_top = diam_top

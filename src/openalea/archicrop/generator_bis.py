@@ -7,6 +7,9 @@ import pandas as pd
 from scipy.interpolate import interp1d
 
 from openalea.mtg import MTG, fat_mtg
+# from openalea.mtg import *
+from openalea.mtg.traversal import pre_order
+from openalea.mtg.turtle import traverse_with_turtle
 
 from .geometry import mtg_interpreter
 from .plant_design import get_form_factor
@@ -202,7 +205,87 @@ def as_plant(json):
     return blades, stem, leaves
 
 
-def cereals(json=None, classic=False, seed=None, plant=None):
+####################################################
+# TODO : copy and modify the function from the tests
+
+# def add_phytomer(n, tt_stem, tt_leaf, phyllochron, plastochron, )
+
+
+def add_tiller(g, vid, start_time, phyllochron, plastochron, 
+               stem_duration, leaf_duration, leaf_lifespan, end_juv, 
+               tiller_delay, reduction_factor):
+    """ Add a tiller to the plant at the given time
+    Args:
+        g: the MTG
+        vid: the vertex id of the plant
+        start_time: the time of tiller initiation
+        phyllochron: the phyllochron of the plant
+        tiller_delay: the delay of the tiller
+    """
+
+    # Add a new component to the MTG
+
+    tillers = []
+    # scale_id = g.scale(vid)
+    axis_id = g.complex(vid)
+    rank = g.Rank(vid) + 1  # Number of edges from the root of the axis
+    n = len(g.Axis(vid))
+    len_tiller  = n - rank  # we remove the parent that do not belong to the tiller 
+
+    tt_stem = start_time
+    tt_leaf = start_time
+    dtt_stem = phyllochron * stem_duration
+    dtt_leaf = plastochron * leaf_duration
+
+    tid = g.add_child(parent=axis_id, edge_type='+', label='Axis')
+
+    # Extract characteristics of homologous vertex on main stem
+
+
+    vid_stem, tid2 = g.add_child_and_complex(parent=vid, complex=tid, edge_type='+', **stem)
+
+    g.node(vid_stem).start_tt = tt_stem
+    g.node(vid_stem).end_tt = tt_stem + dtt_stem
+    tt_stem += phyllochron
+
+    vid_leaf = g.add_child(vid_stem, edge_type="+", **leaf)
+
+    g.node(vid_leaf).start_tt = tt_leaf
+    g.node(vid_leaf).end_tt = tt_leaf + dtt_leaf
+    tt_leaf += plastochron
+
+    if g.node(vid_leaf).start_tt < end_juv:
+        g.node(vid_leaf).senescence = g.node(vid_leaf).start_tt + leaf_lifespan[0] 
+    else:
+        g.node(vid_leaf).senescence = g.node(vid_leaf).start_tt + leaf_lifespan[1]
+
+
+    for i in range(1, len_tiller):
+        vid_stem = g.add_child(parent=vid_stem, edge_type='<', **stem)
+
+        g.node(vid_stem).start_tt = tt_stem
+        g.node(vid_stem).end_tt = tt_stem + dtt_stem
+        tt_stem += phyllochron
+
+        vid_leaf = g.add_child(vid_stem, edge_type="+", **leaf)
+
+        g.node(vid_leaf).start_tt = tt_leaf
+        g.node(vid_leaf).end_tt = tt_leaf + dtt_leaf
+        tt_leaf += plastochron
+
+        if g.node(vid_leaf).start_tt < end_juv:
+            g.node(vid_leaf).senescence = g.node(vid_leaf).start_tt + leaf_lifespan[0] 
+        else:
+            g.node(vid_leaf).senescence = g.node(vid_leaf).start_tt + leaf_lifespan[1]
+        
+        tillers.append((vid_stem, tt_stem + tiller_delay))
+
+    return tillers
+
+
+def cereals(phyllochron, plastochron, stem_duration, leaf_duration, 
+            leaf_lifespan, nb_tillers, tiller_delay, end_juv, reduction_factor,
+            json=None, classic=False, seed=None, plant=None):
     """
     Generate a 'geometric-based' MTG representation of cereals
 
@@ -219,18 +302,19 @@ def cereals(json=None, classic=False, seed=None, plant=None):
         unit: (string) desired length unit for the output mtg
         seed: (int) a seed for the random number generator
     """
-    if plant is None:
-        blade_dimensions, stem_dimensions, leaves = as_plant(json)
+    # if plant is None:
+    #     blade_dimensions, stem_dimensions, leaves = as_plant(json)
 
-        dim = blade_dimensions.merge(stem_dimensions)
-        dim = dim.sort_values("ntop", ascending=False)
-        relative_azimuth = dim.leaf_azimuth.copy()
-        relative_azimuth[1:] = np.diff(relative_azimuth)
-    else:
-        dim = plant
-        leaves = {row["ntop"]: row["leaf_shape"] for index, row in dim.iterrows()}
+    #     dim = blade_dimensions.merge(stem_dimensions)
+    #     dim = dim.sort_values("ntop", ascending=False)
+    #     relative_azimuth = dim.leaf_azimuth.copy()
+    #     relative_azimuth[1:] = np.diff(relative_azimuth)
+    # else:
+    #     dim = plant
+    leaves = {row["ntop"]: row["leaf_shape"] for index, row in plant.iterrows()}
 
-    # print(dim)
+
+    # Main Axis
 
     g = MTG()
     # Add a root vertex for the plant
@@ -240,7 +324,7 @@ def cereals(json=None, classic=False, seed=None, plant=None):
 
     first = True
 
-    for _i, row in dim.iterrows():
+    for _i, row in plant.iterrows():
 
         rank = _i
 
@@ -252,7 +336,7 @@ def cereals(json=None, classic=False, seed=None, plant=None):
         # g.property('rank')[vid_phytomer] = rank  # Assign rank to the phytomer
 
         # Add internode as a child of the phytomer
-        internode = {
+        stem = {
             "label": "Stem",
             "rank": rank,
             "mature_length": row["L_internode"],
@@ -268,10 +352,10 @@ def cereals(json=None, classic=False, seed=None, plant=None):
         }
 
         if first:
-            vid_internode = g.add_component(vid_axis, **internode)
+            vid_stem = g.add_component(vid_axis, **stem)
             first = False
         else:
-            vid_internode = g.add_child(vid_internode, edge_type="<", **internode)
+            vid_stem = g.add_child(vid_stem, edge_type="<", **stem)
 
 
         leaf = {
@@ -303,7 +387,55 @@ def cereals(json=None, classic=False, seed=None, plant=None):
             "senescent_lengths": [0.0]
         }
 
-        vid_leaf = g.add_child(vid_internode, edge_type="+", **leaf)  # noqa: F841
+        vid_leaf = g.add_child(vid_stem, edge_type="+", **leaf)  # noqa: F841
+
+
+    # Tillers
+
+    # Here we consider that the list is sorted by the time
+    tiller_points = []
+
+    max_scale = g.max_scale()
+    root_id = next(g.component_roots_at_scale_iter(g.root, scale=max_scale))
+
+    tt_stem = 0
+    tt_leaf = 0
+    dtt_stem = phyllochron * stem_duration
+    dtt_leaf = plastochron * leaf_duration
+
+
+    for vid in pre_order(g, root_id):
+
+        n = g.node(vid)
+
+        if "Stem" in n.label:
+            n.start_tt = tt_stem
+            n.end_tt = tt_stem + dtt_stem
+            tt_stem += phyllochron
+            tiller_points.append((vid, tt_stem + tiller_delay))
+        elif "Leaf" in n.label:
+            n.start_tt = tt_leaf
+            n.end_tt = tt_leaf + dtt_leaf
+            tt_leaf += plastochron
+
+            # check in which pheno stage is start_tt to know which value of lifespan to use
+            if n.start_tt < end_juv:
+                n.senescence = n.start_tt + leaf_lifespan[0] 
+            else:
+                n.senescence = n.start_tt + leaf_lifespan[1]
+
+
+    for i in range(nb_tillers):
+        # add a tiller
+        vid, time = tiller_points.pop(0)
+
+        new_tillers = add_tiller(g, vid, time, phyllochron=phyllochron, tiller_delay=tiller_delay) 
+
+        tiller_points.extend(new_tillers)
+        
+        tiller_points.sort(key=lambda x: x[1])
+        tiller_points = tiller_points[:nb_tillers-i]
+
 
     g = fat_mtg(g)
 

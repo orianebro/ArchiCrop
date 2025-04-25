@@ -85,7 +85,7 @@ for k,v in growing_plant.items():
 
 par_caribu = []
 for scene in scenes.values():
-    par_caribu.append(compute_light_inter(scene, zenith))
+    par_caribu.append(compute_light_inter(scene, zenith)[0])
 
 plt.plot(time, par_caribu, alpha=0.5, linestyle='--')  # Plot each curve (optional for visualization)
 plt.plot(time, par_stics, color="black", label="STICS")

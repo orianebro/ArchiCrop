@@ -1,0 +1,113 @@
+import matplotlib.pyplot  as plt
+from random import *
+
+from alinea.caribu.data_samples import data_path
+from openalea.plantgl.all import Material, Color3, Scene, Viewer
+
+from openalea.archicrop.archicrop import ArchiCrop
+from openalea.archicrop.simulation import read_sti_file, read_xml_file
+from openalea.archicrop.display import build_scene, display_scene
+from openalea.archicrop.stand import agronomic_plot
+from openalea.archicrop.light_it import compute_light_inter
+
+
+seed(18)
+
+stics_output_file = 'mod_ssorghum.sti'
+sowing_density = 10
+inter_row = 0.4
+stics_output_data = read_sti_file(stics_output_file, sowing_density)
+time = [value["Thermal time"] for value in stics_output_data.values()]
+LA_stics = [value["Plant leaf area"] for value in stics_output_data.values()]
+sen_LA_stics = [value["Senescent leaf area"] for value in stics_output_data.values()]
+height_stics = [value["Plant height"] for value in stics_output_data.values()]
+par_stics = [value["Absorbed PAR"] for value in stics_output_data.values()]
+# print(stics_output_data)
+
+file_xml = 'proto_sorghum_plt.xml'
+params_sen = ['durvieF', 'ratiodurvieI']
+
+sen_stics = read_xml_file(file_xml, params_sen)
+lifespan = sen_stics['durvieF']
+lifespan_early = sen_stics['ratiodurvieI'] * lifespan
+
+
+height=max(height_stics)
+Smax=max(LA_stics)
+nb_phy=12
+wl=0.12
+diam_base=2.5 
+diam_top=1.5
+insertion_angle=35
+scurv=0.7
+curvature=100
+klig=0.6
+swmax=0.55
+f1=0.64 
+f2=0.92
+stem_q=1.1
+rmax=0.8
+skew=0.0005
+phyllotactic_angle=180
+phyllotactic_deviation=20
+phyllochron=35
+plastochron=phyllochron
+leaf_lifespan=[lifespan_early, lifespan]
+
+sorghum = ArchiCrop(height, 
+                    nb_phy,
+                    Smax,
+                    wl, diam_base, diam_top, 
+                    insertion_angle, scurv, curvature, 
+                    klig, swmax, f1, f2, 
+                    stem_q, rmax, skew,
+                    phyllotactic_angle,
+                    phyllotactic_deviation,
+                    phyllochron, 
+                    plastochron, 
+                    leaf_lifespan,
+                    stics_output_data)
+sorghum.generate_potential_plant()
+sorghum.define_development()
+growing_plant = sorghum.grow_plant()
+
+# Sky
+zenith = str(data_path('zenith.light'))
+
+nice_green=Color3((50,100,0))
+
+nplants, positions, domain, domain_area, unit = agronomic_plot(length=1, width=1, sowing_density=sowing_density, inter_row=inter_row, noise=0.1)
+
+inter_plant = 1/sowing_density/inter_row
+x_pattern = inter_plant/2
+y_pattern = inter_row/2
+pattern = (-x_pattern, -y_pattern, x_pattern, y_pattern)
+
+# scenes = {}
+# for k,v in growing_plant.items():
+#     scene, nump = build_scene([v]*nplants, positions, leaf_material=Material(nice_green), stem_material=Material(nice_green), senescence=False)
+#     scenes[k] = scene
+
+scene, nump = build_scene(growing_plant[time[len(time)//2]], (0,0,0), leaf_material=Material(nice_green), stem_material=Material(nice_green), senescence=False)
+
+# par_caribu = []
+# for scene in scenes.values():
+#     par_caribu.append(compute_light_inter(scene, zenith))
+
+par_caribu, scene_eabs, values_eabs = compute_light_inter(scene, zenith, pattern)
+
+Viewer.display(scene_eabs, group_by_color=False, property=values_eabs)
+
+# plt.plot(time, par_caribu, alpha=0.5, linestyle='--')  # Plot each curve (optional for visualization)
+# plt.plot(time, par_stics, color="black", label="STICS")
+# # plt.scatter(time_points, LA_stics)
+
+# # Labels and legend
+# plt.xlabel("Thermal time")
+# plt.ylabel("% of absorbed PAR")
+# plt.title("Absorbed PAR: 3D canopy vs. STICS")
+# plt.legend()
+# plt.show()
+
+# %gui qt
+# %run test_use_archicrop.py
