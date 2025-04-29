@@ -51,7 +51,7 @@ leaf_area : list
 sen_leaf_area :list
 height : list
 
-daily_outputs = {
+daily_dynamics = {
         i+1: {"Thermal time": thermal_time[i],
             "Phenology": 'germination' if i+1 <= emergence else 'juvenile' if emergence < i+1 <= end_juv else 'exponential' if end_juv < i+1 <= max_lai else 'repro',
             "Plant leaf area": leaf_area[i], 
@@ -65,12 +65,12 @@ daily_outputs = {
 }
 
 # Senescence parameters
-lifespan = 1
-lifespan_early = 200 * lifespan
+lifespan = 240
+lifespan_early = 1 * lifespan
 
 # ArchiCrop parameters
 height=2*max(height)
-Smax=2*max(LA)
+Smax=2*max(leaf_area)
 nb_phy=20
 wl=0.12
 diam_base=2.5 
@@ -108,9 +108,9 @@ plant = ArchiCrop(height=height,
 
 # Generate a potential plant
 plant.generate_potential_plant()
-plant.define_development()
+# plant.define_development()
 
-# Simulate growth and senescence of this plant according to the STICS dynamics
+# Simulate growth and senescence of this plant according to the given dynamics
 growing_plant = plant.grow_plant()
 ```
 

@@ -30,6 +30,7 @@ def build_shoot(
     phyllotactic_deviation,
     plant_orientation=45,
     spiral=True,
+    nb_short_phy=4
 ):
     """create a shoot
 
@@ -59,7 +60,7 @@ def build_shoot(
     # nb_young_phy = int(
     #     round((nb_phy - 1.95) / 1.84 / 1.3)
     # )
-    nb_short_phy = 4
+    # nb_short_phy = 4
     short_phy_height = 2
 
     pseudostem_height = nb_short_phy * short_phy_height
@@ -118,13 +119,13 @@ def build_shoot(
     leaf_azimuths[1:] = np.diff(leaf_azimuths)
 
     ## df
-    df = blades.merge(stem)
-    df["leaf_azimuth"] = leaf_azimuths
-    df["leaf_rank"] = ranks
-    df["leaf_shape"] = [leaf_shapes[n - 1] for n in df.leaf_rank]
-    df["wl"] = [wl for _ in df.leaf_rank]
+    axis = blades + stem
+    axis["leaf_azimuth"] = leaf_azimuths
+    axis["leaf_rank"] = ranks
+    axis["leaf_shape"] = [leaf_shapes[n - 1] for n in ranks]
+    # df["wl"] = [wl for _ in df.leaf_rank]
     # df["leaf_tck"] = [(tck) for _ in df.leaf_rank]
-    return df, cereals_generator(plant=df)
+    return axis, cereals_generator(plant=axis)
 
 
 def shoot_at_stage(shoot, stage):

@@ -208,12 +208,76 @@ def as_plant(json):
 ####################################################
 # TODO : copy and modify the function from the tests
 
-# def add_phytomer(n, tt_stem, tt_leaf, phyllochron, plastochron, )
+from .plant_design import stem_dimension, blade_dimension, leaf_azimuth
+from .plant_shape import geometric_dist, bell_shaped_dist
+from .cereals_leaf import parametric_leaf
+
+def stem_element_properties(nb_phy, nb_short_phy, height, stem_q, diam_top, diam_base, ntop):
+    '''
+    Return dict of stem element properties
+    '''
+    short_phy_height = 2
+    pseudostem_height = nb_short_phy * short_phy_height
+
+    pseudostem = np.array([short_phy_height*i for i in range(1, nb_short_phy+1)])
+    stem = np.array(geometric_dist(height, nb_phy-nb_short_phy, q=stem_q, u0=pseudostem_height))
+    insertion_heights = np.concatenate((pseudostem, stem), axis=0)
+
+    stem_diameters = np.linspace(diam_base, diam_top, nb_phy).tolist()
+
+    stem = stem_dimension(
+        h_ins=insertion_heights, d_internode=stem_diameters, ntop=ntop
+    )
+
+    return stem
+
+def leaf_properties(nb_phy, Smax, rmax, skew, insertion_angle, scurv, curvature, 
+                    klig, swmax, f1, f2, ntop, wl, phyllotactic_angle, phyllotactic_deviation, plant_orientation, spiral):
+    '''
+    Return dict of blade properties
+    '''
+    # leaf areas
+    leaf_areas = np.array(bell_shaped_dist(Smax, nb_phy, rmax, skew))
+
+    # leaf shapes
+    a_leaf = parametric_leaf(
+        nb_segment=10,
+        insertion_angle=insertion_angle,
+        scurv=scurv,
+        curvature=curvature,
+        klig=klig, swmax=swmax, f1=f1, f2=f2
+    )
+
+    blades = blade_dimension(area=leaf_areas, ntop=ntop, wl=wl)
+
+    # phyllotaxy
+    leaf_azimuths = leaf_azimuth(
+        size=nb_phy,
+        phyllotactic_angle=phyllotactic_angle,
+        phyllotactic_deviation=phyllotactic_deviation,
+        plant_orientation=plant_orientation,
+        spiral=spiral,
+    )
+    leaf_azimuths[1:] = np.diff(leaf_azimuths)
+
+    blades["leaf_azimuth"] = leaf_azimuths
+    blades["leaf_shape"] = [a_leaf] * nb_phy 
+
+    return blades
+
 
 
 def add_tiller(g, vid, start_time, phyllochron, plastochron, 
                stem_duration, leaf_duration, leaf_lifespan, end_juv, 
-               tiller_delay, reduction_factor):
+               tiller_delay, reduction_factor, 
+               height, Smax, wl, diam_base, diam_top,
+               insertion_angle, scurv, curvature,
+               klig, swmax, f1, f2,
+               stem_q, rmax, skew, 
+               phyllotactic_angle, phyllotactic_deviation,
+               plant_orientation=45,
+               spiral=True,
+               nb_short_phy=4):
     """ Add a tiller to the plant at the given time
     Args:
         g: the MTG
@@ -231,6 +295,13 @@ def add_tiller(g, vid, start_time, phyllochron, plastochron,
     rank = g.Rank(vid) + 1  # Number of edges from the root of the axis
     n = len(g.Axis(vid))
     len_tiller  = n - rank  # we remove the parent that do not belong to the tiller 
+    nb_phy = len_tiller
+
+    ranks = range(1, nb_phy + 1)
+    ntop = max(ranks) - np.array(ranks) + 1
+    stem_prop = stem_element_properties(nb_phy, nb_short_phy, height, stem_q, diam_top, diam_base, ntop)
+    leaf_prop = leaf_properties(nb_phy, Smax, rmax, skew, insertion_angle, scurv, curvature, 
+                    klig, swmax, f1, f2, ntop, wl, phyllotactic_angle, phyllotactic_deviation, plant_orientation, spiral)
 
     tt_stem = start_time
     tt_leaf = start_time
@@ -239,36 +310,64 @@ def add_tiller(g, vid, start_time, phyllochron, plastochron,
 
     tid = g.add_child(parent=axis_id, edge_type='+', label='Axis')
 
-    # Extract characteristics of homologous vertex on main stem
-    # TOOD
-    stem = {}
+    first = True
 
-    vid_stem, tid2 = g.add_child_and_complex(parent=vid, complex=tid, edge_type='+', **stem)
+    for rank in ranks:
 
-    g.node(vid_stem).start_tt = tt_stem
-    g.node(vid_stem).end_tt = tt_stem + dtt_stem
-    tt_stem += phyllochron
+        stem = {
+            "label": "Stem",
+            "rank": rank,
+            "mature_length": stem_prop["L_internode"][rank-1],
+            "length": stem_prop["L_internode"][rank-1],
+            "visible_length": stem_prop["L_internode"][rank-1],
+            "is_green": True,
+            "mature_stem_diameter": stem_prop["W_internode"][rank-1],
+            "stem_diameter": stem_prop["W_internode"][rank-1],
+            "azimuth": leaf_prop["leaf_azimuth"][rank-1],
+            "grow": False,
+            "age": 0.0,
+            "stem_lengths": []
+        }
+        # add tiller inclination !!!!!!!!!!!!!!!!
 
-    # TODO
-    leaf ={}
-    vid_leaf = g.add_child(vid_stem, edge_type="+", **leaf)
-
-    g.node(vid_leaf).start_tt = tt_leaf
-    g.node(vid_leaf).end_tt = tt_leaf + dtt_leaf
-    tt_leaf += plastochron
-
-    if g.node(vid_leaf).start_tt < end_juv:
-        g.node(vid_leaf).senescence = g.node(vid_leaf).start_tt + leaf_lifespan[0] 
-    else:
-        g.node(vid_leaf).senescence = g.node(vid_leaf).start_tt + leaf_lifespan[1]
-
-
-    for i in range(1, len_tiller):
-        vid_stem = g.add_child(parent=vid_stem, edge_type='<', **stem)
+        if first:
+            vid_stem, tid2 = g.add_child_and_complex(parent=vid, complex=tid, edge_type='+', **stem)
+            first = False
+        else:
+            vid_stem = g.add_child(parent=vid_stem, edge_type='<', **stem)
 
         g.node(vid_stem).start_tt = tt_stem
         g.node(vid_stem).end_tt = tt_stem + dtt_stem
         tt_stem += phyllochron
+
+        leaf = {
+            "label": "Leaf",
+            "rank": rank,
+            "shape": leaf_prop["leaf_shape"][rank-1],
+            "mature_length": leaf_prop["L_blade"][rank-1],
+            "length": leaf_prop["L_blade"][rank-1],
+            "visible_length": leaf_prop["L_blade"][rank-1],
+            "leaf_area": leaf_prop["S_blade"][rank-1],
+            "visible_leaf_area": 0.0,
+            "senescent_area": 0.0,
+            "senescent_length": 0.0,
+            # "form_factor": leaf_prop["form_factor"][rank-1],
+            "wl": wl,
+            # "tck": (row["tck"]), !!!!!!!!!!!!
+            "is_green": True,
+            "srb": 0,
+            "srt": 1,
+            "lrolled": 0,
+            "d_rolled": 0,
+            "shape_max_width": leaf_prop["W_blade"][rank-1],
+            "mature_stem_diameter": stem_prop["W_internode"][rank-1],
+            "stem_diameter": stem_prop["W_internode"][rank-1],
+            "grow": False,
+            "dead": False,
+            "age": 0.0,
+            "leaf_lengths": [0.0],
+            "senescent_lengths": [0.0]
+        }
 
         vid_leaf = g.add_child(vid_stem, edge_type="+", **leaf)
 
@@ -286,9 +385,28 @@ def add_tiller(g, vid, start_time, phyllochron, plastochron,
     return tillers
 
 
-def cereals(phyllochron, plastochron, stem_duration, leaf_duration, 
-            leaf_lifespan, nb_tillers, tiller_delay, end_juv, reduction_factor,
-            json=None, classic=False, seed=None, plant=None):
+def cereals(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration, 
+            leaf_lifespan, end_juv, nb_tillers, tiller_delay, reduction_factor,
+            height,
+            Smax,
+            wl,
+            diam_base,
+            diam_top,
+            insertion_angle,
+            scurv,
+            curvature,
+            # alpha,
+            klig, swmax, f1, f2,
+            stem_q,
+            rmax,
+            skew,
+            phyllotactic_angle,
+            phyllotactic_deviation,
+            plant_orientation=45,
+            spiral=True,
+            nb_short_phy=4,
+            classic=False):
+            # json=None, classic=False, seed=None, plant=None):
     """
     Generate a 'geometric-based' MTG representation of cereals
 
@@ -314,10 +432,16 @@ def cereals(phyllochron, plastochron, stem_duration, leaf_duration,
     #     relative_azimuth[1:] = np.diff(relative_azimuth)
     # else:
     #     dim = plant
-    leaves = {row["ntop"]: row["leaf_shape"] for index, row in plant.iterrows()}
-
+    #     leaves = {row["ntop"]: row["leaf_shape"] for index, row in plant.iterrows()}
 
     # Main Axis
+
+    ranks = range(1, nb_phy + 1)
+    ntop = max(ranks) - np.array(ranks) + 1
+    # Dicts instead of a dataframe
+    stem_prop = stem_element_properties(nb_phy, nb_short_phy, height, stem_q, diam_top, diam_base, ntop)
+    leaf_prop = leaf_properties(nb_phy, Smax, rmax, skew, insertion_angle, scurv, curvature, 
+                    klig, swmax, f1, f2, ntop, wl, phyllotactic_angle, phyllotactic_deviation, plant_orientation, spiral)
 
     g = MTG()
     # Add a root vertex for the plant
@@ -327,9 +451,9 @@ def cereals(phyllochron, plastochron, stem_duration, leaf_duration,
 
     first = True
 
-    for _i, row in plant.iterrows():
-
-        rank = _i
+    # for _i, row in plant.iterrows(): 
+    # iterate over the number of phytomers of the main stem
+    for rank in ranks:
 
         # # Add a phytomer as a component of the plant
         # if first:
@@ -342,13 +466,13 @@ def cereals(phyllochron, plastochron, stem_duration, leaf_duration,
         stem = {
             "label": "Stem",
             "rank": rank,
-            "mature_length": row["L_internode"],
-            "length": row["L_internode"],
-            "visible_length": row["L_internode"],
+            "mature_length": stem_prop["L_internode"][rank-1],
+            "length": stem_prop["L_internode"][rank-1],
+            "visible_length": stem_prop["L_internode"][rank-1],
             "is_green": True,
-            "mature_stem_diameter": row["W_internode"],
-            "stem_diameter": row["W_internode"],
-            "azimuth": row["leaf_azimuth"],
+            "mature_stem_diameter": stem_prop["W_internode"][rank-1],
+            "stem_diameter": stem_prop["W_internode"][rank-1],
+            "azimuth": leaf_prop["leaf_azimuth"][rank-1],
             "grow": False,
             "age": 0.0,
             "stem_lengths": []
@@ -364,25 +488,25 @@ def cereals(phyllochron, plastochron, stem_duration, leaf_duration,
         leaf = {
             "label": "Leaf",
             "rank": rank,
-            "shape": leaves[row["ntop"]],
-            "mature_length": row["L_blade"],
-            "length": row["L_blade"],
-            "visible_length": row["L_blade"],
-            "leaf_area": row["S_blade"],
+            "shape": leaf_prop["leaf_shape"][rank-1],
+            "mature_length": leaf_prop["L_blade"][rank-1],
+            "length": leaf_prop["L_blade"][rank-1],
+            "visible_length": leaf_prop["L_blade"][rank-1],
+            "leaf_area": leaf_prop["S_blade"][rank-1],
             "visible_leaf_area": 0.0,
             "senescent_area": 0.0,
             "senescent_length": 0.0,
-            "form_factor": row["form_factor"],
-            "wl": row["wl"],
-            # "tck": (row["tck"]),
+            # "form_factor": leaf_prop["form_factor"][rank-1],
+            "wl": wl,
+            # "tck": (row["tck"]), !!!!!!!!!!!!
             "is_green": True,
             "srb": 0,
             "srt": 1,
             "lrolled": 0,
             "d_rolled": 0,
-            "shape_max_width": row["W_blade"],
-            "mature_stem_diameter": row["W_internode"],
-            "stem_diameter": row["W_internode"],
+            "shape_max_width": leaf_prop["W_blade"][rank-1],
+            "mature_stem_diameter": stem_prop["W_internode"][rank-1],
+            "stem_diameter": stem_prop["W_internode"][rank-1],
             "grow": False,
             "dead": False,
             "age": 0.0,
@@ -432,12 +556,23 @@ def cereals(phyllochron, plastochron, stem_duration, leaf_duration,
         # add a tiller
         vid, time = tiller_points.pop(0)
 
-        new_tillers = add_tiller(g, vid, time, phyllochron=phyllochron, tiller_delay=tiller_delay) 
+        new_tillers = add_tiller(g, vid, time, phyllochron=phyllochron, plastochron=plastochron, tiller_delay=tiller_delay, 
+                                stem_duration=stem_duration, leaf_duration=leaf_duration, leaf_lifespan=leaf_lifespan, end_juv=end_juv, 
+                                reduction_factor=reduction_factor, 
+                                height=height, Smax=Smax, wl=wl, diam_base=diam_base, diam_top=diam_top,
+                                insertion_angle=insertion_angle, scurv=scurv, curvature=curvature,
+                                klig=klig, swmax=swmax, f1=f1, f2=f2,
+                                stem_q=stem_q, rmax=rmax, skew=skew, 
+                                phyllotactic_angle=phyllotactic_angle, phyllotactic_deviation=phyllotactic_deviation,
+                                plant_orientation=45,
+                                spiral=True,
+                                nb_short_phy=4) 
 
         tiller_points.extend(new_tillers)
         
         tiller_points.sort(key=lambda x: x[1])
         tiller_points = tiller_points[:nb_tillers-i]
+
 
 
     g = fat_mtg(g)
