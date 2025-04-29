@@ -1,12 +1,9 @@
+from __future__ import annotations
+
 import matplotlib.pyplot as plt
 
-from openalea.plantgl.all import surface
-
-from openalea.archicrop.plant_shape import bell_shaped_dist
-from openalea.archicrop.geometry import leaf_area_plant, mesh_area
 from openalea.archicrop.archicrop import ArchiCrop
 from openalea.archicrop.simulation import read_sti_file, read_xml_file
-from openalea.archicrop.display import build_scene, display_scene
 
 # Get output data from crop model
 stics_output_file = 'mod_smaize.sti'
@@ -36,7 +33,7 @@ for key, value in stics_output_data.items():
 
 # Set model parameters
 height=max(height_stics)
-Smax=max(LA_stics)
+leaf_area=max(LA_stics)
 nb_phy=11
 wl=0.12
 diam_base=2.5 
@@ -56,38 +53,41 @@ phyllotactic_deviation=0
 
 leaf_lifespan = [lifespan_early, lifespan]
 
+nb_tillers=0
+tiller_delay=1
+reduction_factor=1
+
 # Test different values for phyllochron
 phyllochrons_to_test = [30]
 phyllochrons = [phy for phy in phyllochrons_to_test if end_veg/phy-nb_phy > 1]
 
 for phy in phyllochrons:
     phyllochron = phy
-    print("Phyllochron :", phyllochron)
+    # print("Phyllochron :", phyllochron)
     plastochron=phyllochron+11
     # leaf_duration=time[-1]/phy-nb_phy
     # stem_duration=leaf_duration
     # print("Leaf duration :", leaf_duration)
 
     # Run ArchiCrop model
-    maize = ArchiCrop(height, 
-                        nb_phy,
-                        Smax,
-                        wl, diam_base, diam_top, 
-                        insertion_angle, scurv, curvature, 
-                        klig, swmax, f1, f2, 
-                        stem_q, rmax, skew,
-                        phyllotactic_angle,
-                        phyllotactic_deviation,
-                        phyllochron, 
-                        plastochron, 
-                        leaf_lifespan,
-                        stics_output_data)
+    maize = ArchiCrop(height=height, 
+                    nb_phy=nb_phy,
+                    leaf_area=leaf_area,
+                    wl=wl, diam_base=diam_base, diam_top=diam_top, 
+                    insertion_angle=insertion_angle, scurv=scurv, curvature=curvature, 
+                    klig=klig, swmax=swmax, f1=f1, f2=f2, 
+                    stem_q=stem_q, rmax=rmax, skew=skew,
+                    phyllotactic_angle=phyllotactic_angle,
+                    phyllotactic_deviation=phyllotactic_deviation,
+                    phyllochron=phyllochron, 
+                    plastochron=plastochron, 
+                    leaf_lifespan=leaf_lifespan,
+                    nb_tillers=nb_tillers, tiller_delay=tiller_delay, reduction_factor=reduction_factor,
+                    daily_dynamics=stics_output_data)
     maize.generate_potential_plant()
-    maize.define_development()
     growing_plant = maize.grow_plant()
 
-    # 
-    for l in range(len(growing_plant[time[-1]].properties()["leaf_lengths"].values())):
+    for l in range(len(growing_plant[time[-1]].properties()["leaf_lengths"].values())):  # noqa: E741
         # print(list(growing_plant[time[1]].properties()["leaf_lengths"].values()))
         # print(list(growing_plant[time[-1]].properties()["leaf_lengths"].values()))
         plt.plot(time[1:], [list(growing_plant[t].properties()["leaf_lengths"].values())[l][-1] - list(growing_plant[t].properties()["senescent_lengths"].values())[l][-1] for t in time[1:]], color="green", alpha=min(1,20/phyllochron), label=f"{phyllochron}")

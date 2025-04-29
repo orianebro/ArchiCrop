@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from openalea.archicrop.simulation import read_xml_file
 
 file_xml = 'sorgho_tec.xml'

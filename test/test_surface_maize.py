@@ -1,12 +1,11 @@
+from __future__ import annotations
+
 import matplotlib.pyplot as plt
 
-from openalea.plantgl.all import surface
-
-from openalea.archicrop.plant_shape import bell_shaped_dist
-from openalea.archicrop.geometry import leaf_area_plant, mesh_area
 from openalea.archicrop.archicrop import ArchiCrop
+from openalea.archicrop.plant_shape import bell_shaped_dist
 from openalea.archicrop.simulation import read_sti_file, read_xml_file
-from openalea.archicrop.display import build_scene, display_scene
+from openalea.plantgl.all import surface
 
 stics_output_file = 'mod_smaize.sti'
 file_tec_xml = 'Mais_tec.xml'
@@ -36,7 +35,7 @@ for key, value in stics_output_data.items():
             break
 
 height=max(height_stics)
-Smax=max(LA_stics)
+leaf_area=max(LA_stics)
 nb_phy=11
 wl=0.12
 diam_base=2.5 
@@ -58,6 +57,10 @@ phyllotactic_deviation=0
 phyllochrons_to_test = [30]
 phyllochrons = [phy for phy in phyllochrons_to_test if end_veg/phy-nb_phy > 1]
 
+nb_tillers=0
+tiller_delay=1
+reduction_factor=1
+
 fig, ax = plt.subplots(2)
 
 for phy in phyllochrons:
@@ -68,35 +71,35 @@ for phy in phyllochrons:
     # stem_duration=leaf_duration
     # print("Leaf duration :", leaf_duration)
 
-    maize = ArchiCrop(height, 
-                        nb_phy,
-                        Smax,
-                        wl, diam_base, diam_top, 
-                        insertion_angle, scurv, curvature, 
-                        klig, swmax, f1, f2, 
-                        stem_q, rmax, skew,
-                        phyllotactic_angle,
-                        phyllotactic_deviation,
-                        phyllochron, 
-                        plastochron,
-                        leaf_lifespan,
-                        stics_output_data)
+    maize = ArchiCrop(height=height, 
+                    nb_phy=nb_phy,
+                    leaf_area=leaf_area,
+                    wl=wl, diam_base=diam_base, diam_top=diam_top, 
+                    insertion_angle=insertion_angle, scurv=scurv, curvature=curvature, 
+                    klig=klig, swmax=swmax, f1=f1, f2=f2, 
+                    stem_q=stem_q, rmax=rmax, skew=skew,
+                    phyllotactic_angle=phyllotactic_angle,
+                    phyllotactic_deviation=phyllotactic_deviation,
+                    phyllochron=phyllochron, 
+                    plastochron=plastochron, 
+                    leaf_lifespan=leaf_lifespan,
+                    nb_tillers=nb_tillers, tiller_delay=tiller_delay, reduction_factor=reduction_factor,
+                    daily_dynamics=stics_output_data)
     maize.generate_potential_plant()
-    maize.define_development()
     growing_plant = maize.grow_plant()
 
     print("LA in :", max(LA_stics))
     print("LA out theo:", sum(growing_plant[maize.end_veg].properties()["visible_leaf_area"].values()))
     print("LA out 3D :", sum([surface(geom) for vid, geom in growing_plant[maize.end_veg].properties()["geometry"].items() if vid in growing_plant[maize.end_veg].properties()["visible_leaf_area"]])) 
     print("")
-    # LA theo =/= real !!!!
+    # LA theo =/= real !!!
 
     ax[0].plot(range(1,nb_phy+1), growing_plant[time[-1]].properties()["visible_leaf_area"].values(), color="green", alpha=min(1,20/phy), label="Realised") # label=f"{phyllochron}")
     # ax[0].plot(range(1,nb_phy+1), [surface(geom) for vid, geom in growing_plant[time[-1]].properties()["geometry"].items() if vid in growing_plant[time[-1]].properties()["visible_leaf_area"]], color="green", alpha=min(1,1/leaf_duration))
     ax[1].plot(time, [sum(growing_plant[t].properties()["visible_leaf_area"].values()) - sum(growing_plant[t].properties()["senescent_area"].values()) for t in time], color="green", alpha=min(1,20/phy), label="Realised") # label=f"{phyllochron}")
     # ax[1].plot(time, [sum([surface(geom) for vid, geom in growing_plant[t].properties()["geometry"].items() if vid in growing_plant[time[-1]].properties()["visible_leaf_area"]]) for t in time], color="green", alpha=min(1,1/leaf_duration))
 
-ax[0].plot(range(1,nb_phy+1), bell_shaped_dist(maize.Smax, nb_phy, rmax, skew), color="orange", alpha=0.5, label="Potential")
+ax[0].plot(range(1,nb_phy+1), bell_shaped_dist(maize.leaf_area, nb_phy, rmax, skew), color="orange", alpha=0.5, label="Potential")
 ax[0].set_xlabel("Leaf rank")
 ax[0].set_ylabel("Leaf area (cm²)")
 ax[0].legend(loc="upper left")

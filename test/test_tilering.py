@@ -6,7 +6,7 @@ def test1():
     
     nb_phy=12
     height=200
-    Smax=4000
+    leaf_area=4000
     wl=0.12
     diam_base=2
     diam_top=1
@@ -26,7 +26,7 @@ def test1():
     build_shoot(
     nb_phy,
     height,
-    Smax,
+    leaf_area,
     wl,
     diam_base,
     diam_top,

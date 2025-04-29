@@ -1,14 +1,12 @@
-import numpy as np
-import matplotlib.pyplot as plt
-from itertools import product
-from scipy.stats import qmc
+from __future__ import annotations
+
 import xml.etree.ElementTree as ET
+from itertools import product
 
-from openalea.plantgl.all import surface
+import numpy as np
+from scipy.stats import qmc
 
-# from archicrop
 from .archicrop import ArchiCrop
-from .plant_shape import compute_height_growing_plant, compute_leaf_area_growing_plant
 
 
 def dict_ranges_to_all_possible_combinations(d):
@@ -19,8 +17,7 @@ def dict_ranges_to_all_possible_combinations(d):
     ]
     
     # Generate all combinations
-    parameters_combinations = list(product(*values))
-    return parameters_combinations
+    return list(product(*values))
 
 
 def generate_single_list_dicts(params):
@@ -56,13 +53,13 @@ def LHS_param_sampling(archi_params, n_samples):
         if isinstance(value, (int, float)):  # Fixed parameter
             fixed_params[key] = value
         # Parameter distribution in Latin Hypercube
-        elif isinstance(value, list) and key not in {"leaf_lifespan", "increments"}:  # Range to sample
+        elif isinstance(value, list) and key not in {"leaf_lifespan", "daily_dynamics"}:  # Range to sample
             l_bounds.append(min(value))
             u_bounds.append(max(value))
             
             sampled_params.append(key)
 
-        elif key in {"leaf_lifespan", "increments"}:
+        elif key in {"leaf_lifespan", "daily_dynamics"}:
             fixed_params[key] = value
 
     
@@ -76,15 +73,15 @@ def LHS_param_sampling(archi_params, n_samples):
     scaled_samples = qmc.scale(lhs_samples, l_bounds=l_bounds, u_bounds=u_bounds)
 
     # Retrieve phenology
-    for key, value in archi_params["increments"].items():
+    for key, value in archi_params["daily_dynamics"].items():
         if value["Phenology"] == 'juvenile':
             next_key = key + 1
-            if next_key in archi_params["increments"] and archi_params["increments"][next_key]["Phenology"] == 'exponential':
-                end_juv = value["Thermal time"]
+            # if next_key in archi_params["daily_dynamics"] and archi_params["daily_dynamics"][next_key]["Phenology"] == 'exponential':
+            #     end_juv = value["Thermal time"]
 
         elif value["Phenology"] == 'exponential':
             next_key = key + 1
-            if next_key in archi_params["increments"] and archi_params["increments"][next_key]["Phenology"] == 'repro':
+            if next_key in archi_params["daily_dynamics"] and archi_params["daily_dynamics"][next_key]["Phenology"] == 'repro':
                 end_veg = value["Thermal time"]
                 break
 
@@ -128,9 +125,8 @@ def params_for_curve_fit(param_sets, curves, error_LA=300, error_height=30):
 
     
     for params in param_sets:
-        sorghum = ArchiCrop(height = max(height_stics), Smax = max(LA_stics), **params)
+        sorghum = ArchiCrop(height = max(height_stics), leaf_area = max(LA_stics), **params)
         sorghum.generate_potential_plant()
-        sorghum.define_development()
         growing_plant = sorghum.grow_plant()
         growing_plant_mtg = list(growing_plant.values())
     
@@ -201,7 +197,7 @@ def read_sti_file(file_sti, density):
     data_dict = {}
     non_zero_height_encountered = False
 
-    with open(file_sti, "r") as file:
+    with open(file_sti) as file:  # noqa: PTH123
         # Read the header line to get column names
         header = file.readline().strip().split(";")
         # Strip whitespace from column names
@@ -235,8 +231,8 @@ def read_sti_file(file_sti, density):
     # thermal_time = list(np.cumsum([float(i) for i in data_dict["tmoy(n)"][:end]]))
 
     # Green LAI
-    leaf_area = [10000*float(i)/density for i in data_dict["laimax"]] # from m2/m2 to cm2/plant
-    leaf_area_incr = [leaf_area[0]] + [leaf_area[i+1]-leaf_area[i] for i in range(len(leaf_area[1:]))]
+    plant_leaf_area = [10000*float(i)/density for i in data_dict["laimax"]] # from m2/m2 to cm2/plant
+    leaf_area_incr = [plant_leaf_area[0]] + [plant_leaf_area[i+1]-plant_leaf_area[i] for i in range(len(plant_leaf_area[1:]))]
 
     # Senescent LAI
     sen_leaf_area = [10000*float(i)/density for i in data_dict["laisen(n)"]] # from m2/m2 to cm2/plant
@@ -257,7 +253,7 @@ def read_sti_file(file_sti, density):
     return {
         i+1: {"Thermal time": round(thermal_time[i],4),
             "Phenology": 'germination' if i+1 <= emergence else 'juvenile' if emergence < i+1 <= end_juv else 'exponential' if end_juv < i+1 <= max_lai else 'repro',
-            "Plant leaf area": round(leaf_area[i],4), 
+            "Plant leaf area": round(plant_leaf_area[i],4), 
             "Leaf area increment": round(leaf_area_incr[i],4), 
             "Senescent leaf area": round(sen_leaf_area[i],4),
             "Senescent leaf area increment": round(sen_leaf_area_incr[i],4),
@@ -266,119 +262,5 @@ def read_sti_file(file_sti, density):
             "Absorbed PAR": round(par_abs[i],4)}
         for i in range(len(thermal_time))
     }
-# dict of dict to object !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-
-
-# def grow_pop(g, constraints_crop, sowing_density, inter_row, tt_cum):
-
-#     nice_green = Color3((50, 100, 0))
-
-#     # Add development 
-#     g = thermal_time(g)
-
-#     # Spatial arrangement parameters
-#     nb_of_plants, positions, domain, domain_area, unit = agronomic_plot(sowing_density=sowing_density, inter_row=inter_row, noise=0.1)
-
-#     scenes = []
-
-#     # Loop through time
-#     for i, tt in enumerate(tt_cum):
-#         constraints_crop_tt = [constraints_crop[0][i], constraints_crop[1][i]]
-#         constraints_plants = distribute_constraint_among_plants(constraints_crop_tt, nb_of_plants)
-#         growing_plant = grow_plant_from_constraint(g, tt, constraints_plants)
-#         plants = [growing_plant] * nb_of_plants
-
-#         scene, nump = build_scene(plants, positions, leaf_material=Material(nice_green), stem_material=Material(nice_green))
-#         # PlantGL(scene, group_by_color=True)
-#         scenes.append(scene)
-    
-#     return scenes
-
-
-
-# def grow_pop_and_compute_light_inter(g, constraints_crop, sowing_density, inter_row, tt_cum):
-
-#     nice_green = Color3((50, 100, 0))
-
-#     # Add development 
-#     g = thermal_time(g)
-
-#     # Spatial arrangement parameters
-#     nb_of_plants, positions, domain, domain_area, unit = agronomic_plot(sowing_density=sowing_density, inter_row=inter_row, noise=0.1)
-
-#     # Loop through time
-#     par_caribu = []
-#     for i, tt in enumerate(tt_cum):
-#         constraints_crop_tt = [constraints_crop[0][i], constraints_crop[1][i]]
-#         constraints_plants = distribute_constraint_among_plants(constraints_crop_tt, nb_of_plants)
-#         growing_plant = grow_plant_from_constraint(g, tt, constraints_plants)
-#         plants = [growing_plant] * nb_of_plants
-#         if i > 0:
-#             # stand
-#             scene, nump = build_scene(plants, positions, leaf_material=Material(nice_green), stem_material=Material(nice_green))
-#             # compute light inter
-#             par_crop = compute_light_inter(scene)
-#             # par_crop = par_crop*0.0145
-#             # print(par_crop)
-#             par_caribu.append(par_crop)
-        
-#     return par_caribu
-
-
-# def model_with_light_inter(nb_phy,
-#             max_leaf_length,
-#             wl,
-#             diam_base,
-#             diam_top,
-#             insertion_angle,
-#             scurv,
-#             curvature,
-#             alpha,
-#             stem_q,
-#             rmax,
-#             skew,
-#             phyllotactic_angle,
-#             phyllotactic_deviation,
-#             sowing_density, 
-#             inter_row,
-#             filename_outputs):
-    
-#     # Retrieve STICS dynamics from files 
-#     stics_output_data = read_sti_file(filename_outputs, sowing_density)
-#     height_potential_plant = max(value["Plant height"] for value in stics_output_data.values())
-
-
-#     # Generate potential plant
-#     g = generate_potential_plant(nb_phy,
-#                                 height_potential_plant,
-#                                 max_leaf_length,
-#                                 wl,
-#                                 diam_base,
-#                                 diam_top,
-#                                 insertion_angle,
-#                                 scurv,
-#                                 curvature,
-#                                 alpha,
-#                                 stem_q,
-#                                 rmax,
-#                                 skew,
-#                                 phyllotactic_angle,
-#                                 phyllotactic_deviation)
-
-#     # Grow population of plants with constraint from crop model
-#     # and compute light interception for all time steps
-#     par_caribu = grow_pop_and_compute_light_inter(g, 
-#                                                   constraints_crop, 
-#                                                   sowing_density, 
-#                                                   inter_row,
-#                                                   tt_cum)
-    
-#     # plt.plot(tt_cum[1:], par_caribu, color='orange', label='PAR Caribu')
-#     # plt.plot(tt_cum[1:], par_stics[1:-1], color='black', label='PAR STICS')
-#     # plt.xlabel('Thermal time')
-#     # plt.ylabel('PAR')
-#     # plt.show()
-
-#     return par_caribu, par_stics

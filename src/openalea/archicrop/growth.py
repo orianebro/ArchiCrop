@@ -1,89 +1,31 @@
 from __future__ import annotations
 
-import math
-import numpy as np
-import sympy as sp
 from scipy.interpolate import splev
-from openalea.mtg.traversal import pre_order2, pre_order2_with_filter
 
-from .geometry import CerealsTurtle, CerealsVisitor, addSets, TurtleFrame, leaf_mesh_for_growth, stem_mesh
-from .plant_shape import shape_to_surface
+from openalea.mtg.traversal import pre_order2_with_filter
 
-
-
-
-def thermal_time(g, phyllochron, plastochron, leaf_duration, stem_duration, leaf_lifespan, end_juv): # durations 1.6
-    """
-    Add dynamic properties on the mtg to simulate development
-
-    :param g: MTG, MTG of a plant
-    :param phyllochron: float, phyllochron, i.e. internode appearance rate (in °C.day/internode)
-    :param plastochron: float, plastochron, i.e. leaf appearance rate (in °C.day/leaf)
-    :param leaf_duration: float, phyllochronic time for a leaf to develop from tip appearance to collar appearance (/phyllochron)
-    :param stem_duration: float, phyllochronic time for a stem to develop from base to top (/phyllochron)
-
-
-    :return: MTG
-    """
-
-    axes = g.vertices(scale=1)
-    metamer_scale = g.max_scale()
-
-    for axis in axes:
-        tt_stem = 0
-        tt_leaf = 0
-        v = next(g.component_roots_at_scale_iter(axis, scale=metamer_scale))
-        # stem_ids = g.Trunk(v)
-        # nb_stems = len(stem_ids)
-        # nb_sectors = 1
-        dtt_stem = phyllochron * stem_duration
-        dtt_leaf = plastochron * leaf_duration
-
-        for metamer in pre_order2(g, v):
-            nm = g.node(metamer)
-
-            if "Stem" in nm.label:
-                nm.start_tt = tt_stem
-                nm.end_tt = tt_stem + dtt_stem
-                tt_stem += phyllochron
-            elif "Leaf" in nm.label:
-                nm.start_tt = tt_leaf
-                nm.end_tt = tt_leaf + dtt_leaf
-                tt_leaf += plastochron
-
-                # check in which pheno stage is start_tt to know which value of lifespan to use
-                if nm.start_tt < end_juv:
-                    nm.senescence = nm.start_tt + leaf_lifespan[0] 
-                else:
-                    nm.senescence = nm.start_tt + leaf_lifespan[1]
-
-    return g
+from .geometry import (
+    CerealsTurtle,
+    CerealsVisitor,
+    TurtleFrame,
+    addSets,
+    leaf_mesh,
+    stem_mesh,
+)
 
 
 def init_visible_variables(g):
     """Initialize leaf and stem visible lengths"""
 
-    for k in g.properties()["visible_length"].keys():
+    for k in g.properties()["visible_length"]:
         g.properties()["visible_length"][k] = 0.0
 
     return g
 
 
-class Growth:
-
-    def __init__(self, height_to_distribute: float, height_for_each_internode: dict[int,float], LA_to_distribute: float, LA_for_each_leaf: dict[int,float], 
-                 sen_LA_to_distribute: float, sen_LA_for_each_leaf: dict[int,float]) -> None:
-        self.height_to_distribute = height_to_distribute
-        self.height_for_each_internode = height_for_each_internode
-        self.LA_to_distribute = LA_to_distribute
-        self.LA_for_each_leaf = LA_for_each_leaf
-        self.sen_LA_to_distribute = sen_LA_to_distribute
-        self.sen_LA_for_each_leaf = sen_LA_for_each_leaf
-
-
 def equal_dist(increment, growing_organs):
     '''return initial distribution per organ (H: same amount for all organs)'''
-    return {vid: increment/len(growing_organs) for vid in growing_organs.keys()}
+    return {vid: increment/len(growing_organs) for vid in growing_organs}
 
 
 def demand_dist(increment, growing_organs):
@@ -121,12 +63,12 @@ def get_growing_organs(g, time, prev_time):
     growing_internodes = []
     growing_leaves = []
 
-    for vid in g.properties()["leaf_area"].keys(): 
+    for vid in g.properties()["leaf_area"]: 
         n = g.node(vid)
         if n.start_tt <= time <= n.end_tt or prev_time < n.end_tt < time:
             growing_leaves.append(vid)
 
-    for vid in g.properties()["mature_length"].keys(): 
+    for vid in g.properties()["mature_length"]: 
         n = g.node(vid)
         if n.label.startswith("Stem") and (n.start_tt <= time < n.end_tt or prev_time < n.end_tt < time):
             growing_internodes.append(vid)
@@ -138,7 +80,7 @@ def get_senescing_organs(g, time):
     """Identify senescing blades at a given time"""
 
     senescing_leaves = []
-    for vid in g.properties()["leaf_area"].keys(): 
+    for vid in g.properties()["leaf_area"]: 
         n = g.node(vid)
         if n.senescence <= time and n.srt > 0: 
             senescing_leaves.append(vid)
@@ -148,7 +90,7 @@ def get_senescing_organs(g, time):
 def distribute_to_potential(growing_organs, increment_to_distribute, distribution_function):
     "Distribute increment among growing organs up to potential of each organ"
 
-    increment_for_each_organ = {vid: 0.0 for vid in growing_organs}
+    increment_for_each_organ = dict.fromkeys(growing_organs, 0.0)
 
     while len(growing_organs) > 0 and increment_to_distribute > 1e-4: 
         incr_temp = distribution_function(increment_to_distribute, growing_organs)
@@ -177,7 +119,7 @@ def distribute_to_potential(growing_organs, increment_to_distribute, distributio
 
 
 
-def distribute_among_organs(g, time, prev_time, increments):
+def distribute_among_organs(g, time, prev_time, daily_dynamics):
     """Fill the dictionnary of variables recording growth process at a given time"""
 
     # compute number of growing organs
@@ -187,29 +129,23 @@ def distribute_among_organs(g, time, prev_time, increments):
     # senescing_leaves = get_senescing_organs(g, time)
 
     # set amount of growth to distribute among organs
-    height_to_distribute = increments["Height increment"] 
-    LA_to_distribute = increments["Leaf area increment"] 
-    sen_LA_to_distribute = increments["Senescent leaf area increment"]
+    height_to_distribute = daily_dynamics["Height increment"] 
+    LA_to_distribute = daily_dynamics["Leaf area increment"] 
+    sen_LA_to_distribute = daily_dynamics["Senescent leaf area increment"]
     
-    height_for_each_internode = {vid: 0.0 for vid in growing_internodes}
-    LA_for_each_leaf = {vid: 0.0 for vid in growing_leaves}
-    sen_LA_for_each_leaf = {vid: 0.0 for vid in senescing_leaves}
+    height_for_each_internode = dict.fromkeys(growing_internodes, 0.0)
+    LA_for_each_leaf = dict.fromkeys(growing_leaves, 0.0)
+    sen_LA_for_each_leaf = dict.fromkeys(senescing_leaves, 0.0)
 
-    # print(time)
-    # print(sen_LA_to_distribute)
 
     if LA_to_distribute > 0.0:
         LA_for_each_leaf = distribute_to_potential(growing_leaves, LA_to_distribute, demand_dist)
-        # print(LA_for_each_leaf)
     if height_to_distribute > 0.0:
         height_for_each_internode = distribute_to_potential(growing_internodes, height_to_distribute, demand_dist)
     if sen_LA_to_distribute > 0.0:
         sen_LA_for_each_leaf = distribute_to_potential(senescing_leaves, sen_LA_to_distribute, equal_dist)
-        # print(time)
-    #     print(sen_LA_to_distribute == sum(list(sen_LA_for_each_leaf.values())))
-    # print('')
 
-    growth = {"height_to_distribute": height_to_distribute,
+    return {"height_to_distribute": height_to_distribute,
               "height_for_each_internode": height_for_each_internode,
               "LA_to_distribute": LA_to_distribute,
               "LA_for_each_leaf": LA_for_each_leaf,
@@ -219,143 +155,6 @@ def distribute_among_organs(g, time, prev_time, increments):
               "growing_leaves": growing_leaves,
               "senescing_leaves": senescing_leaves}
 
-    return growth
-
-
-'''
-def compute_organ(
-    vid, element_node, time, growth, classic=False
-):  # see maybe with *kwarg, **kwds, etc. for time
-    """compute geometry of Adel base elements (LeafElement and StemElement)
-    element_node should be a mtg node proxy"""
-    n = element_node
-    geom = None
-
-
-    if n.label.startswith("Leaf") or n.label.startswith("Stem"):
-
-        # organ not yet appeared --> never the case because only apeared organs go through this function
-        if time < n.start_tt:  
-            n.visible_length = 0.0
-            n.grow = False
-            if n.label.startswith("Leaf"):
-                n.leaf_lengths.append(0.0)
-                n.senescent_lengths.append(0.0)
-            elif n.label.startswith("Stem"):
-                n.stem_lengths.append(0.0)
-    
-        # organ appeared
-        elif n.start_tt <= time:
-            n.grow = True
-            n.age = time - n.start_tt # update age of organ
-        
-            # starting from the lowest (oldest) growing organ
-            if time <= n.end_tt: # if n.start_tt <= time < n.end_tt: # organ growing
-
-                if n.visible_length < n.mature_length:  
-
-                    # for growing blades
-                    if n.label.startswith("Leaf") and growth["LA_to_distribute"] > 0.0:
-                        LA_for_this_leaf = growth["LA_for_each_leaf"][vid]
-                        
-                        if n.visible_leaf_area + LA_for_this_leaf < n.leaf_area:
-                            n.visible_leaf_area += LA_for_this_leaf
-                            # convert constraint on area for each leaf(t) to leaf length
-                            relative_visible_area = n.visible_leaf_area / n.leaf_area
-                            tck = shape_to_surface(n.shape, n.wl) # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                            n.visible_length = float(splev(x=relative_visible_area, tck=tck)) * n.mature_length
-                        else: 
-                            n.visible_leaf_area = n.leaf_area
-                            n.visible_length = n.mature_length
-
-                        n.leaf_lengths.append(n.visible_length)
-                        n.senescent_lengths.append(0.0)
-                        
-                    # for growing stem elements
-                    elif n.label.startswith("Stem") and growth["height_to_distribute"] > 0.0:
-                        height_for_this_internode = growth["height_for_each_internode"][vid]
-
-                        if n.visible_length + height_for_this_internode <= n.mature_length:
-                            n.visible_length += height_for_this_internode
-                        else: 
-                            n.visible_length = n.mature_length
-
-                        n.stem_lengths.append(n.visible_length)
-
-            
-            # organ reaches maturity according to defined development
-            elif time > n.end_tt:
-
-                # blade senescence
-                if n.label.startswith("Leaf") and growth["sen_LA_to_distribute"] > 0.0:
-                    if n.senescence <= time:
-                        if not n.dead:
-                            n.grow = False 
-                            sen_LA_for_this_leaf = growth["sen_LA_for_each_leaf"][vid]
-                            
-                            if n.senescent_area + sen_LA_for_this_leaf < n.leaf_area:
-                                n.senescent_area += sen_LA_for_this_leaf
-                                relative_senescent_area = n.senescent_area / n.leaf_area
-                                tck = shape_to_surface(n.shape, n.wl) # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                                n.srt = 1 - float(splev(x=relative_senescent_area, tck=tck))
-                                n.senescent_length = (1 - n.srt) * n.mature_length
-                            else: 
-                                n.senescent_area = n.leaf_area
-                                n.senescent_length = n.mature_length
-                                n.dead = True
-
-                            n.senescent_lengths.append(n.senescent_length)
-
-                        else:
-                            n.senescent_lengths.append(n.mature_length)
-
-                else:
-                    if n.visible_length < n.mature_length:  # organ reaches maturity below potential 
-                        n.visible_length = n.visible_length
-                    else:  # organ reaches maturity at potential
-                        n.visible_length = n.mature_length
-                    if n.label.startswith("Leaf"):
-                        n.leaf_lengths.append(n.visible_length)
-                        n.senescent_lengths.append(n.senescent_length)
-                    elif n.label.startswith("Stem"):
-                        n.stem_lengths.append(n.visible_length)
-    
-    
-    if n.label.startswith("Leaf"):  # leaf element
-        if n.visible_length > 0.0001:  # filter less than 0.001 mm leaves
-            # TODO : test if senesc or not
-            # if senesc : create a mesh in green and a mesh with senesc
-            if n.shape is not None and n.srb is not None:
-                geom = leaf_mesh_for_growth(
-                    n.shape,
-                    n.mature_length,
-                    n.shape_max_width,
-                    n.visible_length,
-                    n.srb,
-                    n.srt,
-                    # flipx allows x-> -x to place the shape along
-                    #  with the tiller positioned with
-                    # turtle.down()
-                    flipx=True,
-                    inclination=min(0.5 + 0.5*(time - n.start_tt) / (n.end_tt - n.start_tt),1.5), # !!!!!!!!!!!!!!!!!
-                    stem_diameter=n.stem_diameter,
-                )
-            if n.lrolled > 0:
-                rolled = stem_mesh(
-                    n.lrolled, n.lrolled, n.d_rolled, classic
-                )
-                if geom is None:
-                    geom = rolled
-                else:
-                    geom = addSets(rolled, geom, translate=(0, 0, n.lrolled))
-    elif n.label.startswith("Stem"):  # stem element
-        geom = stem_mesh(n.length, n.visible_length, n.stem_diameter, n.stem_diameter, classic)
-
-
-    return geom, growth
-'''
-
-#########################################
 
 def compute_organ(vid, element_node, time, growth, classic=False):
     """Compute geometry of Adel base elements (LeafElement and StemElement).
@@ -395,42 +194,44 @@ def compute_organ(vid, element_node, time, growth, classic=False):
                 else:
                     finalize_organ_growth(n)
 
+        # Evolution of organ geometry with age
+        stem_diameter = min(n.stem_diameter/2 * (1+0.5*(time - n.start_tt) / (n.end_tt - n.start_tt)), n.stem_diameter)
+        leaf_inclination = min(1.5*(time - n.start_tt) / (n.end_tt - n.start_tt), 2)
+
     if n.label.startswith("Leaf"):  # leaf element
         if n.visible_length > 0.0001:  # filter less than 0.001 mm leaves
-            # TODO : test if senesc or not
-            # if senesc : create a mesh in green and a mesh with senesc
             if n.shape is not None and n.srb is not None:
-                geom = leaf_mesh_for_growth(
-                    n.shape,
-                    n.mature_length,
-                    n.shape_max_width,
-                    n.visible_length,
-                    n.srb,
-                    n.srt,
+                geom = leaf_mesh(
+                    leaf=n.shape,
+                    L_shape=n.mature_length,
+                    Lw_shape=n.shape_max_width,
+                    length=n.visible_length,
+                    s_base=n.srb,
+                    s_top=n.srt,
                     # flipx allows x-> -x to place the shape along
-                    #  with the tiller positioned with
+                    # with the tiller positioned with
                     # turtle.down()
                     flipx=True,
-                    inclination=min(1.5*(time - n.start_tt) / (n.end_tt - n.start_tt),2), # !!!!!!!!!!!!!!!!!
-                    stem_diameter=n.stem_diameter,
+                    inclination=leaf_inclination, 
+                    stem_diameter=stem_diameter,
                 )
 
             ### Add a mesh that is senescent
-            if n.senescent_length > 0.0001:
-                if n.shape is not None and n.srt is not None:
-                    geom_senescent = leaf_mesh_for_growth(
-                        n.shape,
-                        n.mature_length,
-                        n.shape_max_width,
-                        n.visible_length,
-                        n.srt,
-                        1.,
+            if n.senescent_length > 0.0001: # filter less than 0.001 mm leaves  # noqa: SIM102
+                if n.srt is not None: # and n.shape is not None
+                    geom_senescent = leaf_mesh(
+                        leaf=n.shape,
+                        L_shape=n.mature_length,
+                        Lw_shape=n.shape_max_width,
+                        length=n.visible_length,
+                        s_base=n.srt,
+                        s_top=1.,
                         # flipx allows x-> -x to place the shape along
-                        #  with the tiller positioned with
+                        # with the tiller positioned with
                         # turtle.down()
                         flipx=True,
-                        inclination=min(1.5*(time - n.start_tt) / (n.end_tt - n.start_tt),2), # !!!!!!!!!!!!!!!!!
-                        stem_diameter=n.stem_diameter,
+                        inclination=leaf_inclination, 
+                        stem_diameter=stem_diameter,
                     )
                     n.geometry_senescent = geom_senescent
 
@@ -444,7 +245,7 @@ def compute_organ(vid, element_node, time, growth, classic=False):
                 else:
                     geom = addSets(rolled, geom, translate=(0, 0, n.lrolled))
     elif n.label.startswith("Stem"):  # stem element
-        geom = stem_mesh(n.length, n.visible_length, n.stem_diameter, n.stem_diameter, classic)
+        geom = stem_mesh(n.length, n.visible_length, stem_diameter, stem_diameter, classic)
 
 
     return geom, growth
@@ -453,8 +254,8 @@ def update_leaf_growth(n, LA_for_this_leaf):
     if n.visible_leaf_area + LA_for_this_leaf < n.leaf_area:
         n.visible_leaf_area += LA_for_this_leaf
         relative_visible_area = n.visible_leaf_area / n.leaf_area
-        tck = shape_to_surface(n.shape, n.wl)
-        n.visible_length = float(splev(x=relative_visible_area, tck=tck)) * n.mature_length
+        # tck = shape_to_surface(n.shape, n.wl)
+        n.visible_length = float(splev(x=relative_visible_area, tck=n.tck)) * n.mature_length
     else:
         n.visible_leaf_area = n.leaf_area
         n.visible_length = n.mature_length
@@ -473,8 +274,8 @@ def update_leaf_senescence(n, sen_LA_for_this_leaf):
     if n.senescent_area + sen_LA_for_this_leaf < n.visible_leaf_area:
         n.senescent_area += sen_LA_for_this_leaf
         relative_senescent_area = n.senescent_area / n.visible_leaf_area
-        tck = shape_to_surface(n.shape, n.wl)
-        n.srt = 1 - float(splev(x=relative_senescent_area, tck=tck))
+        # tck = shape_to_surface(n.shape, n.wl)
+        n.srt = 1 - float(splev(x=relative_senescent_area, tck=n.tck))
         n.senescent_length = (1 - n.srt) * n.visible_length
     else:
         n.senescent_area = n.visible_leaf_area
@@ -493,8 +294,6 @@ def finalize_organ_growth(n):
     elif n.label.startswith("Stem"):
         n.stem_lengths.append(n.visible_length)
 
-
-###########################################
         
 
 class CerealsVisitorConstrained(CerealsVisitor):
@@ -548,7 +347,7 @@ class CerealsVisitorConstrained(CerealsVisitor):
         
 
 
-def mtg_turtle_time_with_constraint(g, time, prev_time, increments, update_visitor=None):
+def mtg_turtle_time_with_constraint(g, time, prev_time, daily_dynamics, update_visitor=None):  # noqa: ARG001
     """Compute the geometry on each node of the MTG using Turtle geometry.
 
     Update_visitor is a function called on each node in a pre order (parent before children).
@@ -561,7 +360,7 @@ def mtg_turtle_time_with_constraint(g, time, prev_time, increments, update_visit
 
     max_scale = g.max_scale()
 
-    growth = distribute_among_organs(g, time, prev_time, increments)
+    growth = distribute_among_organs(g, time, prev_time, daily_dynamics)
 
     cereal_visitor = CerealsVisitorConstrained(False)
 
@@ -580,7 +379,7 @@ def mtg_turtle_time_with_constraint(g, time, prev_time, increments, update_visit
                 start_tt = n.start_tt
                 if start_tt > time:
                     return False
-            except:
+            except:  # noqa: E722
                 pass
             if g.edge_type(v) == "+":
                 turtle.push()
@@ -592,12 +391,12 @@ def mtg_turtle_time_with_constraint(g, time, prev_time, increments, update_visit
                 start_tt = n.start_tt
                 if start_tt > time:
                     return False
-            except:
+            except:  # noqa: E722
                 pass
             if g.edge_type(v) == "+":  # noqa: RET503
-                turtle.pop()
+                turtle.pop()  # noqa: RET503
 
-        if g.node(vid).label.startswith("Leaf") or g.node(vid).label.startswith("Stem"):
+        if g.node(vid).label.startswith("Leaf") or g.node(vid).label.startswith("Stem"):  # noqa: SIM102
             if g.node(vid).start_tt <= time:
                 growth = visitor(g, vid, turtle, time, growth)
                 # turtle.push()
@@ -634,89 +433,9 @@ def mtg_interpreter_with_constraint(g, classic=False):
     turtle = CerealsTurtle()
     visitor = CerealsVisitorConstrained(classic)
 
-    scene = TurtleFrame(g, visitor=visitor, turtle=turtle, gc=False, all_roots=True)
+    scene = TurtleFrame(g, visitor=visitor, turtle=turtle, gc=False, all_roots=True)  # noqa: F841
 
     return g
 
 
-
-
-# def leaf_area_function_of_length(l, L, wl, alpha=-2.3):
-#     '''returns the current leaf area (i.e. twice the integral of leaf shape) given the current length s
-    
-#         function obtained this way : 
-
-#         # Define the variable and parameters
-#         s = sympy.symbols('l')
-#         L, wl, alpha = sympy.symbols('L, wl, alpha') 
-
-#         # Define the scaled leaf shape function with parameters
-#         # alpha = -2.3
-#         beta = -2 * (alpha + sqrt(-alpha))
-#         gamma = 2 * sqrt(-alpha) + alpha
-#         r = wl * L (alpha * s**2 + beta * s + gamma)
-
-#         # Reflect the function to the axis x=0.5 
-#         reflected_r = r.subs(s, -s+L).simplify()
-
-#         # Find the indefinite integral (primitive)
-#         primitive_f = sympy.integrate(reflected_r, s)
-
-#         print(2*primitive_f)
-    
-#     '''
-
-#     return 2*l**2*wl*math.sqrt(-alpha) + 2*alpha*l**3*wl/(3*L)
-
-
-# def compute_leaf_length_increment(LA_for_each_leaf, leaf):
-#     """returns the leaf length given a leaf area"""
-
-#     L = leaf.mature_length
-#     current_leaf_length = leaf.visible_length
-#     wl = leaf.shape_max_width / leaf.mature_length
-    
-#     s = sp.symbols('s')
-    
-#     # Define the equation
-#     equation = LA_for_each_leaf + leaf_area_function_of_length(current_leaf_length, L, wl) - leaf_area_function_of_length(s, L, wl)
-#     # print ("LA_for_each_leaf", LA_for_each_leaf)
-
-#     # Solve the equation, restricting the domain to real numbers
-#     real_solutions = sp.solveset(equation, s, domain=sp.S.Reals)
-#     # print("Sol", real_solutions)
-#     # print(real_solutions)
-#     for sol in real_solutions:
-#         if current_leaf_length < sol <= L:
-#             unique_solution = sol
-#             leaf_length_increment = unique_solution - current_leaf_length
-#             break
-#         elif sol <= current_leaf_length:
-#             leaf_length_increment = 0.0
-#         elif sol > L:
-#             leaf_length_increment = L - current_leaf_length
-    
-#     return leaf_length_increment
-
-
-
-# def search_new_dl(d, l, dS_input, L):
-#     found_start = False  
-#     first = True
-#     key_prev = None
-#     value_prev = None
-#     for key, value in d.items():
-#         if key >= l:
-#             found_start = True  
-#             if first:
-#                 S_start = value
-#                 key_prev, value_prev = key, value
-#                 first = False
-#         if found_start:
-#             # print(key, value-S_start)
-#             if value-S_start >= dS_input:  
-#                 return key_prev, value_prev 
-#             else:
-#                 key_prev, value_prev = key, value
-#     return L, value  # if no match is found --> finished
 

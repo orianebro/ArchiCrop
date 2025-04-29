@@ -1,12 +1,10 @@
+from __future__ import annotations
+
 import matplotlib.pyplot as plt
 
-from openalea.plantgl.all import surface
-
-from openalea.archicrop.plant_shape import bell_shaped_dist
-from openalea.archicrop.geometry import leaf_area_plant, mesh_area
 from openalea.archicrop.archicrop import ArchiCrop
+from openalea.archicrop.plant_shape import bell_shaped_dist
 from openalea.archicrop.simulation import read_sti_file, read_xml_file
-from openalea.archicrop.display import build_scene, display_scene
 
 stics_output_file = 'mod_ssorghum.sti'
 sowing_density = 10
@@ -33,7 +31,7 @@ for key, value in stics_output_data.items():
             break
 
 height=max(height_stics)
-max_LA=max(LA_stics)
+leaf_area=max(LA_stics)
 nb_phy=12
 wl=0.12
 diam_base=2.5 
@@ -55,32 +53,36 @@ phyllotactic_deviation=0
 phyllochrons_to_test = [20,30,40,50]
 phyllochrons = [phy for phy in phyllochrons_to_test if end_veg/phy-nb_phy > 1]
 
+nb_tillers=0
+tiller_delay=1
+reduction_factor=1
+
 fig, ax = plt.subplots(2)
 
 for phy in phyllochrons:
     phyllochron = phy
-    print("Phyllochron :", phyllochron)
+    # print("Phyllochron :", phyllochron)
     plastochron=phyllochron+10
     # leaf_duration=time[-1]/phy-nb_phy
     # stem_duration=leaf_duration
     # print("Leaf duration :", leaf_duration)
 
-    sorghum = ArchiCrop(height, 
-                        nb_phy,
-                        max_LA,
-                        wl, diam_base, diam_top, 
-                        insertion_angle, scurv, curvature, 
-                        klig, swmax, f1, f2, 
-                        stem_q, rmax, skew,
-                        phyllotactic_angle,
-                        phyllotactic_deviation,
-                        phyllochron, 
-                        plastochron,
-                        leaf_lifespan,
-                        stics_output_data)
+    sorghum = ArchiCrop(height=height, 
+                        nb_phy=nb_phy,
+                        leaf_area=leaf_area,
+                        wl=wl, diam_base=diam_base, diam_top=diam_top, 
+                        insertion_angle=insertion_angle, scurv=scurv, curvature=curvature, 
+                        klig=klig, swmax=swmax, f1=f1, f2=f2, 
+                        stem_q=stem_q, rmax=rmax, skew=skew,
+                        phyllotactic_angle=phyllotactic_angle,
+                        phyllotactic_deviation=phyllotactic_deviation,
+                        phyllochron=phyllochron, 
+                        plastochron=plastochron, 
+                        leaf_lifespan=leaf_lifespan,
+                        nb_tillers=nb_tillers, tiller_delay=tiller_delay, reduction_factor=reduction_factor,
+                        daily_dynamics=stics_output_data)
     sorghum.generate_potential_plant()
-    # assert(sorghum.Smax == 2*max_LA)
-    sorghum.define_development()
+    # assert(sorghum.leaf_area == 2*max_LA)
     growing_plant = sorghum.grow_plant()
 
     # times = [t for i,t in enumerate(time) if i%10==0]
@@ -96,14 +98,14 @@ for phy in phyllochrons:
 #     print("LA out theo:", sum(growing_plant[sorghum.end_veg].properties()["visible_leaf_area"].values()))
 #     print("LA out 3D :", sum([surface(geom) for vid, geom in growing_plant[sorghum.end_veg].properties()["geometry"].items() if vid in growing_plant[sorghum.end_veg].properties()["visible_leaf_area"]])) 
 #     print("")
-#     # LA theo =/= real !!!!
+#     # LA theo =/= real !!!
 
     ax[0].plot(range(1,nb_phy+1), growing_plant[time[-1]].properties()["visible_leaf_area"].values(), color="green", alpha=min(1,20/phy), label=f"{phyllochron}")
     # ax[0].plot(range(1,nb_phy+1), [surface(geom) for vid, geom in growing_plant[time[-1]].properties()["geometry"].items() if vid in growing_plant[time[-1]].properties()["visible_leaf_area"]], color="green", alpha=min(1,1/leaf_duration))
     ax[1].plot(time, [sum(growing_plant[t].properties()["visible_leaf_area"].values()) - sum(growing_plant[t].properties()["senescent_area"].values()) for t in time], color="green", alpha=min(1,20/phy), label=f"{phyllochron}")
     # ax[1].plot(time, [sum([surface(geom) for vid, geom in growing_plant[t].properties()["geometry"].items() if vid in growing_plant[time[-1]].properties()["visible_leaf_area"]]) for t in time], color="green", alpha=min(1,1/leaf_duration))
 
-ax[0].plot(range(1,nb_phy+1), bell_shaped_dist(sorghum.Smax, nb_phy, rmax, skew), color="orange", alpha=0.5, label="Weibull law")
+ax[0].plot(range(1,nb_phy+1), bell_shaped_dist(sorghum.leaf_area, nb_phy, rmax, skew), color="orange", alpha=0.5, label="Weibull law")
 ax[0].set_xlabel("Leaf rank")
 ax[0].set_ylabel("Leaf area")
 ax[0].legend(loc="upper left")

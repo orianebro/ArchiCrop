@@ -200,7 +200,8 @@ def blade_elt_area(s, r, Lshape=1, Lwshape=1, sr_base=0, sr_top=1):
 
     S = trapezoid(rnew, snew) * Lshape * Lwshape
 
-    return S
+    return S  # noqa: RET504
+
 
 
 def form_factor(leaf):
@@ -245,7 +246,7 @@ def arrange_leaf(leaf, stem_diameter=0, inclination=1, relative=True):
         y1 = y[0] + sin_a * x + cos_a * y
     leaf = x1 + stem_diameter / 2.0, y1, s, r
 
-    return leaf
+    return leaf  # noqa: RET504
 
 
 def leaf_mesh(
@@ -304,7 +305,8 @@ def leaf_mesh(
         mesh = None if len(ind) < 1 else fitting.plantgl_shape(pts, ind)
     else:
         if length > 0:
-            print("ERROR No mesh", s_base, s_top, length)
+            msg = f"Error : no mesh. s_base = {s_base}, s_top = {s_top}, length = {length}"
+            raise ValueError(msg)
         mesh = None
 
     return mesh

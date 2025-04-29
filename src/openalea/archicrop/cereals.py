@@ -1,20 +1,17 @@
 from __future__ import annotations
 
 import numpy as np
-from scipy.integrate import cumulative_simpson
-from scipy.interpolate import splrep
 
 from .cereals_leaf import parametric_leaf
 from .generator import cereals as cereals_generator
 from .plant_design import blade_dimension, leaf_azimuth, stem_dimension
-from .plant_shape import bell_shaped_dist, geometric_dist, shape_to_surface
-
+from .plant_shape import bell_shaped_dist, geometric_dist
 
 
 def build_shoot(
     nb_phy,
     height,
-    Smax,
+    leaf_area,
     wl,
     diam_base,
     diam_top,
@@ -85,10 +82,10 @@ def build_shoot(
     ## Leaves
 
     # leaf length repartition along axis
-    # leaf_areas_stem = np.array(bell_shaped_dist(Smax, nb_phy, rmax, skew))
-    # leaf_areas_pseudostem = np.array(bell_shaped_dist(Smax, nb_phy, rmax, skew))
+    # leaf_areas_stem = np.array(bell_shaped_dist(leaf_area, nb_phy, rmax, skew))
+    # leaf_areas_pseudostem = np.array(bell_shaped_dist(leaf_area, nb_phy, rmax, skew))
     # leaf_areas = np.concatenate((leaf_areas_pseudostem, leaf_areas_stem), axis=0)
-    leaf_areas = np.array(bell_shaped_dist(Smax, nb_phy, rmax, skew))
+    leaf_areas = np.array(bell_shaped_dist(leaf_area, nb_phy, rmax, skew))
 
 
     # leaf shapes
@@ -129,5 +126,5 @@ def build_shoot(
 
 
 def shoot_at_stage(shoot, stage):
-    df = shoot.loc[shoot["leaf_rank"] <= stage, :]
+    df = shoot.loc[shoot["leaf_rank"] <= stage, :]  # noqa: PD901
     return df, cereals_generator(plant=df)

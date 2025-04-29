@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from oawidgets.plantgl import *
 from alinea.caribu.CaribuScene import CaribuScene
-from alinea.caribu.data_samples import data_path
-from alinea.caribu.light import light_sources  
+
+# from alinea.caribu.data_samples import data_path
+from alinea.caribu.light import light_sources
 
 
 def illuminate(scene, light=None, pattern=None, scene_unit="cm", north=0):

@@ -1,10 +1,10 @@
-import math
+from __future__ import annotations
+
 import matplotlib.pyplot as plt
 
 from openalea.archicrop.archicrop import ArchiCrop
-from openalea.archicrop.simulation import read_sti_file, read_xml_file
 from openalea.archicrop.display import build_scene, display_scene
-
+from openalea.archicrop.simulation import read_sti_file, read_xml_file
 
 stics_output_file = 'mod_ssorghum.sti'
 sowing_density = 10
@@ -20,7 +20,7 @@ file_xml = 'proto_sorghum_plt.xml'
 params_sen = ['durvieF', 'ratiodurvieI']
 
 sen_stics = read_xml_file(file_xml, params_sen)
-print(sen_stics)
+# print(sen_stics)
 lifespan = sen_stics['durvieF']
 lifespan_early = sen_stics['ratiodurvieI'] * lifespan
 
@@ -34,7 +34,7 @@ for key, value in stics_output_data.items():
 
 
 height=max(height_stics)
-Smax=max(LA_stics)
+leaf_area=max(LA_stics)
 nb_phy=12
 wl=0.12
 diam_base=2.5 
@@ -54,26 +54,29 @@ phyllotactic_deviation=0
 phyllochron=38
 plastochron=phyllochron
 leaf_duration=time_end_veg/phyllochron-nb_phy 
-print(leaf_duration)
+# print(leaf_duration)
 stem_duration=leaf_duration
 leaf_lifespan=[lifespan_early, lifespan]
+nb_tillers=0
+tiller_delay=1
+reduction_factor=1
 
-sorghum = ArchiCrop(height, 
-                    nb_phy,
-                    Smax,
-                    wl, diam_base, diam_top, 
-                    insertion_angle, scurv, curvature, 
-                    klig, swmax, f1, f2, 
-                    stem_q, rmax, skew,
-                    phyllotactic_angle,
-                    phyllotactic_deviation,
-                    phyllochron, 
-                    plastochron, 
-                    leaf_lifespan,
-                    stics_output_data)
+sorghum = ArchiCrop(height=height, 
+                    nb_phy=nb_phy,
+                    leaf_area=leaf_area,
+                    wl=wl, diam_base=diam_base, diam_top=diam_top, 
+                    insertion_angle=insertion_angle, scurv=scurv, curvature=curvature, 
+                    klig=klig, swmax=swmax, f1=f1, f2=f2, 
+                    stem_q=stem_q, rmax=rmax, skew=skew,
+                    phyllotactic_angle=phyllotactic_angle,
+                    phyllotactic_deviation=phyllotactic_deviation,
+                    phyllochron=phyllochron, 
+                    plastochron=plastochron, 
+                    leaf_lifespan=leaf_lifespan,
+                    nb_tillers=nb_tillers, tiller_delay=tiller_delay, reduction_factor=reduction_factor,
+                    daily_dynamics=stics_output_data)
 sorghum.generate_potential_plant()
-sorghum.define_development(stics_output_data)
-growing_plant = sorghum.grow_plant(stics_output_data)
+growing_plant = sorghum.grow_plant()
 
 # for val in growing_plant[time[-1]].properties()["senescent_lengths"].values():
 #     print([round(v,3) for v in val])
@@ -83,7 +86,7 @@ growing_plant = sorghum.grow_plant(stics_output_data)
 def plot2d():
     fig, ax1 = plt.subplots()
     # ax2 = ax1.twinx()
-    for l in range(len(growing_plant[time[-1]].properties()["leaf_lengths"].values())):
+    for l in range(len(growing_plant[time[-1]].properties()["leaf_lengths"].values())):  # noqa: E741
         # print(list(growing_plant[time[-1]].properties()["senescent_lengths"].values())[l])
         # ax1.plot(time[1:], [list(growing_plant[t].properties()["leaf_lengths"].values())[l][-1] for t in time[1:]], color=(0, 1/math.sqrt(l+1), 0))
         # ax1.plot(time[1:], [list(growing_plant[t].properties()["senescent_lengths"].values())[l][-1] for t in time[1:]], color=(0, 1/math.sqrt(l+1), 0))

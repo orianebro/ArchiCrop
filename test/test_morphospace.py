@@ -1,7 +1,9 @@
-from openalea.plantgl.all import Material, Color3, Scene
+from __future__ import annotations
+
 from openalea.archicrop.archicrop import ArchiCrop
-from openalea.archicrop.simulation import read_sti_file, read_xml_file
 from openalea.archicrop.display import build_scene, display_scene
+from openalea.archicrop.simulation import read_sti_file, read_xml_file
+from openalea.plantgl.all import Color3, Material
 
 # Retrieve STICS params about management
 # file_tec_xml = 'sorgho_tec.xml'
@@ -34,7 +36,7 @@ for nb in [10,15,20]:
 
     # Set ArchiCrop parameters
     height=max(height_stics)
-    Smax=max(LA_stics)
+    leaf_area=max(LA_stics)
     nb_phy=nb
     wl=0.12
     diam_base=2.5 
@@ -54,24 +56,27 @@ for nb in [10,15,20]:
     phyllochron=30
     plastochron=phyllochron+11
     leaf_lifespan=[lifespan_early, lifespan]
+    nb_tillers=0
+    tiller_delay=1
+    reduction_factor=1
 
     # Instanciate ArchiCrop object
     plant = ArchiCrop(height=height, 
-                        nb_phy=nb_phy,
-                        Smax=Smax,
-                        wl=wl, diam_base=diam_base, diam_top=diam_top, 
-                        insertion_angle=insertion_angle, scurv=scurv, curvature=curvature, 
-                        klig=klig, swmax=swmax, f1=f1, f2=f2, 
-                        stem_q=stem_q, rmax=rmax, skew=skew,
-                        phyllotactic_angle=phyllotactic_angle,
-                        phyllotactic_deviation=phyllotactic_deviation,
-                        phyllochron=phyllochron, 
-                        plastochron=plastochron, 
-                        leaf_lifespan=leaf_lifespan,
-                        increments=stics_output_data)
+                    nb_phy=nb_phy,
+                    leaf_area=leaf_area,
+                    wl=wl, diam_base=diam_base, diam_top=diam_top, 
+                    insertion_angle=insertion_angle, scurv=scurv, curvature=curvature, 
+                    klig=klig, swmax=swmax, f1=f1, f2=f2, 
+                    stem_q=stem_q, rmax=rmax, skew=skew,
+                    phyllotactic_angle=phyllotactic_angle,
+                    phyllotactic_deviation=phyllotactic_deviation,
+                    phyllochron=phyllochron, 
+                    plastochron=plastochron, 
+                    leaf_lifespan=leaf_lifespan,
+                    nb_tillers=nb_tillers, tiller_delay=tiller_delay, reduction_factor=reduction_factor,
+                    daily_dynamics=stics_output_data)
     # Generate a potential plant
     plant.generate_potential_plant()
-    plant.define_development()
     # Simulate growth and senescence of this plant according to the STICS dynamics
     growing_plant = plant.grow_plant()
     gps.append(growing_plant)

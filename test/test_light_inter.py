@@ -1,17 +1,18 @@
-import matplotlib.pyplot  as plt
-from random import *
+from __future__ import annotations
 
+from random import *  # noqa: F403
+
+import matplotlib.pyplot as plt
 from alinea.caribu.data_samples import data_path
-from openalea.plantgl.all import Material, Color3, Scene, Viewer
 
 from openalea.archicrop.archicrop import ArchiCrop
-from openalea.archicrop.simulation import read_sti_file, read_xml_file
-from openalea.archicrop.display import build_scene, display_scene
-from openalea.archicrop.stand import agronomic_plot
+from openalea.archicrop.display import build_scene
 from openalea.archicrop.light_it import compute_light_inter
+from openalea.archicrop.simulation import read_sti_file, read_xml_file
+from openalea.archicrop.stand import agronomic_plot
+from openalea.plantgl.all import Color3, Material
 
-
-seed(18)
+seed(18)  # noqa: F405
 
 stics_output_file = 'mod_ssorghum.sti'
 sowing_density = 10
@@ -33,7 +34,7 @@ lifespan_early = sen_stics['ratiodurvieI'] * lifespan
 
 
 height=max(height_stics)
-Smax=max(LA_stics)
+leaf_area=max(LA_stics)
 nb_phy=12
 wl=0.12
 diam_base=2.5 
@@ -53,22 +54,25 @@ phyllotactic_deviation=20
 phyllochron=35
 plastochron=phyllochron
 leaf_lifespan=[lifespan_early, lifespan]
+nb_tillers=0
+tiller_delay=1
+reduction_factor=1
 
-sorghum = ArchiCrop(height, 
-                    nb_phy,
-                    Smax,
-                    wl, diam_base, diam_top, 
-                    insertion_angle, scurv, curvature, 
-                    klig, swmax, f1, f2, 
-                    stem_q, rmax, skew,
-                    phyllotactic_angle,
-                    phyllotactic_deviation,
-                    phyllochron, 
-                    plastochron, 
-                    leaf_lifespan,
-                    stics_output_data)
+sorghum = ArchiCrop(height=height, 
+                    nb_phy=nb_phy,
+                    leaf_area=leaf_area,
+                    wl=wl, diam_base=diam_base, diam_top=diam_top, 
+                    insertion_angle=insertion_angle, scurv=scurv, curvature=curvature, 
+                    klig=klig, swmax=swmax, f1=f1, f2=f2, 
+                    stem_q=stem_q, rmax=rmax, skew=skew,
+                    phyllotactic_angle=phyllotactic_angle,
+                    phyllotactic_deviation=phyllotactic_deviation,
+                    phyllochron=phyllochron, 
+                    plastochron=plastochron, 
+                    leaf_lifespan=leaf_lifespan,
+                    nb_tillers=nb_tillers, tiller_delay=tiller_delay, reduction_factor=reduction_factor,
+                    daily_dynamics=stics_output_data)
 sorghum.generate_potential_plant()
-sorghum.define_development()
 growing_plant = sorghum.grow_plant()
 
 # Sky
