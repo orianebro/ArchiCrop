@@ -156,7 +156,7 @@ def leaf_mesh(
     """
     shape = arrange_leaf(
         leaf,
-        stem_diameter=stem_diameter / length,
+        stem_diameter=stem_diameter / L_shape,
         inclination=inclination,
         relative=relative,
     )
@@ -246,7 +246,7 @@ def slim_cylinder(length, radius_base, radius_top):
     )
 
 
-def stem_mesh(length, visible_length, stem_diameter, classic=False, slices=24):
+def stem_mesh(length, visible_length, stem_diameter, classic=False, slices=24):  # noqa: ARG001
     """Compute mesh for a stem element
     - classic indicates
     """
@@ -308,7 +308,7 @@ def compute_element(element_node, classic=False):
 
 class CerealsTurtle(pgl.PglTurtle):
     def __init__(self):
-        super(CerealsTurtle, self).__init__()
+        super().__init__()
         self.context = {}
 
     def transform(self, mesh, face_up=False):
@@ -391,124 +391,3 @@ def mtg_interpreter(g, classic=False):
     scene = TurtleFrame(g, visitor=visitor, turtle=turtle, gc=False, all_roots=True)  # noqa: F841
 
     return g
-
-
-'''
-def compute_continuous_element(
-    element_node, time, classic=False
-):  # see maybe with *kwarg, **kwds, etc. for time
-    """compute geometry of Adel base elements (LeafElement and StemElement)
-    element_node should be a mtg node proxy"""
-    n = element_node
-    geom = None
-
-    # added by Oriane, for continuous growth
-    if n.start_tt <= time < n.end_tt:  # organ growing
-        # for unconstrained growth
-        relative_growth = (time - n.start_tt) / (n.end_tt - n.start_tt)
-        if n.label.startswith("Leaf") or n.label.startswith("Stem"):
-            n.visible_length = n.mature_length * relative_growth
-            n.grow = True
-
-    elif time < n.start_tt:  # organ not yet appeared
-        if n.label.startswith("Leaf") or n.label.startswith("Stem"):
-            n.visible_length = 0.0
-            n.grow = False
-
-    elif time >= n.end_tt:  # organ mature
-        if n.label.startswith("Leaf") or n.label.startswith("Stem"):
-            n.visible_length = n.mature_length
-            n.grow = True
-
-    if n.label.startswith("Leaf"):  # leaf element
-        if n.visible_length > 0.0001:  # filter less than 0.001 mm leaves
-            if n.shape is not None and n.srb is not None:
-                geom = leaf_mesh(
-                    n.shape,
-                    n.mature_length,
-                    n.shape_max_width,
-                    n.visible_length,
-                    n.srb,
-                    n.srt,
-                    # flipx allows x-> -x to place the shape along
-                    #  with the tiller positioned with
-                    # turtle.down()
-                    flipx=True,
-                    inclination=1,
-                    stem_diameter=n.stem_diameter,
-                )
-            if n.lrolled > 0:
-                rolled = stem_mesh(
-                    n.lrolled, n.lrolled, n.d_rolled, classic
-                )
-                if geom is None:
-                    geom = rolled
-                else:
-                    geom = addSets(rolled, geom, translate=(0, 0, n.lrolled))
-    elif n.label.startswith("Stem"):  # stem element
-        geom = stem_mesh(n.length, n.visible_length, n.stem_diameter, n.stem_diameter, classic)
-
-    return geom
-
-
-class CerealsContinuousVisitor(CerealsVisitor):
-    def __init__(self, classic):
-        super().__init__(classic)
-
-    def __call__(self, g, v, turtle, time):
-        # 1. retrieve the node
-        n = g.node(v)
-
-        # Go to plant position if first plant element
-        if n.parent() is None:
-            turtle.move(0, 0, 0)
-            # initial position to be compatible with canMTG positioning
-            turtle.setHead(0, 0, 1, -1, 0, 0)
-
-        # incline turtle at the base of stems,
-        if n.label.startswith("Stem"):
-            azim = float(n.azimuth) if n.azimuth else 0.0
-            if azim:
-                # print 'node', n._vid, 'azim ', azim
-                turtle.rollL(azim)
-
-        if n.label.startswith("Leaf") or n.label.startswith("Stem"):
-            # update geometry of elements
-            # if n.length > 0:
-            # print(v)
-            mesh = compute_continuous_element(n, time, self.classic)
-            if mesh:  # To DO : reset to None if calculated so ?
-                n.geometry = turtle.transform(mesh)
-                n.anchor_point = turtle.getPosition()
-
-        # 3. Update the turtle and context
-        turtle.setId(v)
-        if n.label.startswith("Stem"):
-            if n.length > 0:
-                turtle.f(n.visible_length)
-            turtle.context.update({"top": turtle.getFrame()})
-        if n.label.startswith("Leaf"):  # noqa: SIM102
-            if n.lrolled > 0:
-                turtle.f(n.lrolled)
-                turtle.context.update({"top": turtle.getFrame()})
-
-
-def mtg_interpreter_continuous(g, classic=False):
-    """
-    Compute/update the geometry on each node of the MTG using Turtle geometry.
-    """
-    # BUG : sub_mtg mange le vertex plant => on perd la plante !
-    # plants = g.component_roots_at_scale(g.root, scale=1)
-    # nplants = g.nb_vertices(scale=1)
-    # gt = MTG()
-
-    # for plant in plants:
-    #   gplant = g.sub_mtg(plant)
-    turtle = CerealsTurtle()
-    visitor = CerealsContinuousVisitor(classic)
-
-    scene = TurtleFrame(g, visitor=visitor, turtle=turtle, gc=False, all_roots=True)
-
-    return g
-'''
-

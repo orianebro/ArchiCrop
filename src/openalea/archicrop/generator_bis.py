@@ -131,10 +131,13 @@ def add_development(g, vid, tt, dtt, rate):
 
 
 def add_leaf_senescence(g, vid_leaf, leaf_lifespan, end_juv):
-    if g.node(vid_leaf).start_tt < end_juv:
-        g.node(vid_leaf).senescence = g.node(vid_leaf).start_tt + leaf_lifespan[0] 
+    if isinstance(leaf_lifespan, list): 
+        if g.node(vid_leaf).start_tt < end_juv:
+            g.node(vid_leaf).senescence = g.node(vid_leaf).start_tt + leaf_lifespan[0] 
+        else:
+            g.node(vid_leaf).senescence = g.node(vid_leaf).start_tt + leaf_lifespan[1]
     else:
-        g.node(vid_leaf).senescence = g.node(vid_leaf).start_tt + leaf_lifespan[1]
+        g.node(vid_leaf).senescence = g.node(vid_leaf).start_tt + leaf_lifespan
 
 
 
