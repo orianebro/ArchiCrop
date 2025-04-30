@@ -20,7 +20,7 @@ inter_row = 0.4
 stics_output_data = read_sti_file(stics_output_file, sowing_density)
 time = [value["Thermal time"] for value in stics_output_data.values()]
 LA_stics = [value["Plant leaf area"] for value in stics_output_data.values()]
-sen_LA_stics = [value["Senescent leaf area"] for value in stics_output_data.values()]
+sen_LA_stics = [value["Plant senescent leaf area"] for value in stics_output_data.values()]
 height_stics = [value["Plant height"] for value in stics_output_data.values()]
 par_stics = [value["Absorbed PAR"] for value in stics_output_data.values()]
 # print(stics_output_data)

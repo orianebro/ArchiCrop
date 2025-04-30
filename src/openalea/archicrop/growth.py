@@ -56,7 +56,7 @@ def get_growing_and_senescing_organs_potential_visible(g, time, prev_time):
 
     return growing_internodes, growing_leaves, senescing_leaves
 
-
+'''
 def get_growing_organs(g, time, prev_time):
     """Identify growing organs and their potential at a given time"""
 
@@ -85,7 +85,7 @@ def get_senescing_organs(g, time):
         if n.senescence <= time and n.srt > 0: 
             senescing_leaves.append(vid)
     return senescing_leaves
-
+'''
 
 def distribute_to_potential(growing_organs, increment_to_distribute, distribution_function):
     "Distribute increment among growing organs up to potential of each organ"
@@ -146,14 +146,14 @@ def distribute_among_organs(g, time, prev_time, daily_dynamics):
         sen_LA_for_each_leaf = distribute_to_potential(senescing_leaves, sen_LA_to_distribute, equal_dist)
 
     return {"height_to_distribute": height_to_distribute,
-              "height_for_each_internode": height_for_each_internode,
-              "LA_to_distribute": LA_to_distribute,
-              "LA_for_each_leaf": LA_for_each_leaf,
-              "sen_LA_to_distribute": sen_LA_to_distribute,
-              "sen_LA_for_each_leaf": sen_LA_for_each_leaf,
-              "growing_internodes": growing_internodes,
-              "growing_leaves": growing_leaves,
-              "senescing_leaves": senescing_leaves}
+            "height_for_each_internode": height_for_each_internode,
+            "LA_to_distribute": LA_to_distribute,
+            "LA_for_each_leaf": LA_for_each_leaf,
+            "sen_LA_to_distribute": sen_LA_to_distribute,
+            "sen_LA_for_each_leaf": sen_LA_for_each_leaf,
+            "growing_internodes": growing_internodes,
+            "growing_leaves": growing_leaves,
+            "senescing_leaves": senescing_leaves}
 
 
 def compute_organ(vid, element_node, time, growth, classic=False):
@@ -262,12 +262,14 @@ def update_leaf_growth(n, LA_for_this_leaf):
     n.leaf_lengths.append(n.visible_length)
     n.senescent_lengths.append(0.0)
 
+
 def update_stem_growth(n, height_for_this_internode):
     if n.visible_length + height_for_this_internode <= n.mature_length:
         n.visible_length += height_for_this_internode
     else:
         n.visible_length = n.mature_length
     n.stem_lengths.append(n.visible_length)
+
 
 def update_leaf_senescence(n, sen_LA_for_this_leaf):
     n.grow = False
@@ -282,6 +284,7 @@ def update_leaf_senescence(n, sen_LA_for_this_leaf):
         n.senescent_length = n.visible_length
         n.dead = True
     n.senescent_lengths.append(n.senescent_length)
+
 
 def finalize_organ_growth(n):
     # if n.visible_length < n.mature_length:
@@ -343,8 +346,6 @@ class CerealsVisitorConstrained(CerealsVisitor):
 
         return growth
     
-
-        
 
 
 def mtg_turtle_time_with_constraint(g, time, prev_time, daily_dynamics, update_visitor=None):  # noqa: ARG001

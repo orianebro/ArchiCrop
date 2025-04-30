@@ -113,7 +113,7 @@ def params_for_curve_fit(param_sets, curves, error_LA=300, error_height=30):
     :return: dict of lists of parameters, mtg(t), LA(t), height(t) for curve-fitting simulations
     '''
     LA_stics = [value["Plant leaf area"] for value in curves.values()]
-    sen_LA_stics = [value["Senescent leaf area"] for value in curves.values()]
+    sen_LA_stics = [value["Plant senescent leaf area"] for value in curves.values()]
     height_stics = [value["Plant height"] for value in curves.values()]
     
     fitting_sim = {
@@ -252,10 +252,10 @@ def read_sti_file(file_sti, density):
 
     return {
         i+1: {"Thermal time": round(thermal_time[i],4),
-            "Phenology": 'germination' if i+1 <= emergence else 'juvenile' if emergence < i+1 <= end_juv else 'exponential' if end_juv < i+1 <= max_lai else 'repro',
+            "Phenology": 'germination' if i+1 < emergence else 'juvenile' if emergence <= i+1 < end_juv else 'exponential' if end_juv <= i+1 < max_lai else 'repro',
             "Plant leaf area": round(plant_leaf_area[i],4), 
             "Leaf area increment": round(leaf_area_incr[i],4), 
-            "Senescent leaf area": round(sen_leaf_area[i],4),
+            "Plant senescent leaf area": round(sen_leaf_area[i],4),
             "Senescent leaf area increment": round(sen_leaf_area_incr[i],4),
             "Plant height": round(height[i],4), 
             "Height increment": round(height_incr[i],4), 
