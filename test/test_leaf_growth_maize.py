@@ -64,7 +64,7 @@ phyllochrons = [phy for phy in phyllochrons_to_test if end_veg/phy-nb_phy > 1]
 for phy in phyllochrons:
     phyllochron = phy
     # print("Phyllochron :", phyllochron)
-    plastochron=phyllochron+11
+    plastochron=phyllochron
     # leaf_duration=time[-1]/phy-nb_phy
     # stem_duration=leaf_duration
     # print("Leaf duration :", leaf_duration)

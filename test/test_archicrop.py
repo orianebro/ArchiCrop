@@ -50,7 +50,7 @@ skew=0.0005
 phyllotactic_angle=180
 phyllotactic_deviation=10
 phyllochron=30
-plastochron=phyllochron+11
+plastochron=41
 leaf_lifespan=[lifespan_early, lifespan]
 
 nb_tillers=0
