@@ -42,14 +42,14 @@ def get_growing_and_senescing_organs_potential_visible(g, time, prev_time):
     growing_leaves = {}
     senescing_leaves = {}
 
-    for vid, la in g.properties()["leaf_area"].items(): 
+    for vid, la in g.property("leaf_area").items(): 
         n = g.node(vid)
         if n.start_tt <= time <= n.end_tt or prev_time < n.end_tt < time:
             growing_leaves[vid] = {"potential": la, "visible": n.visible_leaf_area}
         elif n.senescence <= time and not n.dead: # and n.srt > 0: 
             senescing_leaves[vid] = {"potential": n.visible_leaf_area, "visible": n.senescent_area}
 
-    for vid, ml in g.properties()["mature_length"].items(): 
+    for vid, ml in g.property("mature_length").items(): 
         n = g.node(vid)
         if n.label.startswith("Stem") and (n.start_tt <= time < n.end_tt or prev_time < n.end_tt < time):
             growing_internodes[vid] = {"potential": ml, "visible": n.visible_length}
@@ -140,8 +140,18 @@ def distribute_among_organs(g, time, prev_time, daily_dynamics):
 
     if LA_to_distribute > 0.0:
         LA_for_each_leaf = distribute_to_potential(growing_leaves, LA_to_distribute, demand_dist)
+    
+    axes = dict()
+    for vid in growing_internodes:
+        axes.setdefault(g.complex(vid), []).append(vid)
+
     if height_to_distribute > 0.0:
-        height_for_each_internode = distribute_to_potential(growing_internodes, height_to_distribute, demand_dist)
+        height_for_each_internode = dict()
+        for aid in axes:
+            growing_inter = {vid:growing_internodes[vid]  for vid in axes[aid]}
+            height_for_each_axis = distribute_to_potential(growing_inter, height_to_distribute, demand_dist)
+            height_for_each_internode.update(height_for_each_axis)
+    
     if sen_LA_to_distribute > 0.0:
         sen_LA_for_each_leaf = distribute_to_potential(senescing_leaves, sen_LA_to_distribute, equal_dist)
 
@@ -304,6 +314,11 @@ class CerealsVisitorConstrained(CerealsVisitor):
         super().__init__(classic)
 
     def __call__(self, g, v, turtle, time, growth):
+        
+        # TODO : Oriane
+        # Set the parameter as a parameter and not as a constant
+        gravitropism_coefficient = 0.12
+        
         # 1. retrieve the node
         geoms_senesc = g.property("geometry_senescent")
         n = g.node(v)
@@ -313,6 +328,16 @@ class CerealsVisitorConstrained(CerealsVisitor):
             turtle.move(0, 0, 0)
             # initial position to be compatible with canMTG positioning
             turtle.setHead(0, 0, 1, -1, 0, 0)
+
+        # Manage inclination of tiller
+        if g.edge_type(v) == "+":
+            # TODO Oriane : set the insertion angle as a MTG property of the axes?
+            # axis_id = g.complex(vid); g.property('insertion_angle')
+            angle = 60 if g.order(v) == 1 else 30
+            turtle.down(angle)
+            turtle.elasticity = gravitropism_coefficient 
+            turtle.tropism = (0, 0, 1)
+
 
         # incline turtle at the base of stems,
         if n.label.startswith("Stem"):
