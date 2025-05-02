@@ -27,11 +27,11 @@ def illuminate(scene, light=None, pattern=None, scene_unit="cm", north=0):
     infinite = False
     if pattern is not None:
         infinite = True
-    if light is not None:
-        light = light_sources(*light, orientation=north)
+    # if light is not None:
+    #     light = light_sources(*light, orientation=north)
     cs = CaribuScene(scene, light=light, scene_unit=scene_unit, pattern=pattern)
     raw, agg = cs.run(direct=True, simplify=True, infinite=infinite)
-    return cs, raw["Ei"], pd.DataFrame(agg)
+    return cs, raw["Ei"], raw["Eabs"], pd.DataFrame(agg)
 
 
 def compute_light_inter(scene, sky, pattern):

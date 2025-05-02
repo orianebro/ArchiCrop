@@ -141,13 +141,13 @@ def distribute_among_organs(g, time, prev_time, daily_dynamics):
     if LA_to_distribute > 0.0:
         LA_for_each_leaf = distribute_to_potential(growing_leaves, LA_to_distribute, demand_dist)
     
-    axes = dict()
+    axes = {}
     for vid in growing_internodes:
         axes.setdefault(g.complex(vid), []).append(vid)
 
     if height_to_distribute > 0.0:
-        height_for_each_internode = dict()
-        for aid in axes:
+        height_for_each_internode = {}
+        for aid in axes:  # noqa: PLC0206
             growing_inter = {vid:growing_internodes[vid]  for vid in axes[aid]}
             height_for_each_axis = distribute_to_potential(growing_inter, height_to_distribute, demand_dist)
             height_for_each_internode.update(height_for_each_axis)
@@ -206,7 +206,7 @@ def compute_organ(vid, element_node, time, growth, classic=False):
 
         # Evolution of organ geometry with age
         stem_diameter = min(n.stem_diameter/2 * (1+0.5*(time - n.start_tt) / (n.end_tt - n.start_tt)), n.stem_diameter)
-        leaf_inclination = min(1.5*(time - n.start_tt) / (n.end_tt - n.start_tt), 2)
+        leaf_inclination = min(1.5*(time - n.start_tt) / (n.end_tt - n.start_tt), 1)
 
     if n.label.startswith("Leaf"):  # leaf element
         if n.visible_length > 0.0001:  # filter less than 0.001 mm leaves
@@ -330,7 +330,7 @@ class CerealsVisitorConstrained(CerealsVisitor):
             turtle.setHead(0, 0, 1, -1, 0, 0)
 
         # Manage inclination of tiller
-        if g.edge_type(v) == "+":
+        if g.edge_type(v) == "+" and not n.label.startswith("Leaf"):
             # TODO Oriane : set the insertion angle as a MTG property of the axes?
             # axis_id = g.complex(vid); g.property('insertion_angle')
             angle = 60 if g.order(v) == 1 else 30
