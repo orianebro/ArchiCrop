@@ -14,18 +14,21 @@ from openalea.plantgl.all import Color3, Material
 
 seed(18)  # noqa: F405
 
-stics_output_file = 'mod_ssorghum.sti'
-sowing_density = 10
+file_tec_xml = '../../simulations_STICS/sorgho_tec.xml'
+params_tec = ['densitesem', 'interrang']
+tec_stics = read_xml_file(file_tec_xml, params_tec)
+sowing_density = tec_stics['densitesem']
 inter_row = 0.4
+
+stics_output_file = '../../simulations_STICS/mod_ssorghum.sti'
 stics_output_data = read_sti_file(stics_output_file, sowing_density)
 time = [value["Thermal time"] for value in stics_output_data.values()]
 LA_stics = [value["Plant leaf area"] for value in stics_output_data.values()]
 sen_LA_stics = [value["Plant senescent leaf area"] for value in stics_output_data.values()]
 height_stics = [value["Plant height"] for value in stics_output_data.values()]
 par_stics = [value["Absorbed PAR"] for value in stics_output_data.values()]
-# print(stics_output_data)
 
-file_xml = 'proto_sorghum_plt.xml'
+file_xml = '../../simulations_STICS/proto_sorghum_plt.xml'
 params_sen = ['durvieF', 'ratiodurvieI']
 
 sen_stics = read_xml_file(file_xml, params_sen)
@@ -33,8 +36,8 @@ lifespan = sen_stics['durvieF']
 lifespan_early = sen_stics['ratiodurvieI'] * lifespan
 
 
-height=max(height_stics)
-leaf_area=max(LA_stics)
+height=1.5*max(height_stics)
+leaf_area=1.5*max(LA_stics)
 nb_phy=12
 wl=0.12
 diam_base=2.5 
@@ -80,11 +83,17 @@ zenith = str(data_path('zenith.light'))
 
 nice_green=Color3((50,100,0))
 
-nplants, positions, domain, domain_area, unit = agronomic_plot(length=1, width=1, sowing_density=10, inter_row=0.4, noise=0.1)
+nplants, positions, domain, domain_area, unit = agronomic_plot(length=1, width=1, sowing_density=sowing_density, inter_row=inter_row, noise=0.1)
+
+inter_plant = 1/sowing_density/inter_row
+x_pattern = inter_plant/2
+y_pattern = inter_row/2
+pattern = (-x_pattern, -y_pattern, x_pattern, y_pattern)
+position = (0,0,0)
 
 scenes = {}
 for k,v in growing_plant.items():
-    scene, nump = build_scene([v]*nplants, positions, leaf_material=Material(nice_green), stem_material=Material(nice_green), senescence=False)
+    scene, nump = build_scene(v, position, leaf_material=Material(nice_green), stem_material=Material(nice_green), senescence=False)
     scenes[k] = scene
 
 par_caribu = []
