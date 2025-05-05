@@ -116,4 +116,4 @@ def jet_colors(values, minval=None, maxval=None):
     if maxval is None:
         maxval = max(values)
     cmap = ColorMap()
-    return map(lambda x: cmap(x, minval, maxval, 250.0, 20.0), values)
+    return (cmap(x, minval, maxval, 250.0, 20.0) for x in values)

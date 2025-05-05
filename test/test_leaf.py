@@ -24,13 +24,14 @@ Build parameters for a leaf
 
 from __future__ import annotations
 
-from pytest import approx
+from pytest import approx  # noqa: PT013
+
 from openalea.archicrop.cereals_leaf import (
     leaf_mesh,
     parametric_leaf,
 )
-
 from openalea.plantgl.all import surface
+
 
 def leaf_shape():
     """return x, y, s, r values."""

@@ -14,9 +14,13 @@ from .simplification import cost
 debug = False
 
 
-def curvilinear_abscisse(x, y):
+def curvilinear_abscisse(x, y, z=None):
+    """Curvilinear abcissa along a polyline"""
     s = np.zeros(len(x))
-    s[1:] = np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2)
+    if z is None:
+        s[1:] = np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2)
+    else:
+        s[1:] = np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)
     return s.cumsum()
 
 
