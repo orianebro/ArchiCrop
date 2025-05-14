@@ -144,14 +144,14 @@ def add_leaf_senescence(g, vid_leaf, leaf_lifespan, end_juv):
 def add_tiller(g, vid, start_time, phyllochron, plastochron, 
                stem_duration, leaf_duration, leaf_lifespan, end_juv, 
                tiller_delay, reduction_factor, 
-               height, leaf_area, wl, diam_base, diam_top,
+               height, leaf_area, nb_short_phy, wl, diam_base, diam_top,
                insertion_angle, scurv, curvature,
                klig, swmax, f1, f2,
                stem_q, rmax, skew, 
                phyllotactic_angle, phyllotactic_deviation,
+               tiller_angle, gravitropism_coefficient,
                plant_orientation=45,
-               spiral=True,
-               nb_short_phy=4):
+               spiral=True):
     """ Add a tiller to the plant at the given time
     Args:
         g: the MTG
@@ -193,6 +193,8 @@ def add_tiller(g, vid, start_time, phyllochron, plastochron,
         stem = stem_as_dict(stem_prop=stem_prop, leaf_prop=leaf_prop, rank=rank)
         if first:
             vid_stem, tid2 = g.add_child_and_complex(parent=vid, complex=tid, edge_type='+', **stem)
+            g.node(vid_stem).tiller_angle = tiller_angle
+            g.node(vid_stem).gravitropism_coefficient = gravitropism_coefficient
             first = False
         else:
             vid_stem = g.add_child(parent=vid_stem, edge_type='<', **stem)
@@ -212,6 +214,7 @@ def cereals(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration,
             leaf_lifespan, end_juv, nb_tillers, tiller_delay, reduction_factor,
             height,
             leaf_area,
+            nb_short_phy,
             wl,
             diam_base,
             diam_top,
@@ -225,9 +228,10 @@ def cereals(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration,
             skew,
             phyllotactic_angle,
             phyllotactic_deviation,
+            tiller_angle,
+            gravitropism_coefficient,
             plant_orientation=45,
             spiral=True,
-            nb_short_phy=4,
             classic=False):
             # json=None, classic=False, seed=None, plant=None):
     """
@@ -285,6 +289,8 @@ def cereals(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration,
         stem = stem_as_dict(stem_prop=stem_prop, leaf_prop=leaf_prop, rank=rank)
         if first:
             vid_stem = g.add_component(vid_axis, **stem)
+            g.node(vid_stem).tiller_angle = 0
+            g.node(vid_stem).gravitropism_coefficient = 0
             first = False
         else:
             vid_stem = g.add_child(vid_stem, edge_type="<", **stem)
@@ -303,7 +309,7 @@ def cereals(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration,
         # add a tiller
         vid, time = tiller_points.pop(0)
 
-        new_tillers = add_tiller(g, vid, time, phyllochron=phyllochron, plastochron=plastochron, tiller_delay=tiller_delay, 
+        new_tillers = add_tiller(g=g, vid=vid, start_time=time, phyllochron=phyllochron, plastochron=plastochron, tiller_delay=tiller_delay, 
                                 stem_duration=stem_duration, leaf_duration=leaf_duration, leaf_lifespan=leaf_lifespan, end_juv=end_juv, 
                                 reduction_factor=reduction_factor, 
                                 height=height, leaf_area=leaf_area, wl=wl, diam_base=diam_base, diam_top=diam_top,
@@ -311,6 +317,7 @@ def cereals(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration,
                                 klig=klig, swmax=swmax, f1=f1, f2=f2,
                                 stem_q=stem_q, rmax=rmax, skew=skew, 
                                 phyllotactic_angle=phyllotactic_angle, phyllotactic_deviation=phyllotactic_deviation,
+                                tiller_angle=tiller_angle, gravitropism_coefficient=gravitropism_coefficient,
                                 plant_orientation=45,
                                 spiral=True,
                                 nb_short_phy=4) 

@@ -315,10 +315,6 @@ class CerealsVisitorConstrained(CerealsVisitor):
 
     def __call__(self, g, v, turtle, time, growth):
         
-        # TODO : Oriane
-        # Set the parameter as a parameter and not as a constant
-        gravitropism_coefficient = 0.12
-        
         # 1. retrieve the node
         geoms_senesc = g.property("geometry_senescent")
         n = g.node(v)
@@ -331,11 +327,12 @@ class CerealsVisitorConstrained(CerealsVisitor):
 
         # Manage inclination of tiller
         if g.edge_type(v) == "+" and not n.label.startswith("Leaf"):
-            # TODO Oriane : set the insertion angle as a MTG property of the axes?
             # axis_id = g.complex(vid); g.property('insertion_angle')
-            angle = 60 if g.order(v) == 1 else 30
+            # TODO : vary as function of age and species(e.g. rice)
+            # print(n.label, n.visible_length, n.tiller_angle)
+            angle = 2*n.tiller_angle if g.order(v) == 1 else n.tiller_angle 
             turtle.down(angle)
-            turtle.elasticity = gravitropism_coefficient 
+            turtle.elasticity = n.gravitropism_coefficient 
             turtle.tropism = (0, 0, 1)
 
 

@@ -104,7 +104,7 @@ def compute_light_inter(scene, sky, pattern):
 
 # Einc is the total incident energy received on the domain
 # Eabs (float): the surfacic density of energy absorbed (µmol m⁻² s⁻¹)
-# raint (float): from STICS, Photosynthetic Active Radiation intercepted by the canopy 	(MJ m⁻²)
+# raint (float): from STICS, Photosynthetic Active Radiation intercepted by the canopy 	(MJ m⁻²) --> faPAR !!!
 # PAR(MJ m⁻²) = 0.0145 * PAR(µmol m⁻² s⁻¹)
 
 # sum_eabs = 0
