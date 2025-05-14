@@ -264,7 +264,7 @@ def cereals(json=None, classic=False, seed=None, plant=None):
             "azimuth": row["leaf_azimuth"],
             "grow": False,
             "age": 0.0,
-            "lengths": []
+            "stem_lengths": []
         }
 
         if first:
@@ -283,6 +283,8 @@ def cereals(json=None, classic=False, seed=None, plant=None):
             "visible_length": row["L_blade"],
             "leaf_area": row["S_blade"],
             "visible_leaf_area": 0.0,
+            "senescent_area": 0.0,
+            "senescent_length": 0.0,
             "form_factor": row["form_factor"],
             "wl": row["wl"],
             # "tck": (row["tck"]),
@@ -295,8 +297,10 @@ def cereals(json=None, classic=False, seed=None, plant=None):
             "mature_stem_diameter": row["W_internode"],
             "stem_diameter": row["W_internode"],
             "grow": False,
+            "dead": False,
             "age": 0.0,
-            "lengths": []
+            "leaf_lengths": [0.0],
+            "senescent_lengths": [0.0]
         }
 
         vid_leaf = g.add_child(vid_internode, edge_type="+", **leaf)  # noqa: F841

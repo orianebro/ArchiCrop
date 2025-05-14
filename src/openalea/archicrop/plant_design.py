@@ -78,7 +78,7 @@ def blade_dimension(
         case of incomplete data
 
     Returns:
-        a pandas dataframe with estimated blade dimensions
+        a dict with estimated blade dimensions
 
     """
 
@@ -119,8 +119,7 @@ def blade_dimension(
     if isinstance(plant, int):
         plant = [plant] * len(ntop)
 
-    return pd.DataFrame(
-        {
+    return {
             "plant": plant,
             "ntop": ntop,
             "wl": wl,
@@ -128,8 +127,7 @@ def blade_dimension(
             "W_blade": width,
             "S_blade": area,
             "form_factor": form_factor,
-        }
-    )
+            }
 
 
 def stem_dimension(
@@ -160,7 +158,7 @@ def stem_dimension(
         plant: (int or array) vector of plant number
 
     Returns:
-        a pandas dataframe with estimated sheath and internode dimension
+        a dict with estimated sheath and internode dimension
     """
 
     if h_ins is None and h_ins == internode == sheath:
@@ -210,8 +208,7 @@ def stem_dimension(
     if isinstance(plant, int):
         plant = [plant] * len(ntop)
 
-    return pd.DataFrame(
-        {
+    return {
             "plant": plant,
             "ntop": ntop,
             "h_ins": h_ins,
@@ -219,8 +216,7 @@ def stem_dimension(
             "W_sheath": d_sheath,
             "L_internode": internode,
             "W_internode": d_internode,
-        }
-    )
+            }
 
 
 def leaf_azimuth(
