@@ -3,13 +3,16 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+import sky_sources as skys
 
-from . import sky_sources as skys
-from .cereals import build_shoot, leaf_azimuth, parametric_leaf
-from .display import build_scene, display_scene
-from .geometry import form_factor
-from .simple_maize import bell_shaped_dist, geometric_dist
-from .stand import agronomic_plot
+from cereals import build_shoot
+from cereals_leaf import parametric_leaf
+from plant_design import leaf_azimuth
+from display import build_scene, display_scene
+from geometry import form_factor
+from ltfs import illuminate
+from plant_shape import bell_shaped_dist, geometric_dist
+from stand import agronomic_plot
 
 # import light_it as ltfs
 
@@ -21,7 +24,7 @@ leaf_lengths = (10, 10)
 leaf_areas = (10, 10)
 # type ?parametric_leaf for parameter siginification
 a_leaf = parametric_leaf(
-    nb_segment=10, insertion_angle=50, scurv=0.5, curvature=50, alpha=-2.3
+    nb_segment=10, insertion_angle=50, scurv=0.5, curvature=50, # alpha=-2.3
 )
 leaf_shapes = [a_leaf for l in leaf_lengths]
 # type ?leaf_azimuths for parameter siginification
@@ -108,18 +111,18 @@ scene, nump = build_scene(plants, positions)
 display_scene(scene)
 
 # vertical light interception
-# cs, ei, df = ltfs.illuminate(scene, scene_unit='cm')
-# cs.plot(ei)
+cs, ei, df = illuminate(scene, scene_unit='cm')
+cs.plot(ei)
 
 
 # diffuse light interception
 sources = skys.sky_sources()
-# cs, ei, df = ltfs.illuminate(scene, light=sources, scene_unit='cm')
-# cs.plot(ei)
+cs, ei, df = illuminate(scene, light=sources, scene_unit='cm')
+cs.plot(ei)
 
 # get score per plant
-# def score(res):
-#     return pandas.Series({'ei':(res.Ei*res.area).sum() / res.area.sum(),
-#                               'area': res.area.sum()})
-# df['nump']=nump
-# df.groupby('nump').apply(score)
+def score(res):
+    return pd.Series({'ei':(res.Ei*res.area).sum() / res.area.sum(),
+                              'area': res.area.sum()})
+df['nump']=nump
+df.groupby('nump').apply(score)

@@ -1,4 +1,4 @@
-﻿name: archicrop
+name: archicrop
 channels:
   - nodefaults
   - openalea3
@@ -14,4 +14,3 @@ dependencies:
   - sympy
   - oawidgets
   - pytest
-

@@ -1,20 +1,17 @@
 from __future__ import annotations
 
 import numpy as np
-from scipy.integrate import cumulative_simpson
-from scipy.interpolate import splrep
 
 from .cereals_leaf import parametric_leaf
 from .generator import cereals as cereals_generator
 from .plant_design import blade_dimension, leaf_azimuth, stem_dimension
-from .plant_shape import bell_shaped_dist, geometric_dist, shape_to_surface
-
+from .plant_shape import bell_shaped_dist, geometric_dist
 
 
 def build_shoot(
     nb_phy,
     height,
-    Smax,
+    leaf_area,
     wl,
     diam_base,
     diam_top,
@@ -30,6 +27,7 @@ def build_shoot(
     phyllotactic_deviation,
     plant_orientation=45,
     spiral=True,
+    nb_short_phy=4
 ):
     """create a shoot
 
@@ -59,13 +57,13 @@ def build_shoot(
     # nb_young_phy = int(
     #     round((nb_phy - 1.95) / 1.84 / 1.3)
     # )
-    nb_young_phy = 5
-    young_phy_height = 2
+    # nb_short_phy = 4
+    short_phy_height = 2
 
-    pseudostem_height = nb_young_phy * young_phy_height
+    pseudostem_height = nb_short_phy * short_phy_height
 
-    pseudostem = np.array([young_phy_height*i for i in range(1, nb_young_phy+1)])
-    stem = np.array(geometric_dist(height, nb_phy-nb_young_phy, q=stem_q, u0=pseudostem_height))
+    pseudostem = np.array([short_phy_height*i for i in range(1, nb_short_phy+1)])
+    stem = np.array(geometric_dist(height, nb_phy-nb_short_phy, q=stem_q, u0=pseudostem_height))
     insertion_heights = np.concatenate((pseudostem, stem), axis=0)
     # stem = np.array([pseudostem_height+i*(height - pseudostem_height)/(nb_phy - nb_young_phy) for i in range(nb_young_phy+1,nb_phy+1)])
     # insertion_heights = np.array(geometric_dist(height, nb_phy, q=stem_q)) #, u0=young_phy_height))
@@ -84,10 +82,10 @@ def build_shoot(
     ## Leaves
 
     # leaf length repartition along axis
-    # leaf_areas_stem = np.array(bell_shaped_dist(Smax, nb_phy, rmax, skew))
-    # leaf_areas_pseudostem = np.array(bell_shaped_dist(Smax, nb_phy, rmax, skew))
+    # leaf_areas_stem = np.array(bell_shaped_dist(leaf_area, nb_phy, rmax, skew))
+    # leaf_areas_pseudostem = np.array(bell_shaped_dist(leaf_area, nb_phy, rmax, skew))
     # leaf_areas = np.concatenate((leaf_areas_pseudostem, leaf_areas_stem), axis=0)
-    leaf_areas = np.array(bell_shaped_dist(Smax, nb_phy, rmax, skew))
+    leaf_areas = np.array(bell_shaped_dist(leaf_area, nb_phy, rmax, skew))
 
 
     # leaf shapes
@@ -118,15 +116,15 @@ def build_shoot(
     leaf_azimuths[1:] = np.diff(leaf_azimuths)
 
     ## df
-    df = blades.merge(stem)
-    df["leaf_azimuth"] = leaf_azimuths
-    df["leaf_rank"] = ranks
-    df["leaf_shape"] = [leaf_shapes[n - 1] for n in df.leaf_rank]
-    df["wl"] = [wl for _ in df.leaf_rank]
+    axis = blades + stem
+    axis["leaf_azimuth"] = leaf_azimuths
+    axis["leaf_rank"] = ranks
+    axis["leaf_shape"] = [leaf_shapes[n - 1] for n in ranks]
+    # df["wl"] = [wl for _ in df.leaf_rank]
     # df["leaf_tck"] = [(tck) for _ in df.leaf_rank]
-    return df, cereals_generator(plant=df)
+    return axis, cereals_generator(plant=axis)
 
 
 def shoot_at_stage(shoot, stage):
-    df = shoot.loc[shoot["leaf_rank"] <= stage, :]
+    df = shoot.loc[shoot["leaf_rank"] <= stage, :]  # noqa: PD901
     return df, cereals_generator(plant=df)

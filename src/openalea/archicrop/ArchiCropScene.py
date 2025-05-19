@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from .archicrop import ArchiCrop
-from .stand import agronomic_plot
+# from .archicrop import ArchiCrop
+# from .stand import agronomic_plot
+
 
 class ArchiCropScene:
 
