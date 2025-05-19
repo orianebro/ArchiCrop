@@ -1,10 +1,10 @@
-﻿name: archicrop
+name: archicrop
 channels:
   - nodefaults
   - openalea3
   - conda-forge
 dependencies:
-  - alinea.astk
+  - openalea.astk
   - alinea.caribu
   - numpy
   - openalea.mtg
@@ -14,4 +14,3 @@ dependencies:
   - sympy
   - oawidgets
   - pytest
-
