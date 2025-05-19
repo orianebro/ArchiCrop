@@ -17,7 +17,7 @@ def run_lsystem(lsystem='leafy.lpy', parameters=None):
     return lsys, lstring, lscene
 '''
 
-def illuminate(scene, light=None, pattern=None, scene_unit='cm', north=0):
+def illuminate(scene, light=None, pattern=None, scene_unit='cm', north=0, labels=None):
     """Illuminate scene
 
     Args:
@@ -38,17 +38,18 @@ def illuminate(scene, light=None, pattern=None, scene_unit='cm', north=0):
         light = light_sources(*light, orientation=north)
     cs = CaribuScene(scene, light=light,scene_unit=scene_unit, pattern=pattern)
     raw, agg = cs.run(direct=True, simplify=True, infinite=infinite)
-    return cs, raw['Ei'], pandas.DataFrame(agg)
+    df = pandas.DataFrame(agg)
+    if labels is not None:
+        labs = pandas.DataFrame(labels)
+        df = labs.merge(df.reset_index(), left_index=True, right_index=True)
+    return cs, raw['Ei'], df
 
 
-def leaf_irradiance(df, lstring, leaf_name='Leaf', aggregate=False):
-    leaves = [pid for pid,m in enumerate(lstring) if m.name == leaf_name] # adapt this to MTG
-    if len(leaves) > 0:
-        df = df.loc[df.index.isin(leaves), :]
-        df.loc[:, 'leaf_rank'] = range(1, len(leaves) + 1)
-    if aggregate:
-        df = df.apply(numpy.mean)
-    return df
+def mean_leaf_irradiance(df):
+    df['Energy'] = df['Eabs'] * df['area']
+    agg = df.loc[(df.is_green) & (df.label=='Leaf'),('plant','Energy','area')].groupby('plant').agg('sum')
+    agg['Irradiance'] = agg['Energy'] / agg['area']
+    return agg
 
 
 def toric_canopy_pattern(dx=80, dy=5, density=None):

@@ -14,3 +14,4 @@ dependencies:
   - sympy
   - oawidgets
   - pytest
+  - jupyterlab
