@@ -3,7 +3,7 @@ import pandas
 import numpy
 from alinea.caribu.CaribuScene import CaribuScene
 from alinea.caribu.light import light_sources  # here to avoid import line in notebook
-
+'''
 from openalea.lpy import Lsystem
 
 
@@ -15,7 +15,7 @@ def run_lsystem(lsystem='leafy.lpy', parameters=None):
     lstring = lsys.iterate()
     lscene = lsys.sceneInterpretation(lstring)
     return lsys, lstring, lscene
-
+'''
 
 def illuminate(scene, light=None, pattern=None, scene_unit='cm', north=0):
     """Illuminate scene
