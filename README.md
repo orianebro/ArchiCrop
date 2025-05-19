@@ -1,16 +1,39 @@
 # ArchiCrop
 
-3D plant model that gives structure to crop model
+ArchiCrop is a 3D+t parametric plant model for cereals that gives architecture to 1D+t crop-scale data.
 
-Installation: 
-- Clone ArchiCrop repo on your own device : git clone
-https://github.com/orianebro/ArchiCrop.git
-- ```cd ./ArchiCrop/```
-- Create appropriate conda environment :
-  ```conda env create -f oa3.yml ```
-- Install in develop mode
-  ```python setup.py develop```
+ArchCrop is a model where:
+- plant architecture and development are defined by parameters;
+- known allometrics laws enables to define a potential plant with relatively few parameters;
+- plant growth is globally constrained by dynamics at crop scale, from crop model outputs for example. 
 
+Our approach is inspired by the concept of equifinality, which suggests that an exact same outcome can be achieved starting from distinct initial conditions.  
+Architectural parameters constitute degrees of freedom with respect to the crop-scale data, i.e. all the 3D plants simulated through time are equivalent regarding the crop dynamics.  
+Local differential growth of each organ is calculated from a global constraint, that integrates environmental stresses.  
+Based on these constraints we are able to generate a morphospace of growing architectured plants that follow exactly the crop dynamic constraints. 
+
+The explicit spatial arrangement of crops is considered in ArchiCrop, thanks to the individual-based approach. 
+
+
+## Installation
+- Clone ArchiCrop repo on your own device :  
+  ```git clone https://github.com/orianebro/ArchiCrop.git```  
+- Move into the repo :  
+  ```cd ./ArchiCrop/```  
+- Create appropriate conda environment :  
+  ```conda env create -f archicrop.yml ```  
+- Activate conda environment :  
+  ```conda activate archicrop```  
+- Install ArchiCrop package :  
+  ```pip install .```
+
+
+## Tutorials
+Tutorial for simple use of ArchiCrop : [notebook](/tutorials/tutorial_archicrop_sole_crop.ipynb)  
+Tutorial for using ArchiCrop with crop model outputs : [notebook](/tutorials/tutorial_archicrop_sole_crop_from_pbm.ipynb)
+
+
+## Status 
 [![Actions Status][actions-badge]][actions-link]
 [![Documentation Status][rtd-badge]][rtd-link]
 
