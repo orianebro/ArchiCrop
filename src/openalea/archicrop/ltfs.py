@@ -1,23 +1,9 @@
 """Some macro / utilities to run light simpulation on pgl/lpy virtual scene """
 import pandas
-import numpy
 from alinea.caribu.CaribuScene import CaribuScene
-from alinea.caribu.light import light_sources  # here to avoid import line in notebook
-'''
-from openalea.lpy import Lsystem
 
 
-def run_lsystem(lsystem='leafy.lpy', parameters=None):
-    if parameters:
-        lsys = Lsystem(lsystem, {'parameters': parameters})
-    else:
-        lsys = Lsystem(lsystem)
-    lstring = lsys.iterate()
-    lscene = lsys.sceneInterpretation(lstring)
-    return lsys, lstring, lscene
-'''
-
-def illuminate(scene, light=None, pattern=None, scene_unit='cm', north=0, labels=None):
+def illuminate(scene, light=None, domain=None, scene_unit='cm', labels=None):
     """Illuminate scene
 
     Args:
@@ -32,11 +18,9 @@ def illuminate(scene, light=None, pattern=None, scene_unit='cm', north=0, labels
 
     """
     infinite = False
-    if pattern is not None:
+    if domain is not None:
         infinite = True
-    if light is not None:
-        light = light_sources(*light, orientation=north)
-    cs = CaribuScene(scene, light=light,scene_unit=scene_unit, pattern=pattern)
+    cs = CaribuScene(scene, light=light,scene_unit=scene_unit, pattern=domain)
     raw, agg = cs.run(direct=True, simplify=True, infinite=infinite)
     df = pandas.DataFrame(agg)
     if labels is not None:
