@@ -16,6 +16,8 @@ The explicit spatial arrangement of crops is considered in ArchiCrop, thanks to 
 
 
 ## Installation
+- (optional, if you don't have conda) Install miniforge: https://github.com/conda-forge/miniforge
+- (optional if you don't have git): Install git https://git-scm.com/downloads
 - Clone ArchiCrop repo on your own device :  
   ```git clone https://github.com/orianebro/ArchiCrop.git```  
 - Move into the repo :  
@@ -25,7 +27,7 @@ The explicit spatial arrangement of crops is considered in ArchiCrop, thanks to 
 - Activate conda environment :  
   ```conda activate archicrop```  
 - Install ArchiCrop package :  
-  ```pip install .```
+  ```pip install -e .```
 
 
 ## Tutorials
