@@ -14,3 +14,5 @@ dependencies:
   - sympy
   - oawidgets
   - pytest
+  - jupyterlab
+  - matplotlib
