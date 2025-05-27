@@ -158,14 +158,16 @@ def build_mesh_from_stem(n):
 
     if cid:
         n2 = g.node(cid)
-        p2 = n.anchor_point
-        t2 = n.heading
+        p2 = n2.anchor_point
+        t2 = n2.heading
         p12 = p1+t1*half_length
     else:
         p12 = p1+t1*half_length
         p2 = p12+Vector3(0,0,1)*half_length
 
+    print('points : ', p1, p12, p2)
     poly = Polyline([p1, p12, p2])
+
     radius = n.stem_diameter/2
     rads = Point2Array([Vector2(radius, radius)]*3)
 

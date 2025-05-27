@@ -23,7 +23,7 @@ def test1():
     phyllotactic_angle=180
     phyllotactic_deviation=20
 
-    build_shoot(
+    xxx= build_shoot(
     nb_phy,
     height,
     leaf_area,
@@ -39,3 +39,5 @@ def test1():
     skew,
     phyllotactic_angle,
     phyllotactic_deviation)
+
+    return xxx
