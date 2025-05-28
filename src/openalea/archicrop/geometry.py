@@ -12,6 +12,8 @@ from openalea.mtg.turtle import TurtleFrame
 
 from . import fitting
 
+# Deactivate arrange
+#LEAF_MOVE = False
 
 def blade_elt_area(s, r, Lshape=1, Lwshape=1, sr_base=0, sr_top=1):
     """surface of a blade element, positioned with two relative curvilinear absisca"""
@@ -92,6 +94,8 @@ def arrange_leaf(leaf, stem_diameter=0, inclination=1, relative=True):
         a modified x, y, s, r tuple
 
     """
+    #if not LEAF_MOVE:
+    #    return leaf
 
     x, y, s, r = list(map(np.array, leaf))
     if relative and inclination == 1:
@@ -255,7 +259,7 @@ def stem_mesh(length, visible_length, stem_diameter, classic=False, slices=24): 
         solid = True
         # 6 is the minimal number of slices for a correct computation of star
         #  (percentage error lower than 5)
-        slices = 24
+        slices = 10
         stem = pgl.Tapered(
             stem_diameter / 2.0,
             stem_diameter / 2.0,
@@ -361,12 +365,13 @@ class CerealsVisitor:
                 if mesh:  # To DO : reset to None if calculated so ?
                     n.geometry = turtle.transform(mesh)
                     n.anchor_point = turtle.getPosition()
+                    n.heading = turtle.getHeading()
 
         # 3. Update the turtle and context
         turtle.setId(v)
         if n.label.startswith("Stem"):
-            if n.length > 0:  
-                turtle.f(n.length)
+            if n.visible_length > 0:  
+                turtle.f(n.visible_length)
             turtle.context.update({"top": turtle.getFrame()})
         if n.label.startswith("Leaf"):  # noqa: SIM102
             if n.lrolled > 0:

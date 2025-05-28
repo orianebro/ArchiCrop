@@ -343,6 +343,7 @@ class CerealsVisitorConstrained(CerealsVisitor):
                 # print 'node', n._vid, 'azim ', azim
                 turtle.rollL(azim)
 
+        # Try to build the mesh from GC rather than Cylinder
         if n.label.startswith("Leaf") or n.label.startswith("Stem"):
             # update geometry of elements
             # if n.length > 0:
@@ -352,13 +353,14 @@ class CerealsVisitorConstrained(CerealsVisitor):
             if mesh:  # To DO : reset to None if calculated so ?
                 n.geometry = turtle.transform(mesh)
                 n.anchor_point = turtle.getPosition()
+                n.heading = turtle.getHeading()
             if v in geoms_senesc and geoms_senesc[v] is not None:
                 geoms_senesc[v] = turtle.transform(geoms_senesc[v])
 
         # 3. Update the turtle and context
         turtle.setId(v)
         if n.label.startswith("Stem"):
-            if n.length > 0:
+            if n.visible_length > 0:
                 turtle.f(n.visible_length)
             turtle.context.update({"top": turtle.getFrame()})
         if n.label.startswith("Leaf"):  # noqa: SIM102

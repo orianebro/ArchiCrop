@@ -9,7 +9,13 @@ from openalea.plantgl.all import (
     Scene,
     Shape,
     Translated,
-    Viewer,
+    Viewer, 
+    Vector2,
+    Vector3,
+    Extrusion,
+    Polyline2D,
+    Polyline,
+    Point2Array,
 )
 
 
@@ -43,6 +49,12 @@ def build_scene(
         if senescence_material is None:
             senescence_material = Material(Color3(180, 150, 0)) # Yellow 
             # colors = g.property('color')
+
+
+    for g in mtg:
+        for vid in g:
+            if g.label(vid) == 'Stem':
+                build_mesh_from_stem(g.node(vid))
 
     scene = Scene()
 
@@ -127,3 +139,38 @@ def display_mtg(
     display_scene(scene)
 
     return scene
+
+def build_mesh_from_stem(n):
+    p = [Vector2(0.5, 0), Vector2(0, 0.5), Vector2(-0.5, 0), Vector2(0, -0.5),
+     Vector2(0.5, 0)]
+    section = Polyline2D(p)
+    
+    g = n._g
+    vid = n._vid
+
+    cids = g.Sons(vid, EdgeType='<') 
+    cid = cids[0] if cids else None
+
+    p1 = n.anchor_point
+    t1 = n.heading
+
+    half_length = n.visible_length / 2.
+
+    if cid:
+        n2 = g.node(cid)
+        p2 = n2.anchor_point
+        t2 = n2.heading
+        p12 = p1+t1*half_length
+    else:
+        p12 = p1+t1*half_length
+        p2 = p12+Vector3(0,0,1)*half_length
+
+    print('points : ', p1, p12, p2)
+    poly = Polyline([p1, p12, p2])
+
+    radius = n.stem_diameter/2
+    rads = Point2Array([Vector2(radius, radius)]*3)
+
+    sweep = Extrusion(poly, section, rads)
+    n.geometry = sweep
+
