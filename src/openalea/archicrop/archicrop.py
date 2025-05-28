@@ -22,6 +22,7 @@ class ArchiCrop:
                  nb_phy,
                  leaf_area,
                  nb_short_phy=4,
+                 short_phy_height=2,
                  wl=0.1,
                  diam_base=1,
                  diam_top=1,
@@ -90,6 +91,7 @@ class ArchiCrop:
         self.height = height
         self.leaf_area = leaf_area
         self.nb_short_phy = nb_short_phy
+        self.short_phy_height = short_phy_height
         self.wl = wl
         self.diam_base = diam_base
         self.diam_top = diam_top
@@ -133,6 +135,7 @@ class ArchiCrop:
                         height=self.height,
                         leaf_area=self.leaf_area,
                         nb_short_phy=self.nb_short_phy,
+                        short_phy_height=self.short_phy_height,
                         wl=self.wl,
                         diam_base=self.diam_base,
                         diam_top=self.diam_top,

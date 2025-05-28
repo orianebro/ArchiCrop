@@ -15,11 +15,11 @@ from .plant_design import blade_dimension, get_form_factor, leaf_azimuth, stem_d
 from .plant_shape import bell_shaped_dist, geometric_dist, shape_to_surface
 
 
-def stem_element_properties(nb_phy, nb_short_phy, height, stem_q, diam_top, diam_base, ntop):
+def stem_element_properties(nb_phy, nb_short_phy, short_phy_height, height, stem_q, diam_top, diam_base, ntop):
     '''
     Return dict of stem element properties
     '''
-    short_phy_height = 2
+    # short_phy_height = 2
     pseudostem_height = nb_short_phy * short_phy_height
 
     pseudostem = np.array([short_phy_height*i for i in range(1, nb_short_phy+1)])
@@ -144,7 +144,7 @@ def add_leaf_senescence(g, vid_leaf, leaf_lifespan, end_juv):
 def add_tiller(g, vid, start_time, phyllochron, plastochron, 
                stem_duration, leaf_duration, leaf_lifespan, end_juv, 
                tiller_delay, reduction_factor, 
-               height, leaf_area, nb_short_phy, wl, diam_base, diam_top,
+               height, leaf_area, nb_short_phy, short_phy_height, wl, diam_base, diam_top,
                insertion_angle, scurv, curvature,
                klig, swmax, f1, f2,
                stem_q, rmax, skew, 
@@ -175,7 +175,7 @@ def add_tiller(g, vid, start_time, phyllochron, plastochron,
     ntop = max(ranks) - np.array(ranks) + 1
 
     # see how properties change with reduction factor and order p.r^o
-    stem_prop = stem_element_properties(nb_phy, nb_short_phy, height, stem_q, diam_top, diam_base, ntop)
+    stem_prop = stem_element_properties(nb_phy, nb_short_phy, short_phy_height, height, stem_q, diam_top, diam_base, ntop)
     leaf_prop = leaf_properties(nb_phy, leaf_area, rmax, skew, insertion_angle, scurv, curvature, 
                     klig, swmax, f1, f2, ntop, wl, phyllotactic_angle, phyllotactic_deviation, plant_orientation, spiral)
 
@@ -215,6 +215,7 @@ def cereals(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration,
             height,
             leaf_area,
             nb_short_phy,
+            short_phy_height,
             wl,
             diam_base,
             diam_top,
@@ -320,7 +321,8 @@ def cereals(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration,
                                 tiller_angle=tiller_angle, gravitropism_coefficient=gravitropism_coefficient,
                                 plant_orientation=45,
                                 spiral=True,
-                                nb_short_phy=4) 
+                                nb_short_phy=nb_short_phy,
+                                short_phy_height=short_phy_height) 
 
         tiller_points.extend(new_tillers)
         # Here we consider that the list is sorted by the time

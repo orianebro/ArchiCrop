@@ -41,7 +41,67 @@ def generate_single_list_dicts(params):
     return single_list_dicts
 
 
-def LHS_param_sampling(archi_params, n_samples):
+def LHS_param_sampling(archi_params, daily_dynamics, n_samples):
+    """Generate samples from archi_params dictionary, respecting fixed values."""
+    fixed_params = {}
+    sampled_params = []
+
+    l_bounds = []
+    u_bounds = []
+
+    for key, value in archi_params.items():
+        if isinstance(value, (int, float)):  # Fixed parameter
+            fixed_params[key] = value
+        # Parameter distribution in Latin Hypercube
+        elif isinstance(value, list) and key not in {"leaf_lifespan"}:  # Range to sample
+            l_bounds.append(min(value))
+            u_bounds.append(max(value))
+            
+            sampled_params.append(key)
+
+        elif key in {"leaf_lifespan"}:
+            fixed_params[key] = value
+
+    
+    # Create a Latin Hypercube sampler
+    sampler = qmc.LatinHypercube(d=len(l_bounds))  # d = number of parameters
+    
+    # Generate normalized samples (0 to 1)
+    lhs_samples = sampler.random(n=n_samples)
+    
+    # Scale samples to parameter bounds
+    scaled_samples = qmc.scale(lhs_samples, l_bounds=l_bounds, u_bounds=u_bounds)
+
+    # Retrieve phenology
+    for key, value in daily_dynamics.items():
+        if value["Phenology"] == 'juvenile':
+            next_key = key + 1
+            # if next_key in archi_params["daily_dynamics"] and archi_params["daily_dynamics"][next_key]["Phenology"] == 'exponential':
+            #     end_juv = value["Thermal time"]
+
+        elif value["Phenology"] == 'exponential':
+            next_key = key + 1
+            if next_key in daily_dynamics and daily_dynamics[next_key]["Phenology"] == 'repro':
+                end_veg = value["Thermal time"]
+                break
+
+    # Create parameter sets
+    param_sets = []
+    for sample in scaled_samples:
+        # Combine fixed parameters with sampled parameters
+        phi = sample[sampled_params.index("phyllochron")] if "phyllochron" in sampled_params else archi_params["phyllochron"]
+        nb = sample[sampled_params.index("nb_phy")] if "nb_phy" in sampled_params else archi_params["nb_phy"]
+        if end_veg/phi-nb >= 1:
+            sampled_dict = {
+                key: int(value) if key in {"nb_phy", "nb_tillers", "nb_short_phy"} else value
+                for key, value in zip(sampled_params, sample)
+            }
+            param_sets.append({**fixed_params, **sampled_dict})
+    
+    return param_sets
+
+
+def regular_param_sampling(archi_params, n_samples):
     """Generate samples from archi_params dictionary, respecting fixed values."""
     fixed_params = {}
     sampled_params = []
@@ -91,7 +151,7 @@ def LHS_param_sampling(archi_params, n_samples):
         # Combine fixed parameters with sampled parameters
         phi = sample[sampled_params.index("phyllochron")]
         nb = sample[sampled_params.index("nb_phy")]
-        if end_veg/phi-nb >= 1:
+        if end_veg/phi-nb >= 0.5:
             sampled_dict = {
                 key: int(value) if key == "nb_phy" else value
                 for key, value in zip(sampled_params, sample)
@@ -125,9 +185,9 @@ def params_for_curve_fit(param_sets, curves, error_LA=300, error_height=30):
 
     
     for params in param_sets:
-        sorghum = ArchiCrop(height = max(height_stics), leaf_area = max(LA_stics), **params)
-        sorghum.generate_potential_plant()
-        growing_plant = sorghum.grow_plant()
+        plant = ArchiCrop(daily_dynamics=curves, **params)
+        plant.generate_potential_plant()
+        growing_plant = plant.grow_plant()
         growing_plant_mtg = list(growing_plant.values())
     
         LA_archicrop = [sum(la - sen for la, sen in zip(gp.properties()["visible_leaf_area"].values(), gp.properties()["senescent_area"].values())) for gp in growing_plant_mtg]
