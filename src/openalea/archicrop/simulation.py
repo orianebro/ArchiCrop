@@ -41,7 +41,7 @@ def generate_single_list_dicts(params):
     return single_list_dicts
 
 
-def LHS_param_sampling(archi_params, daily_dynamics, n_samples):
+def LHS_param_sampling(archi_params, daily_dynamics, n_samples, seed=42):
     """Generate samples from archi_params dictionary, respecting fixed values."""
     fixed_params = {}
     sampled_params = []
@@ -64,7 +64,7 @@ def LHS_param_sampling(archi_params, daily_dynamics, n_samples):
 
     
     # Create a Latin Hypercube sampler
-    sampler = qmc.LatinHypercube(d=len(l_bounds))  # d = number of parameters
+    sampler = qmc.LatinHypercube(d=len(l_bounds), seed=seed)  # d = number of parameters
     
     # Generate normalized samples (0 to 1)
     lhs_samples = sampler.random(n=n_samples)
@@ -183,6 +183,12 @@ def params_for_curve_fit(param_sets, curves, error_LA=300, error_height=30):
             'height': []
     }
 
+    non_fitting_sim = {
+            'params': [],
+            'LA': [],
+            'height': []
+    }
+
     
     for params in param_sets:
         plant = ArchiCrop(daily_dynamics=curves, **params)
@@ -203,6 +209,9 @@ def params_for_curve_fit(param_sets, curves, error_LA=300, error_height=30):
                 good = True
             else:
                 good = False
+                non_fitting_sim['params'].append(params)
+                non_fitting_sim['LA'].append(LA_archicrop)
+                non_fitting_sim['height'].append(height_archicrop)
                 break
         if good:
             fitting_sim['params'].append(params)
@@ -210,7 +219,7 @@ def params_for_curve_fit(param_sets, curves, error_LA=300, error_height=30):
             fitting_sim['LA'].append(LA_archicrop)
             fitting_sim['height'].append(height_archicrop)
 
-    return fitting_sim
+    return fitting_sim, non_fitting_sim
 
 
 
@@ -263,24 +272,33 @@ def read_sti_file(file_sti, density):
         # Strip whitespace from column names
         stripped_header = [col.strip() for col in header if col != 'pla']
 
+        # Find indices for date columns
+        ian_idx = header.index("ian")
+        mo_idx = header.index("mo")
+        jo_idx = header.index("jo")
+
         # Initialize empty lists for each selected column in the dictionary
         data_dict = {col.strip(): [] for col in stripped_header}
+        date_list = []
 
         # Read the rest of the lines (data rows)
         for line in file:
-            # Split the line into columns and select only the relevant part
             values = line.strip().split(";")
             values = values[:4] + values[5:]
+            # Extract date values
+            year = int(values[ian_idx])
+            month = int(values[mo_idx])
+            day = int(values[jo_idx])
+            date_str = f"{year:04d}-{month:02d}-{day:02d}"
+            date_list.append(date_str)
             # Convert the values to floats
             row = {col.strip(): float(value) for col, value in zip(stripped_header, values)}
-            # Check if the height is 0 and break the loop if true, but only after encountering a non-zero height
             if row["hauteur"] != 0.0:
                 non_zero_height_encountered = True
-                # Append values to the corresponding lists in the dictionary
                 for col in stripped_header:
                     data_dict[col.strip()].append(row[col.strip()])
-            if non_zero_height_encountered and (row["hauteur"] == 0.0): # or row["laisen(n)"] == 0.0):
-                break 
+            if non_zero_height_encountered and (row["hauteur"] == 0.0):
+                break
 
     # start = 21 # 23
     # end = 140
@@ -307,11 +325,14 @@ def read_sti_file(file_sti, density):
     height = [float(i)*100 for i in data_dict["hauteur"]] # from m to cm
     height_incr = [height[0]] + [height[i+1]-height[i] for i in range(len(height[1:]))]
 
+    # Incident PAR
+    par_inc = [0.95*0.48*float(j) for j in data_dict["trg(n)"]]
     # Absorbed PAR
     par_abs = [float(i)/(0.95*0.48*float(j)) for i, j in zip(data_dict["raint"], data_dict["trg(n)"])] # to % of light intercepted, in MJ/m^2
 
     return {
-        i+1: {"Thermal time": round(thermal_time[i],4),
+        i+1: {"Date": date_list[i],
+            "Thermal time": round(thermal_time[i],4),
             "Phenology": 'germination' if i+1 < emergence else 'juvenile' if emergence <= i+1 < end_juv else 'exponential' if end_juv <= i+1 < max_lai else 'repro',
             "Plant leaf area": round(plant_leaf_area[i],4), 
             "Leaf area increment": round(leaf_area_incr[i],4), 
@@ -319,6 +340,7 @@ def read_sti_file(file_sti, density):
             "Senescent leaf area increment": round(sen_leaf_area_incr[i],4),
             "Plant height": round(height[i],4), 
             "Height increment": round(height_incr[i],4), 
+            "Incident PAR": round(par_inc[i],4),
             "Absorbed PAR": round(par_abs[i],4)}
         for i in range(len(thermal_time))
     }

@@ -117,6 +117,7 @@ def arrange_leaf(leaf, stem_diameter=0, inclination=1, relative=True):
 
         x1 = x[0] + cos_a * x - sin_a * y
         y1 = y[0] + sin_a * x + cos_a * y
+
     leaf = x1 + stem_diameter / 2.0, y1, s, r
 
     return leaf  # noqa: RET504

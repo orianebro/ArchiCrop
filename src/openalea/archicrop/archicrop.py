@@ -45,6 +45,7 @@ class ArchiCrop:
                  tiller_delay=1,
                  tiller_angle=30,
                  gravitropism_coefficient=0.12,
+                 plant_orientation=45,
                  reduction_factor=None,
                  daily_dynamics=None):
         """
@@ -80,11 +81,14 @@ class ArchiCrop:
                     if next_key in daily_dynamics and daily_dynamics[next_key]["Phenology"] == 'repro':
                         end_veg = value["Thermal time"]
                         break
+                
+                else:
+                    end_veg = 0
 
         else:
 
-            end_juv = None
-            end_veg = None
+            end_juv = 0
+            end_veg = 0
             
 
         self.nb_phy = nb_phy
@@ -118,6 +122,7 @@ class ArchiCrop:
         self.reduction_factor = reduction_factor
         self.tiller_angle = tiller_angle
         self.gravitropism_coefficient = gravitropism_coefficient
+        self.plant_orientation = plant_orientation
 
         self.daily_dynamics = daily_dynamics
 
@@ -161,7 +166,8 @@ class ArchiCrop:
                         reduction_factor=self.reduction_factor,
                         tiller_delay=self.tiller_delay,
                         tiller_angle=self.tiller_angle,
-                        gravitropism_coefficient=self.gravitropism_coefficient)
+                        gravitropism_coefficient=self.gravitropism_coefficient,
+                        plant_orientation=self.plant_orientation)
 
     '''
     def define_development(self):

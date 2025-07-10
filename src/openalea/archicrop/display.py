@@ -51,10 +51,10 @@ def build_scene(
             # colors = g.property('color')
 
 
-    for g in mtg:
-        for vid in g:
-            if g.label(vid) == 'Stem':
-                build_mesh_from_stem(g.node(vid))
+    # for g in mtg:
+    #     for vid in g:
+    #         if g.label(vid) == 'Stem':
+    #             build_mesh_from_stem(g.node(vid))
 
     scene = Scene()
 
@@ -165,7 +165,7 @@ def build_mesh_from_stem(n):
         p12 = p1+t1*half_length
         p2 = p12+Vector3(0,0,1)*half_length
 
-    print('points : ', p1, p12, p2)
+    # print('points : ', p1, p12, p2)
     poly = Polyline([p1, p12, p2])
 
     radius = n.stem_diameter/2

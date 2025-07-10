@@ -19,6 +19,8 @@ def init_visible_variables(g):
 
     for k in g.properties()["visible_length"]:
         g.properties()["visible_length"][k] = 0.0
+    for k in g.properties()["stem_diameter"]:
+        g.properties()["stem_diameter"][k] = 0.0
 
     return g
 
@@ -205,12 +207,17 @@ def compute_organ(vid, element_node, time, growth, classic=False):
                     finalize_organ_growth(n)
 
         # Evolution of organ geometry with age
-        stem_diameter = min(n.stem_diameter/2 * (1+0.5*(time - n.start_tt) / (n.end_tt - n.start_tt)), n.stem_diameter)
+        # TODO: take tt from stem of same rank for a leaf
+
+        n_stem = n.parent() if n.label.startswith("Leaf") else n
+
+        n.stem_diameter = min(n.mature_stem_diameter/2 * (1+0.5*(time - n_stem.start_tt) / (n_stem.end_tt - n_stem.start_tt)), n.mature_stem_diameter) 
         leaf_inclination = min(1.5*(time - n.start_tt) / (n.end_tt - n.start_tt), 1)
 
     if n.label.startswith("Leaf"):  # leaf element
         if n.visible_length > 0.0001:  # filter less than 0.001 mm leaves
             if n.shape is not None and n.srb is not None:
+                # stem_diameter=0
                 geom = leaf_mesh(
                     leaf=n.shape,
                     L_shape=n.mature_length,
@@ -223,7 +230,7 @@ def compute_organ(vid, element_node, time, growth, classic=False):
                     # turtle.down()
                     flipx=True,
                     inclination=leaf_inclination, 
-                    stem_diameter=stem_diameter,
+                    stem_diameter=n.stem_diameter,
                 )
 
             ### Add a mesh that is senescent
@@ -241,7 +248,7 @@ def compute_organ(vid, element_node, time, growth, classic=False):
                         # turtle.down()
                         flipx=True,
                         inclination=leaf_inclination, 
-                        stem_diameter=stem_diameter,
+                        stem_diameter=n.stem_diameter,
                     )
                     n.geometry_senescent = geom_senescent
 
@@ -255,7 +262,7 @@ def compute_organ(vid, element_node, time, growth, classic=False):
                 else:
                     geom = addSets(rolled, geom, translate=(0, 0, n.lrolled))
     elif n.label.startswith("Stem"):  # stem element
-        geom = stem_mesh(n.length, n.visible_length, stem_diameter, stem_diameter, classic)
+        geom = stem_mesh(length=n.length, visible_length=n.visible_length, stem_diameter=n.stem_diameter, classic=classic)
 
 
     return geom, growth

@@ -31,58 +31,49 @@ lifespan = sen_stics['durvieF']
 lifespan_early = sen_stics['ratiodurvieI'] * lifespan
 
 # Set ArchiCrop parameters
-height=max(height_stics)
-leaf_area=max(LA_stics)
-nb_phy=20
-wl=0.12
-diam_base=2.5 
-diam_top=1.5
-insertion_angle=35
-scurv=0.7
-curvature=100
-klig=0.6
-swmax=0.55
-f1=0.64 
-f2=0.92
-stem_q=1.1
-rmax=0.8
-skew=0.0005
-phyllotactic_angle=180
-phyllotactic_deviation=10
-phyllochron=30
-plastochron=41
-leaf_lifespan=[lifespan_early, lifespan]
-
-nb_tillers=0
-tiller_delay=1
-reduction_factor=1
+archi = dict(
+    height=3*max(height_stics),
+    leaf_area=1.2*max(LA_stics),
+    nb_phy=6,
+    nb_short_phy=3,
+    wl=0.08,
+    diam_base=2.5,
+    diam_top=1.5,
+    insertion_angle=35,
+    scurv=0.7,
+    curvature=0,
+    klig=0.6,
+    swmax=0.55,
+    f1=0.64,
+    f2=0.92,
+    stem_q=1.1,
+    rmax=0.8,
+    skew=0.0005,
+    phyllotactic_angle=180,
+    phyllotactic_deviation=10,
+    phyllochron=30,
+    plastochron=40,
+    leaf_lifespan=[lifespan_early, lifespan],
+    
+    nb_tillers=6,
+    tiller_delay=1,
+    tiller_angle=20,
+    reduction_factor=1
+)
 
 # Instanciate ArchiCrop object
-plant = ArchiCrop(height=height, 
-                  nb_phy=nb_phy,
-                  leaf_area=leaf_area,
-                  wl=wl, diam_base=diam_base, diam_top=diam_top, 
-                  insertion_angle=insertion_angle, scurv=scurv, curvature=curvature, 
-                  klig=klig, swmax=swmax, f1=f1, f2=f2, 
-                  stem_q=stem_q, rmax=rmax, skew=skew,
-                  phyllotactic_angle=phyllotactic_angle,
-                  phyllotactic_deviation=phyllotactic_deviation,
-                  phyllochron=phyllochron, 
-                  plastochron=plastochron, 
-                  leaf_lifespan=leaf_lifespan,
-                  nb_tillers=nb_tillers, tiller_delay=tiller_delay, reduction_factor=reduction_factor,
-                  daily_dynamics=stics_output_data)
+plant = ArchiCrop(daily_dynamics=stics_output_data, **archi)
 # Generate a potential plant
 plant.generate_potential_plant()
 # Simulate growth and senescence of this plant according to the STICS dynamics
 growing_plant = plant.grow_plant()
 
 # Plot the 3D scene
-times = [t for i,t in enumerate(time) if i%8==0]
+times = [t for i,t in enumerate(time) if i%10==0]
 mean_time = sum(times) / len(times)
 positions = [ (0, 1*(t-mean_time), 0) for t in times]
 nice_green = Color3((50, 100, 0))
-scene, _ = build_scene([g for i,g in enumerate(list(growing_plant.values())) if i%8==0], position=positions, senescence=True, leaf_material = Material(nice_green), stem_material=Material(nice_green))
+scene, _ = build_scene([g for i,g in enumerate(list(growing_plant.values())) if i%10==0], position=positions, senescence=True, leaf_material = Material(nice_green), stem_material=Material(nice_green))
 display_scene(scene)
 
 # %gui qt

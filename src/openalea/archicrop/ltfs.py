@@ -3,7 +3,7 @@ import pandas
 from alinea.caribu.CaribuScene import CaribuScene
 
 
-def illuminate(scene, light=None, domain=None, scene_unit='cm', labels=None):
+def illuminate(scene, light=None, domain=None, scene_unit='cm', labels=None, direct=True):
     """Illuminate scene
 
     Args:
@@ -20,13 +20,13 @@ def illuminate(scene, light=None, domain=None, scene_unit='cm', labels=None):
     infinite = False
     if domain is not None:
         infinite = True
-    cs = CaribuScene(scene, light=light,scene_unit=scene_unit, pattern=domain)
-    raw, agg = cs.run(direct=True, simplify=True, infinite=infinite)
+    cs = CaribuScene(scene, light=light,scene_unit=scene_unit, pattern=domain, soil_mesh=1)
+    raw, agg = cs.run(simplify=True, infinite=infinite, direct=direct) # direct=True
     df = pandas.DataFrame(agg)
     if labels is not None:
         labs = pandas.DataFrame(labels)
         df = labs.merge(df.reset_index(), left_index=True, right_index=True)
-    return cs, raw['Ei'], df
+    return cs, raw['Eabs'], df
 
 
 def mean_leaf_irradiance(df):

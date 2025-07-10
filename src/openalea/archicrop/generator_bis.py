@@ -265,9 +265,12 @@ def cereals(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration,
     ranks = range(1, nb_phy + 1)
     ntop = max(ranks) - np.array(ranks) + 1
     # Dicts instead of a dataframe
-    stem_prop = stem_element_properties(nb_phy, nb_short_phy, height, stem_q, diam_top, diam_base, ntop)
-    leaf_prop = leaf_properties(nb_phy, leaf_area, rmax, skew, insertion_angle, scurv, curvature, 
-                    klig, swmax, f1, f2, ntop, wl, phyllotactic_angle, phyllotactic_deviation, plant_orientation, spiral)
+    stem_prop = stem_element_properties(nb_phy=nb_phy, nb_short_phy=nb_short_phy, short_phy_height=short_phy_height, height=height, 
+                                        stem_q=stem_q, diam_top=diam_top, diam_base=diam_base, ntop=ntop)
+    leaf_prop = leaf_properties(nb_phy=nb_phy, leaf_area=leaf_area, rmax=rmax, skew=skew, insertion_angle=insertion_angle, 
+                                scurv=scurv, curvature=curvature, klig=klig, swmax=swmax, f1=f1, f2=f2, ntop=ntop, wl=wl, 
+                                phyllotactic_angle=phyllotactic_angle, phyllotactic_deviation=phyllotactic_deviation, 
+                                plant_orientation=plant_orientation, spiral=spiral)
     
     tt_stem = 0
     tt_leaf = 0
@@ -319,7 +322,7 @@ def cereals(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration,
                                 stem_q=stem_q, rmax=rmax, skew=skew, 
                                 phyllotactic_angle=phyllotactic_angle, phyllotactic_deviation=phyllotactic_deviation,
                                 tiller_angle=tiller_angle, gravitropism_coefficient=gravitropism_coefficient,
-                                plant_orientation=45,
+                                plant_orientation=plant_orientation,
                                 spiral=True,
                                 nb_short_phy=nb_short_phy,
                                 short_phy_height=short_phy_height) 
