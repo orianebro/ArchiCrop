@@ -5,6 +5,14 @@ from itertools import product
 from scipy.stats import qmc
 
 from .archicrop import ArchiCrop
+from .cereal_leaf import growing_leaf_area
+
+
+def leaf_area_plant(g):
+    S = 0
+    for k,leaf in g.properties()["shape"].items():
+        S += growing_leaf_area(leaf, g.properties()["visible_length"][k], g.properties()["mature_length"][k], g.properties()["shape_max_width"][k])
+    return S
 
 
 def dict_ranges_to_all_possible_combinations(d):
@@ -17,26 +25,6 @@ def dict_ranges_to_all_possible_combinations(d):
     # Generate all combinations
     return list(product(*values))
 
-
-def generate_single_list_dicts(params):
-    """
-    Generate dictionaries where only one parameter remains a list and all others are single values.
-    
-    :param params: dict - The input dictionary containing parameters.
-    :return: list of dict - A list of dictionaries with only one parameter as a list.
-    """
-    single_list_dicts = []
-
-    for key, value in params.items():
-        if isinstance(value, list):  # Only consider keys with list values
-            # Create a base dictionary with single values
-            base_dict = {k: (v[0] if isinstance(v, list) else v) for k, v in params.items()}
-            # Replace the single value with the original list for the current key
-            base_dict[key] = value
-            # Add the dictionary to the results
-            single_list_dicts.append(base_dict)
-    
-    return single_list_dicts
 
 
 def LHS_param_sampling(archi_params, daily_dynamics, n_samples, seed=42):
@@ -92,66 +80,6 @@ def LHS_param_sampling(archi_params, daily_dynamics, n_samples, seed=42):
         if end_veg/phi-nb >= 1:
             sampled_dict = {
                 key: int(value) if key in {"nb_phy", "nb_tillers", "nb_short_phy"} else value
-                for key, value in zip(sampled_params, sample)
-            }
-            param_sets.append({**fixed_params, **sampled_dict})
-    
-    return param_sets
-
-
-def regular_param_sampling(archi_params, n_samples):
-    """Generate samples from archi_params dictionary, respecting fixed values."""
-    fixed_params = {}
-    sampled_params = []
-
-    l_bounds = []
-    u_bounds = []
-
-    for key, value in archi_params.items():
-        if isinstance(value, (int, float)):  # Fixed parameter
-            fixed_params[key] = value
-        # Parameter distribution in Latin Hypercube
-        elif isinstance(value, list) and key not in {"leaf_lifespan", "daily_dynamics"}:  # Range to sample
-            l_bounds.append(min(value))
-            u_bounds.append(max(value))
-            
-            sampled_params.append(key)
-
-        elif key in {"leaf_lifespan", "daily_dynamics"}:
-            fixed_params[key] = value
-
-    
-    # Create a Latin Hypercube sampler
-    sampler = qmc.LatinHypercube(d=len(l_bounds))  # d = number of parameters
-    
-    # Generate normalized samples (0 to 1)
-    lhs_samples = sampler.random(n=n_samples)
-    
-    # Scale samples to parameter bounds
-    scaled_samples = qmc.scale(lhs_samples, l_bounds=l_bounds, u_bounds=u_bounds)
-
-    # Retrieve phenology
-    for key, value in archi_params["daily_dynamics"].items():
-        if value["Phenology"] == 'juvenile':
-            next_key = key + 1
-            # if next_key in archi_params["daily_dynamics"] and archi_params["daily_dynamics"][next_key]["Phenology"] == 'exponential':
-            #     end_juv = value["Thermal time"]
-
-        elif value["Phenology"] == 'exponential':
-            next_key = key + 1
-            if next_key in archi_params["daily_dynamics"] and archi_params["daily_dynamics"][next_key]["Phenology"] == 'repro':
-                end_veg = value["Thermal time"]
-                break
-
-    # Create parameter sets
-    param_sets = []
-    for sample in scaled_samples:
-        # Combine fixed parameters with sampled parameters
-        phi = sample[sampled_params.index("phyllochron")]
-        nb = sample[sampled_params.index("nb_phy")]
-        if end_veg/phi-nb >= 0.5:
-            sampled_dict = {
-                key: int(value) if key == "nb_phy" else value
                 for key, value in zip(sampled_params, sample)
             }
             param_sets.append({**fixed_params, **sampled_dict})

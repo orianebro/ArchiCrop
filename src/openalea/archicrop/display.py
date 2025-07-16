@@ -5,17 +5,17 @@ from itertools import cycle
 from openalea.plantgl.all import (
     AxisRotated,
     Color3,
+    Extrusion,
     Material,
+    Point2Array,
+    Polyline,
+    Polyline2D,
     Scene,
     Shape,
     Translated,
-    Viewer, 
     Vector2,
     Vector3,
-    Extrusion,
-    Polyline2D,
-    Polyline,
-    Point2Array,
+    Viewer,
 )
 
 
@@ -159,7 +159,7 @@ def build_mesh_from_stem(n):
     if cid:
         n2 = g.node(cid)
         p2 = n2.anchor_point
-        t2 = n2.heading
+        # t2 = n2.heading  
         p12 = p1+t1*half_length
     else:
         p12 = p1+t1*half_length

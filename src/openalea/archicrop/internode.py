@@ -163,6 +163,7 @@ def stem_as_dict(stem_prop, leaf_prop, rank):
             "stem_diameter": stem_prop["W_internode"][rank-1],
             "azimuth": leaf_prop["leaf_azimuth"][rank-1],
             "grow": False,
+            "potential_growth_rate": 0.0,
             "age": 0.0,
             "stem_lengths": []
         }

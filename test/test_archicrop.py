@@ -3,7 +3,7 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 
 from openalea.archicrop.archicrop import ArchiCrop
-from openalea.archicrop.cereal_plant import bell_shaped_dist
+from openalea.archicrop.cereal_axis import bell_shaped_dist
 from openalea.archicrop.display import build_scene, display_scene
 from openalea.archicrop.stics_io import get_stics_data
 from openalea.plantgl.all import Color3, Material, surface
@@ -67,7 +67,12 @@ times = [t for i,t in enumerate(time) if i%10==0]
 mean_time = sum(times) / len(times)
 positions = [ (0, 1*(t-mean_time), 0) for t in times]
 nice_green = Color3((50, 100, 0))
-scene, _ = build_scene([g for i,g in enumerate(list(growing_plant.values())) if i%10==0], position=positions, senescence=True, leaf_material = Material(nice_green), stem_material=Material(nice_green))
+scene, _ = build_scene(
+    [g for i,g in enumerate(list(growing_plant.values())) if i%10==0], 
+    position=positions, 
+    senescence=True, 
+    leaf_material = Material(nice_green), 
+    stem_material=Material(nice_green))
 display_scene(scene)
 
 
@@ -75,7 +80,9 @@ display_scene(scene)
 for l in range(len(growing_plant[time[-1]].properties()["leaf_lengths"].values())):  # noqa: E741
     # print(list(growing_plant[time[1]].properties()["leaf_lengths"].values()))
     # print(list(growing_plant[time[-1]].properties()["leaf_lengths"].values()))
-    plt.plot(time[1:], [list(growing_plant[t].properties()["leaf_lengths"].values())[l][-1] - list(growing_plant[t].properties()["senescent_lengths"].values())[l][-1] for t in time[1:]], color="green")
+    plt.plot(time[1:], 
+             [list(growing_plant[t].properties()["leaf_lengths"].values())[l][-1] - list(growing_plant[t].properties()["senescent_lengths"].values())[l][-1] for t in time[1:]], 
+             color="green")
 
 plt.xlabel("Thermal time")
 plt.ylabel("Leaf length")
@@ -88,10 +95,16 @@ plt.show()
 fig, ax = plt.subplots(2)
 
 # only works if nb_tillers = 0
-ax[0].plot(range(1,plant.nb_phy+1), growing_plant[time[-1]].properties()["visible_leaf_area"].values(), color="green", label="Realised") 
-ax[1].plot(time, [sum(growing_plant[t].properties()["visible_leaf_area"].values()) - sum(growing_plant[t].properties()["senescent_area"].values()) for t in time], color="green", label="Realised") 
+ax[0].plot(range(1,plant.nb_phy+1), 
+           growing_plant[time[-1]].properties()["visible_leaf_area"].values(), 
+           color="green", label="Realised") 
+ax[1].plot(time, 
+           [sum(growing_plant[t].properties()["visible_leaf_area"].values()) - sum(growing_plant[t].properties()["senescent_area"].values()) for t in time], 
+           color="green", label="Realised") 
 
-ax[0].plot(range(1,plant.nb_phy+1), bell_shaped_dist(plant.leaf_area, plant.nb_phy, plant.rmax, plant.skew), color="orange", alpha=0.5, label="Potential")
+ax[0].plot(range(1,plant.nb_phy+1), 
+           bell_shaped_dist(plant.leaf_area, plant.nb_phy, plant.rmax, plant.skew), 
+           color="orange", alpha=0.5, label="Potential")
 ax[0].set_xlabel("Leaf rank")
 ax[0].set_ylabel("Leaf area (cm²)")
 ax[0].legend(loc="upper left")
@@ -106,9 +119,13 @@ fig.tight_layout()
 
 plt.show()
 
-print("LA in :", max(LA_stics))
-print("LA out theo:", sum(growing_plant[plant.end_veg].properties()["visible_leaf_area"].values()))
-print("LA out 3D :", sum([surface(geom) for vid, geom in growing_plant[plant.end_veg].properties()["geometry"].items() if vid in growing_plant[plant.end_veg].properties()["visible_leaf_area"]])) 
+print("LA in :", max(LA_stics))  # noqa: T201
+print("LA out theo:", sum(growing_plant[plant.end_veg].properties()["visible_leaf_area"].values())) # noqa: T201
+print("LA out 3D :", sum( # noqa: T201
+    [surface(geom) 
+     for vid, geom in growing_plant[plant.end_veg].properties()["geometry"].items() 
+     if vid in growing_plant[plant.end_veg].properties()["visible_leaf_area"]]
+     )) 
 # LA theo =/= real !!!
 
 # %gui qt

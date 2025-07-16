@@ -26,16 +26,14 @@ from __future__ import annotations
 
 from pytest import approx  # noqa: PT013
 
-from openalea.archicrop.cereal_leaf import (
-    leaf_mesh,
-    parametric_leaf,
-)
+from openalea.archicrop.cereal_leaf import parametric_cereal_leaf
+from openalea.archicrop.leaf import leaf_mesh
 from openalea.plantgl.all import surface
 
 
 def leaf_shape():
     """return x, y, s, r values."""
-    return parametric_leaf()
+    return parametric_cereal_leaf()
 
 
 def simple_leaf(leaf, ratio=1):

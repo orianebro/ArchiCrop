@@ -4,7 +4,9 @@ from scipy.interpolate import splev
 
 from openalea.mtg.traversal import pre_order2_with_filter
 
-from .geometry import CerealsTurtle, CerealsVisitorConstrained
+from .cereal_plant import CerealsVisitor
+from .geometry import compute_growing_organ_geometry
+from .turtle import CerealsTurtle
 
 
 def init_visible_variables(g):
@@ -162,7 +164,7 @@ def distribute_among_organs(g, time, prev_time, daily_dynamics):
             "senescing_leaves": senescing_leaves}
 
 
-def compute_organ_growth(vid, element_node, time, growth):
+def compute_organ_growth(vid, element_node, time, growth, rate=True):
     """Compute geometry of Adel base elements (LeafElement and StemElement).
     element_node should be a mtg node proxy."""
 
@@ -185,10 +187,16 @@ def compute_organ_growth(vid, element_node, time, growth):
                 if n.visible_length < n.mature_length:
                     if n.label.startswith("Leaf") and growth["LA_to_distribute"] > 0.0:
                         LA_for_this_leaf = growth["LA_for_each_leaf"][vid]
-                        update_leaf_growth_area(n, LA_for_this_leaf)
+                        if rate:
+                            update_cereal_leaf_growth_rate(n, LA_for_this_leaf, growth["thermal_time_increment"])
+                        else:
+                            update_cereal_leaf_growth_area(n, LA_for_this_leaf)
                     elif n.label.startswith("Stem") and growth["height_to_distribute"] > 0.0:
                         height_for_this_internode = growth["height_for_each_internode"][vid]
-                        update_stem_growth_height(n, height_for_this_internode)
+                        if rate:
+                            update_stem_growth_rate(n, height_for_this_internode, growth["thermal_time_increment"]) 
+                        else:
+                            update_stem_growth_height(n, height_for_this_internode)
             elif time > n.end_tt:
                 if n.label.startswith("Leaf") and growth["sen_LA_to_distribute"] > 0.0:
                     if n.senescence <= time and not n.dead and vid in growth["sen_LA_for_each_leaf"]:
@@ -211,7 +219,7 @@ def compute_organ_growth(vid, element_node, time, growth):
 
     return growth
 
-def update_leaf_growth_area(n, LA_for_this_leaf):
+def update_cereal_leaf_growth_area(n, LA_for_this_leaf):
     if n.visible_leaf_area + LA_for_this_leaf < n.leaf_area:
         n.visible_leaf_area += LA_for_this_leaf
         relative_visible_area = n.visible_leaf_area / n.leaf_area
@@ -222,15 +230,18 @@ def update_leaf_growth_area(n, LA_for_this_leaf):
     n.leaf_lengths.append(n.visible_length)
     n.senescent_lengths.append(0.0)
 
-def update_leaf_growth_rate(n, LA_for_this_leaf, time_increment):
+def update_cereal_leaf_growth_rate(n, LA_for_this_leaf, time_increment):
     rate = LA_for_this_leaf / time_increment
-    if n.visible_leaf_area + LA_for_this_leaf < n.leaf_area:
+    # print(f"rate: {rate}, LA_for_this_leaf: {LA_for_this_leaf}, time_increment: {time_increment}")
+    # print(f"potential_growth_rate: {n.potential_growth_rate}")
+    if rate <= n.potential_growth_rate:
         n.visible_leaf_area += LA_for_this_leaf
-        relative_visible_area = n.visible_leaf_area / n.leaf_area
-        n.visible_length = float(splev(x=relative_visible_area, tck=n.tck)) * n.mature_length
     else:
-        n.visible_leaf_area = n.leaf_area
-        n.visible_length = n.mature_length
+        new_LA_for_this_leaf = n.potential_growth_rate * time_increment
+        # print(f"new_LA_for_this_leaf: {new_LA_for_this_leaf}")
+        n.visible_leaf_area += new_LA_for_this_leaf
+    relative_visible_area = n.visible_leaf_area / n.leaf_area
+    n.visible_length = float(splev(x=relative_visible_area, tck=n.tck)) * n.mature_length
     n.leaf_lengths.append(n.visible_length)
     n.senescent_lengths.append(0.0)
 
@@ -242,28 +253,17 @@ def update_stem_growth_height(n, height_for_this_internode):
         n.visible_length = n.mature_length
     n.stem_lengths.append(n.visible_length)
 
-def update_stem_growth_rate(n, height_for_this_internode):
-    if n.visible_length + height_for_this_internode <= n.mature_length:
+def update_stem_growth_rate(n, height_for_this_internode, time_increment):
+    rate = height_for_this_internode / time_increment
+    if rate <= n.potential_growth_rate:
         n.visible_length += height_for_this_internode
     else:
-        n.visible_length = n.mature_length
+        new_height_for_this_internode = n.potential_growth_rate * time_increment
+        n.visible_length += new_height_for_this_internode
     n.stem_lengths.append(n.visible_length)
 
 
 def update_leaf_senescence_area(n, sen_LA_for_this_leaf):
-    n.grow = False
-    if n.senescent_area + sen_LA_for_this_leaf < n.visible_leaf_area:
-        n.senescent_area += sen_LA_for_this_leaf
-        relative_senescent_area = n.senescent_area / n.visible_leaf_area
-        n.srt = 1 - float(splev(x=relative_senescent_area, tck=n.tck))
-        n.senescent_length = (1 - n.srt) * n.visible_length
-    else:
-        n.senescent_area = n.visible_leaf_area
-        n.senescent_length = n.visible_length
-        n.dead = True
-    n.senescent_lengths.append(n.senescent_length)
-
-def update_leaf_senescence_rate(n, sen_LA_for_this_leaf):
     n.grow = False
     if n.senescent_area + sen_LA_for_this_leaf < n.visible_leaf_area:
         n.senescent_area += sen_LA_for_this_leaf
@@ -305,7 +305,7 @@ def mtg_turtle_time_with_constraint(g, time, prev_time, daily_dynamics, update_v
 
     growth = distribute_among_organs(g, time, prev_time, daily_dynamics)
 
-    cereal_visitor = CerealsVisitorConstrained(False)
+    cereal_visitor = CerealsVisitorGrowth(False)
 
     # for id in g.vertices():
     #     print(g[id])
@@ -360,3 +360,68 @@ def mtg_turtle_time_with_constraint(g, time, prev_time, daily_dynamics, update_v
     for plant_id in g.component_roots_at_scale_iter(g.root, scale=max_scale):
         g = traverse_with_turtle_time(g, plant_id, time, growth)
     return g
+
+
+
+class CerealsVisitorGrowth(CerealsVisitor):
+    def __init__(self, classic):
+        super().__init__(classic)
+
+    def __call__(self, g, v, turtle, time, growth):
+        
+        # 1. retrieve the node
+        geoms_senesc = g.property("geometry_senescent")
+        n = g.node(v)
+
+        # Go to plant position if first plant element
+        if n.parent() is None:
+            turtle.move(0, 0, 0)
+            # initial position to be compatible with canMTG positioning
+            turtle.setHead(0, 0, 1, -1, 0, 0)
+
+        # Manage inclination of tiller
+        if g.edge_type(v) == "+" and not n.label.startswith("Leaf"):
+            # axis_id = g.complex(vid); g.property('insertion_angle')
+            # TODO : vary as function of age and species(e.g. rice)
+            # print(n.label, n.visible_length, n.tiller_angle)
+            angle = 2*n.tiller_angle if g.order(v) == 1 else n.tiller_angle 
+            turtle.down(angle)
+            turtle.elasticity = n.gravitropism_coefficient 
+            turtle.tropism = (0, 0, 1)
+
+
+        # incline turtle at the base of stems,
+        if n.label.startswith("Stem"):
+            azim = float(n.azimuth) if n.azimuth else 0.0
+            if azim:
+                # print 'node', n._vid, 'azim ', azim
+                turtle.rollL(azim)
+
+        # Try to build the mesh from GC rather than Cylinder
+        if n.label.startswith("Leaf") or n.label.startswith("Stem"):
+            # update geometry of elements
+            # if n.length > 0:
+            # print(v)
+            # nb_of_growing_internodes, nb_of_growing_leaves = growing_organs(g, time)
+            growth = compute_organ_growth(v, n, time, growth)
+            mesh = compute_growing_organ_geometry(n, self.classic)
+            if mesh:  # To DO : reset to None if calculated so ?
+                n.geometry = turtle.transform(mesh)
+                n.anchor_point = turtle.getPosition()
+                n.heading = turtle.getHeading()
+            if v in geoms_senesc and geoms_senesc[v] is not None:
+                geoms_senesc[v] = turtle.transform(geoms_senesc[v])
+
+        # 3. Update the turtle and context
+        turtle.setId(v)
+        if n.label.startswith("Stem"):
+            if n.visible_length > 0:
+                turtle.f(n.visible_length)
+            turtle.context.update({"top": turtle.getFrame()})
+        if n.label.startswith("Leaf"):  # noqa: SIM102
+            if n.lrolled > 0:
+                turtle.f(n.lrolled)
+                turtle.context.update({"top": turtle.getFrame()})
+
+        return growth
+

@@ -4,7 +4,7 @@ from oawidgets.plantgl import *  # noqa: F403
 
 from openalea.plantgl.all import Color3, Material
 
-from .cereal_generator import cereals
+from .cereal_plant import cereal
 from .display import build_scene
 from .growth import (
     init_visible_variables,
@@ -154,7 +154,7 @@ class ArchiCrop:
 
         :return: MTG, MTG of the potential plant generated
         """
-        self.g = cereals(nb_phy=self.nb_phy,
+        self.g = cereal(nb_phy=self.nb_phy,
                         height=self.height,
                         leaf_area=self.leaf_area,
                         nb_short_phy=self.nb_short_phy,

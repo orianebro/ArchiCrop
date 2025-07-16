@@ -1,128 +1,395 @@
-from __future__ import annotations
+"""Generate a geometric-based MTG representation of a cereal plant"""
 
-import math
-from itertools import cycle
+from __future__ import annotations
 
 import numpy as np
 
+from openalea.mtg import MTG, fat_mtg
+from openalea.mtg.turtle import TurtleFrame
 
-def geometric_dist(height, nb_phy, q, u0):
-    """
-    Calculates the heights of leaves'ligules along an axis, according to a geometric series,
-    starting from an offset height (u0) = pseudostem height.
+from .cereal_axis import bell_shaped_dist, geometric_dist
+from .cereal_leaf import parametric_cereal_leaf, shape_to_surface
+from .development import add_development, compute_potential_growth_rate
+from .geometry import compute_organ_geometry
+from .internode import stem_as_dict, stem_dimension
+from .leaf import leaf_as_dict, leaf_dimension
+from .plant import leaf_azimuth
+from .turtle import CerealsTurtle
 
-    Parameters:
-    - height (float): Total height of the plant.
-    - nb_phy (int): Number of phytomers (leaves).
-    - q (float): Geometric progression factor (controls spacing between leaves).
-    - u0 (float): Offset height to start the geometric distribution.
 
+def cereal_stem_properties(nb_phy, nb_short_phy, short_phy_height, height, stem_q, diam_top, diam_base, ntop):
+    '''
+    Return dict of stem element properties
+    '''
+    # short_phy_height = 2
+    pseudostem_height = nb_short_phy * short_phy_height
+
+    pseudostem = np.array([short_phy_height*i for i in range(1, nb_short_phy+1)])
+    stem = np.array(geometric_dist(height, nb_phy-nb_short_phy, q=stem_q, u0=pseudostem_height))
+    insertion_heights = np.concatenate((pseudostem, stem), axis=0)
+
+    stem_diameters = np.linspace(diam_base, diam_top, nb_phy).tolist()
+
+    return stem_dimension(
+        h_ins=insertion_heights, d_internode=stem_diameters, ntop=ntop
+    )
+
+
+def cereal_leaf_properties(nb_phy, leaf_area, rmax, skew, insertion_angle, scurv, curvature, 
+                    klig, swmax, f1, f2, ntop, wl, phyllotactic_angle, phyllotactic_deviation, plant_orientation, spiral):
+    '''
+    Return dict of blade properties
+    '''
+    # leaf areas
+    leaf_areas = np.array(bell_shaped_dist(leaf_area, nb_phy, rmax, skew))
+
+    # leaf shapes
+    a_leaf = parametric_cereal_leaf(
+        nb_segment=10,
+        insertion_angle=insertion_angle,
+        scurv=scurv,
+        curvature=curvature,
+        klig=klig, swmax=swmax, f1=f1, f2=f2
+    )
+
+    blades = leaf_dimension(area=leaf_areas, ntop=ntop, wl=wl)
+
+    # phyllotaxy
+    leaf_azimuths = leaf_azimuth(
+        size=nb_phy,
+        phyllotactic_angle=phyllotactic_angle,
+        phyllotactic_deviation=phyllotactic_deviation,
+        plant_orientation=plant_orientation,
+        spiral=spiral,
+    )
+    leaf_azimuths[1:] = np.diff(leaf_azimuths)
+
+    blades["leaf_azimuth"] = leaf_azimuths
+    blades["leaf_shape"] = [a_leaf] * nb_phy 
+    blades["tck"] = [shape_to_surface(shape, wl) for shape in blades["leaf_shape"]]
+
+    return blades
+
+
+def add_leaf_senescence(g, vid_leaf, leaf_lifespan, end_juv):
+    """Add leaf senescence time to the leaf vertex"""
+    if isinstance(leaf_lifespan, list): 
+        if g.node(vid_leaf).start_tt < end_juv:
+            g.node(vid_leaf).senescence = g.node(vid_leaf).start_tt + leaf_lifespan[0] 
+        else:
+            g.node(vid_leaf).senescence = g.node(vid_leaf).start_tt + leaf_lifespan[1]
+    else:
+        g.node(vid_leaf).senescence = g.node(vid_leaf).start_tt + leaf_lifespan
+
+
+
+def add_tiller(g, vid, start_time, phyllochron, plastochron, 
+               stem_duration, leaf_duration, leaf_lifespan, end_juv, 
+               tiller_delay, reduction_factor,  # noqa: ARG001
+               height, leaf_area, nb_short_phy, short_phy_height, wl, diam_base, diam_top,
+               insertion_angle, scurv, curvature,
+               klig, swmax, f1, f2,
+               stem_q, rmax, skew, 
+               phyllotactic_angle, phyllotactic_deviation,
+               tiller_angle, gravitropism_coefficient,
+               plant_orientation=45,
+               spiral=True):
+    """ Add a tiller to the plant at the given time
+    Args:
+        g: MTG
+        vid: vertex id of the plant
+        start_time: time of tiller initiation (in °C.day)
+        phyllochron: phyllochron of the plant (in °C.day/stem element)
+        tiller_delay: delay of the tiller (in °C.day)
+        plastochron: plastochron of the plant (in °C.day/leaf)
+        stem_duration: duration of the stem element development (in phyllochron)
+        leaf_duration: duration of the leaf blade development (in phyllochron)
+        leaf_lifespan: lifespan of the leaf (in °C.day)
+        end_juv: end of the juvenile phase (in °C.day)
+        reduction_factor: factor of reduction for tiller properties
+        height: height of the plant (in cm)
+        leaf_area: maximal potential leaf area of the plant (in cm²)
+        nb_short_phy: number of short phytomers
+        short_phy_height: height of the short phytomers (in cm)
+        wl: leaf width-to-length ratio
+        diam_base: diameter of the base of the main stem (in cm)
+        diam_top: diameter of the top of the main stem (in cm)
+        insertion_angle: insertion angle of the leaf (i.e. between the stem and the tangent line at the base of the leaf) (in °)
+        scurv: curvilinear abscissa of inflexion point for leaf curvature (in [0,1])
+        curvature: curvature angle (i.e. angle between insertion angle and the tangent line at the tip of the leaf) (in °)
+        klig: coefficient for leaf shape
+        swmax: relative leaf length where leaf reaches its maximum width (in [0,1])
+        f1: coefficient for leaf shape
+        f2: coefficient for leaf shape
+        stem_q: common ratio of the geometric series defining stem element lengths for a given height (cf partition of unit)
+        rmax: relative leaf rank corresponding to the position of the longest leaf, from the base of the stem, according to a bell-shaped distribution of leaf lengths along the stem (in [0,1])
+        skew: parameter describing the asymmetry of the bell-shaped distribution of leaf lengths along the stem
+        phyllotactic_angle: angle between the midribs of two consecutive leaves around the stem (in °)
+        phyllotactic_deviation: half-amplitude of deviation around phyllotactic angle (in °)
+        tiller_angle: angle of the tiller wrt to tiller of prior order (in °)
+        gravitropism_coefficient: coefficient of gravitropism for the tiller
+        plant_orientation: orientation of the plant (in °)
+        spiral: whether the phyllotaxy is spiral or not
+        
     Returns:
-    - List[float]: Normalized distances of leaves along the plant's height.
+        List[Tuple[int, float]]: List of tuples containing the vertex id of the tiller and its start time
     """
-    if nb_phy <= 0:
-        msg = "Number of phytomers (nb_phy) must be greater than zero."
-        raise ValueError(msg)
-    if q <= 0:
-        msg = "Geometric progression factor (q) must be positive."
-        raise ValueError(msg)
-    if u0 >= height:
-        msg = "Offset height (u0) must be less than the total height."
-        raise ValueError(msg)
 
-    # Calculate the height available for geometric distribution
-    remaining_height = height - u0
+    # Add a new component to the MTG
 
-    # Generate table of heights for geometric distribution
-    table_heights = np.array([i*float(height) / nb_phy if q == 1 else remaining_height * (1 - q**i) / (1 - q**nb_phy) for i in range(1, nb_phy + 1)])
-    
-    # Add the offset height (u0) to each leaf's position
-    normalized_heights = u0 + table_heights
-    
-    return normalized_heights.tolist()
+    tillers = []
+    # scale_id = g.scale(vid)
+    axis_id = g.complex(vid)
+    rank = g.Rank(vid) + 1  # Number of edges from the root of the axis
+    n = len(g.Axis(vid))
+    len_tiller  = n - rank  # we remove the parent that do not belong to the tiller 
+    nb_phy = len_tiller
 
+    ranks = range(1, nb_phy + 1)
+    ntop = max(ranks) - np.array(ranks) + 1
 
-def collar_heights_kaitaniemi(height, nb_phy):
-    """return collar heights"""
-    # coefficient k between height of successive collars : 1,17/(1-2,29*exp(-0,79*i))  and k=1,3 for penultimate and k=1,44 for last
-    k = [1.17/(1-2.29*math.exp(-0.79*i)) for i in range(1, nb_phy-2)]
-    k_pelnultimate = 1.3
-    k.append(k_pelnultimate)
-    k_flag = 1.44
-    k.append(k_flag)
+    # see how properties change with reduction factor and order p.r^o
+    stem_prop = cereal_stem_properties(nb_phy, nb_short_phy, short_phy_height, height, stem_q, diam_top, diam_base, ntop)
+    leaf_prop = cereal_leaf_properties(nb_phy, leaf_area, rmax, skew, insertion_angle, scurv, curvature, 
+                    klig, swmax, f1, f2, ntop, wl, phyllotactic_angle, phyllotactic_deviation, plant_orientation, spiral)
 
-    # Compute first collar height
-    k_product = 1
-    k_sum = 1
-    for j in k:
-        k_product *= j
-        k_sum += k_product
+    tt_stem = start_time
+    tt_leaf = start_time
+    dtt_stem = phyllochron * stem_duration
+    dtt_leaf = plastochron * leaf_duration
 
-    u1 = height * 1/k_sum
+    tid = g.add_child(parent=axis_id, edge_type='+', label='Axis')
 
-    # Compute other collars height
-    internode_lengths = [u1]
-    k_product = 1  
-    for f in k:
-        k_product *= f
-        internode_lengths.append(k_product * u1)
+    first = True
 
-    return np.cumsum(np.array(internode_lengths))
+    for rank in ranks:
 
+        stem = stem_as_dict(stem_prop=stem_prop, leaf_prop=leaf_prop, rank=rank)
+        if first:
+            vid_stem, tid2 = g.add_child_and_complex(parent=vid, complex=tid, edge_type='+', **stem)
+            g.node(vid_stem).tiller_angle = tiller_angle
+            g.node(vid_stem).gravitropism_coefficient = gravitropism_coefficient
+            first = False
+        else:
+            vid_stem = g.add_child(parent=vid_stem, edge_type='<', **stem)
+        tt_stem = add_development(g=g, vid=vid_stem, tt=tt_stem, dtt=dtt_stem, rate=phyllochron)
+        compute_potential_growth_rate(g=g, vid=vid_stem)
 
-# def bell_shaped_dist(max_leaf_length, nb_phy, rmax, skew):
-#     """returns relative leaf area of individual leaves along bell shaped model"""
-#     k = -np.log(skew) * rmax
-#     r = np.linspace(1.0 / nb_phy, 1, nb_phy)
-#     relative_area = np.exp(-k / rmax * (2 * (r - rmax) ** 2 + (r - rmax) ** 3))
-#     return relative_area * max_leaf_length
+        leaf = leaf_as_dict(stem_prop=stem_prop, leaf_prop=leaf_prop, rank=rank, wl=wl)
+        vid_leaf = g.add_child(vid_stem, edge_type="+", **leaf)
+        tt_leaf = add_development(g=g, vid=vid_leaf, tt=tt_leaf, dtt=dtt_leaf, rate=plastochron)
+        compute_potential_growth_rate(g=g, vid=vid_leaf)
+        add_leaf_senescence(g=g, vid_leaf=vid_leaf, leaf_lifespan=leaf_lifespan, end_juv=end_juv)
+        
+        tillers.append((vid_stem, tt_stem + tiller_delay))
 
-def bell_shaped_dist(leaf_area, nb_phy, rmax, skew):
-    """returns relative leaf area of individual leaves along bell shaped model, so that the sum equals leaf_area"""
-    k = -np.log(skew) * rmax
-    r = np.linspace(1.0 / nb_phy, 1, nb_phy)
-    relative_area = np.exp(-k / rmax * (2 * (r - rmax) ** 2 + (r - rmax) ** 3))
-    total_area = sum(relative_area)
-    normalized_leaf_areas = [area / total_area for area in relative_area]
-    return [leaf_area * la for la in normalized_leaf_areas]
+    return tillers
 
 
+def mtg_interpreter(g, classic=False):
+    """
+    Compute/update the geometry on each node of the MTG using Turtle geometry.
+    """
+    # BUG : sub_mtg mange le vertex plant => on perd la plante !
+    # plants = g.component_roots_at_scale(g.root, scale=1)
+    # nplants = g.nb_vertices(scale=1)
+    # gt = MTG()
 
-def leaf_azimuth(
-    size=1,
-    phyllotactic_angle=180,
-    phyllotactic_deviation=15,
-    plant_orientation=0,
-    spiral=False,
-):
-    """Generate leaf azimuth series
+    # for plant in plants:
+    #   gplant = g.sub_mtg(plant)
+    turtle = CerealsTurtle()
+    visitor = CerealsVisitor(classic)
+
+    scene = TurtleFrame(g, visitor=visitor, turtle=turtle, gc=False, all_roots=True)  # noqa: F841
+
+    return g
+
+
+
+class CerealsVisitor:
+    """Performs geometric interpretation of mtg nodes"""
+
+    def __init__(self, classic):
+        self.classic = classic
+
+    def __call__(self, g, v, turtle):
+        # 1. retrieve the node
+        n = g.node(v)
+
+        # Go to plant position if first plant element
+        if n.parent() is None:
+            turtle.move(0, 0, 0)
+            # initial position to be compatible with canMTG positioning
+            turtle.setHead(0, 0, 1, -1, 0, 0)
+
+        # incline turtle at the base of stems,
+        if n.label.startswith("Stem"):
+            azim = float(n.azimuth) if n.azimuth else 0.0
+            if azim:
+                # print 'node', n._vid, 'azim ', azim
+                turtle.rollL(azim)
+
+        if n.label.startswith("Leaf") or n.label.startswith("Stem"):  # noqa: SIM102
+            # update geometry of elements
+            if n.length > 0:
+                mesh = compute_organ_geometry(n, self.classic)
+                if mesh:  # To DO : reset to None if calculated so ?
+                    n.geometry = turtle.transform(mesh)
+                    n.anchor_point = turtle.getPosition()
+                    n.heading = turtle.getHeading()
+
+        # 3. Update the turtle and context
+        turtle.setId(v)
+        if n.label.startswith("Stem"):
+            if n.visible_length > 0:  
+                turtle.f(n.visible_length)
+            turtle.context.update({"top": turtle.getFrame()})
+        if n.label.startswith("Leaf"):  # noqa: SIM102
+            if n.lrolled > 0:
+                turtle.f(n.lrolled)
+                turtle.context.update({"top": turtle.getFrame()})
+
+
+def cereal(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration, 
+            leaf_lifespan, end_juv, nb_tillers, tiller_delay, reduction_factor,
+            height,
+            leaf_area,
+            nb_short_phy,
+            short_phy_height,
+            wl,
+            diam_base,
+            diam_top,
+            insertion_angle,
+            scurv,
+            curvature,
+            # alpha,
+            klig, swmax, f1, f2,
+            stem_q,
+            rmax,
+            skew,
+            phyllotactic_angle,
+            phyllotactic_deviation,
+            tiller_angle,
+            gravitropism_coefficient,
+            plant_orientation=45,
+            spiral=True,
+            classic=False):
+            # json=None, classic=False, seed=None, plant=None):
+    """
+    Generate a 'geometric-based' MTG representation of cereals
 
     Args:
-        size: the size of the sample
-        phyllotactic_angle: if spiral=False (default) the phyllotactic angle (deg) bet
-        ween 'left and right' leaves. If spiral is True, the angle between
-        successive leaves (deg)
-        phyllotactic_deviation: half-amplitude of deviation around phyllotactic
-        angle (deg)
-        plant_orientation : first azimuth of the series (deg, from X+ positive
-        counter-clockwise)
+    :param nb_phy: int, number of phytomers
+    :param height: float, height of the main stem (in cm)
+    :param leaf_area: float, maximal potential leaf area of plant (in cm²)
+    :param wl: float, leaf width-to-length ratio
+    :param diam_base: float, diameter of the base of the main stem (in cm)
+    :param diam_top: float, diameter of the top of the main stem (in cm)
+    :param insertion_angle: float, insertion angle of the leaf (i.e. between the stem and the tangent line at the base of the leaf) (in °)
+    :param scurv: float, curvilinear abscissa of inflexion point for leaf curvature (in [0,1])
+    :param curvature: float, curvature angle (i.e. angle between insertion angle and the tangent line at the tip of the leaf) (in °)
+    :param stem_q: float, common ratio of the geometric series defining internode lengths for a given height (cf partition of unit)
+    :param rmax: float, proportion of the total number of leaves corresponding to the position of the longest leaf, from the base of the stem, according to a bell-shaped distribution of leaf lengths along the stem (in [0,1])
+    :param skem: float, parameter describing the asymmetry of the bell-shaped distribution of leaf lengths along the stem
+    :param phyllotactic_angle: float, angle between the midribs of two consecutive leaves around the stem (in °)
+    :param phyllotactic_deviation: float, half-amplitude of deviation around phyllotactic angle (in °)
+    :param phyllochron: float, phyllochron, i.e. internode appearance rate (in °C.day/internode)
+    :param plastochron: float, plastochron, i.e. leaf appearance rate (in °C.day/leaf)
+    :param leaf_duration: float, phyllochronic time for a leaf to develop from tip appearance to collar appearance (/phyllochron)
+    :param stem_duration: float, phyllochronic time for a stem to develop from base to top (/phyllochron)
+    :param leaf_lifespan: float, lifespan of a leaf (in °C.day)
+    :param end_juv: float, end of juvenile phase (in °C.day)
+    :param nb_tillers: int, number of tillers 
+    :param tiller_delay: float, delay between the appearance of a phytomer and the appearance of a tiller from its lateral meristem (/phyllochron)
+    :param reduction_factor: float, factor of reduction for tiller properties regarding the main stem properties
+    :param plant_orientation: float, orientation of the plant (in °)
+    :param spiral: bool, whether the phyllotaxy is spiral or not
+    :param classic: bool, whether to use the classic MTG interpreter or not
 
     Returns:
-        an array of azimuths (deg, from X+, positive counter-clockwise)
+    :return: MTG, a geometric-based MTG representation of cereals
     """
-    if size == 1:
-        return plant_orientation
-    if spiral:
-        main = np.arange(0, size) * phyllotactic_angle
-    else:
-        it = cycle((0, phyllotactic_angle))
-        main = np.array([next(it) for i in range(size)])
-    azim = (
-        plant_orientation
-        + main
-        + (np.random.random(size) - 0.5) * 2 * phyllotactic_deviation  # noqa: NPY002
-    )
-    azim = azim % 360
-    return np.where(azim <= 180, azim, azim - 360)
 
+    # Main Axis
+
+    ranks = range(1, nb_phy + 1)
+    ntop = max(ranks) - np.array(ranks) + 1
+    # Dicts instead of a dataframe
+    stem_prop = cereal_stem_properties(nb_phy=nb_phy, nb_short_phy=nb_short_phy, short_phy_height=short_phy_height, height=height, 
+                                        stem_q=stem_q, diam_top=diam_top, diam_base=diam_base, ntop=ntop)
+    leaf_prop = cereal_leaf_properties(nb_phy=nb_phy, leaf_area=leaf_area, rmax=rmax, skew=skew, insertion_angle=insertion_angle, 
+                                scurv=scurv, curvature=curvature, klig=klig, swmax=swmax, f1=f1, f2=f2, ntop=ntop, wl=wl, 
+                                phyllotactic_angle=phyllotactic_angle, phyllotactic_deviation=phyllotactic_deviation, 
+                                plant_orientation=plant_orientation, spiral=spiral)
+    
+    tt_stem = 0
+    tt_leaf = 0
+    dtt_stem = phyllochron * stem_duration
+    dtt_leaf = plastochron * leaf_duration
+
+    tiller_points = []
+
+    g = MTG()
+    # Add a root vertex for the plant
+    vid_plant = g.add_component(g.root, label="Plant", edge_type="/") 
+    # Add a plant vertex for the main axis
+    vid_axis = g.add_component(vid_plant, label="MainAxis", edge_type="/")
+
+    first = True
+
+    # iterate over the number of phytomers of the main stem
+    for rank in ranks:
+
+        stem = stem_as_dict(stem_prop=stem_prop, leaf_prop=leaf_prop, rank=rank)
+        if first:
+            vid_stem = g.add_component(vid_axis, **stem)
+            g.node(vid_stem).tiller_angle = 0
+            g.node(vid_stem).gravitropism_coefficient = 0
+            first = False
+        else:
+            vid_stem = g.add_child(vid_stem, edge_type="<", **stem)
+        tt_stem = add_development(g=g, vid=vid_stem, tt=tt_stem, dtt=dtt_stem, rate=phyllochron)
+        compute_potential_growth_rate(g=g, vid=vid_stem)
+        tiller_points.append((vid_stem, tt_stem + tiller_delay))
+
+        leaf = leaf_as_dict(stem_prop=stem_prop, leaf_prop=leaf_prop, rank=rank, wl=wl)
+        vid_leaf = g.add_child(vid_stem, edge_type="+", **leaf)  
+        tt_leaf = add_development(g=g, vid=vid_leaf, tt=tt_leaf, dtt=dtt_leaf, rate=plastochron)
+        compute_potential_growth_rate(g=g, vid=vid_leaf)
+        add_leaf_senescence(g=g, vid_leaf=vid_leaf, leaf_lifespan=leaf_lifespan, end_juv=end_juv)
+
+
+    # Tillers
+
+    for i in range(nb_tillers):
+        # add a tiller
+        vid, time = tiller_points.pop(0)
+
+        new_tillers = add_tiller(g=g, vid=vid, start_time=time, phyllochron=phyllochron, plastochron=plastochron, tiller_delay=tiller_delay, 
+                                stem_duration=stem_duration, leaf_duration=leaf_duration, leaf_lifespan=leaf_lifespan, end_juv=end_juv, 
+                                reduction_factor=reduction_factor, 
+                                height=height, leaf_area=leaf_area, wl=wl, diam_base=diam_base, diam_top=diam_top,
+                                insertion_angle=insertion_angle, scurv=scurv, curvature=curvature,
+                                klig=klig, swmax=swmax, f1=f1, f2=f2,
+                                stem_q=stem_q, rmax=rmax, skew=skew, 
+                                phyllotactic_angle=phyllotactic_angle, phyllotactic_deviation=phyllotactic_deviation,
+                                tiller_angle=tiller_angle, gravitropism_coefficient=gravitropism_coefficient,
+                                plant_orientation=plant_orientation,
+                                spiral=True,
+                                nb_short_phy=nb_short_phy,
+                                short_phy_height=short_phy_height) 
+
+        tiller_points.extend(new_tillers)
+        # Here we consider that the list is sorted by the time
+        tiller_points.sort(key=lambda x: x[1])
+        tiller_points = tiller_points[:nb_tillers-i]
+
+
+
+    g = fat_mtg(g)
+
+    # Compute geometry
+    g = mtg_interpreter(g, classic=classic)
+
+    return g  # noqa: RET504
 
