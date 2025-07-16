@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from pytest import approx  # noqa: PT013
 
-from openalea.archicrop.cereals_leaf import (
+from openalea.archicrop.cereal_leaf import (
     leaf_mesh,
     parametric_leaf,
 )

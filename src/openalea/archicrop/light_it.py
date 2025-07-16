@@ -9,8 +9,7 @@ from alinea.caribu.CaribuScene import CaribuScene
 # from alinea.caribu.data_samples import data_path
 from alinea.caribu.light import light_sources
 
-
-def illuminate(scene, light=None, pattern=None, scene_unit="cm", north=0):
+def illuminate(scene, light=None, domain=None, scene_unit='cm', labels=None, direct=True): # north=0):
     """Illuminate scene
 
     Args:
@@ -25,13 +24,36 @@ def illuminate(scene, light=None, pattern=None, scene_unit="cm", north=0):
 
     """
     infinite = False
-    if pattern is not None:
+    if domain is not None:
         infinite = True
     # if light is not None:
     #     light = light_sources(*light, orientation=north)
-    cs = CaribuScene(scene, light=light, scene_unit=scene_unit, pattern=pattern)
-    raw, agg = cs.run(direct=True, simplify=True, infinite=infinite)
-    return cs, raw["Ei"], raw["Eabs"], pd.DataFrame(agg)
+    cs = CaribuScene(scene, light=light,scene_unit=scene_unit, pattern=domain, soil_mesh=1)
+    raw, agg = cs.run(simplify=True, infinite=infinite, direct=direct) # direct=True
+    df = pd.DataFrame(agg)
+    if labels is not None:
+        labs = pd.DataFrame(labels)
+        df = labs.merge(df.reset_index(), left_index=True, right_index=True)
+    return cs, raw['Eabs'], df
+
+
+def mean_leaf_irradiance(df):
+    df['Energy'] = df['Eabs'] * df['area']
+    agg = df.loc[(df.is_green) & (df.label=='Leaf'),('plant','Energy','area')].groupby('plant').agg('sum')
+    agg['Irradiance'] = agg['Energy'] / agg['area']
+    return agg
+
+
+def toric_canopy_pattern(dx=80, dy=5, density=None):
+    if density is not None:
+        if dx is not None:
+            dy = 1. / density / (dx / 100.) * 100
+        elif dy is not None:
+            dx = 1. / density / (dy / 100.) * 100
+        else:
+            raise ValueError('At least one grid dimension (dx, dy) should be specified')
+    return (-0.5 * dx, -0.5 * dy,
+             0.5 * dx, 0.5 * dy)
 
 
 def compute_light_inter(scene, sky, pattern):
@@ -99,6 +121,10 @@ def compute_light_inter(scene, sky, pattern):
     #     PlantGL(scene_eabs, group_by_color=False, property=values_eabs)
 
     return result, scene_ei, values_ei
+
+# par_caribu, scene_eabs, values_eabs = compute_light_inter(scene, zenith, pattern)
+
+# Viewer.display(scene_eabs, group_by_color=False, property=values_eabs)
 
 # PlantGL(scene, group_by_color=False, property=values)
 

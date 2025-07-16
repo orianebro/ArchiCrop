@@ -1,16 +1,15 @@
-"""Parametric leaf used for simple maize"""
-
 from __future__ import annotations
 
 from math import cos, pi, radians, sin
 
 import numpy as np
-from scipy.integrate import trapezoid
+from scipy.integrate import cumulative_simpson, simpson, trapezoid
+from scipy.interpolate import interp1d, splrep
 from scipy.optimize import brentq
 
 import openalea.plantgl.all as pgl
 
-from . import fitting
+from .fitting import fit3, mesh4, plantgl_shape
 
 # def leaf_shape_perez(nb_segment=100, insertion_angle=50, delta_angle=180, coef_curv=-0.2):
 #     def _curvature(s, coef_curv):
@@ -88,6 +87,7 @@ def leaf_shape_perez(insertion_angle=50, scurv=0.5, curvature=50, nb_segment=100
 
 
 def sr_prevot(nb_segment=100, alpha=-2.3):
+    """Leaf shape model from Prevot et al. [year]"""
     beta = -2 * (alpha + np.sqrt(-alpha))
     gamma = 2 * np.sqrt(-alpha) + alpha
     s = np.linspace(0, 1, nb_segment + 1)
@@ -180,7 +180,7 @@ def parametric_leaf(
     x, y = leaf_shape_perez(insertion_angle, scurv, curvature, nseg)
     # s, r = sr_prevot(nseg, alpha)
     s, r = sr_dornbush(nb_segment=nseg, klig=klig, swmax=swmax, f1=f1, f2=f2)
-    return fitting.fit3(x, y, s, r, nb_points=nb_segment)
+    return fit3(x, y, s, r, nb_points=nb_segment)
 
 
 
@@ -205,8 +205,41 @@ def blade_elt_area(s, r, Lshape=1, Lwshape=1, sr_base=0, sr_top=1):
 
 
 def form_factor(leaf):
+    """Compute the form factor of a leaf"""
     _, _, s, r = leaf
     return blade_elt_area(s, r, 1, 1, 0, 1)
+
+
+def get_form_factor(leaf):
+    """
+    return form factor for a x,y,s,r tuple referencing a leaf
+    """
+    _, _, s, r = leaf
+    return simpson(r, s)
+
+
+def compute_leaf_area(leaf, length=1, mature_length=1, width_max=1, form_factor=None):
+    """
+    Leaf area as a function of length
+    -------
+
+    Parameters
+    ----------
+    leaf: x,y,s,r coordinate describing mature leaf shape
+    length: current length of the leaf
+    mature_length: the length of the leaf once mature
+    width_max: maximal width of the mature leaf
+    form_factor: (optional) the form_factor of the mature leaf (if known), used to avoid integration
+
+    Returns
+    -------
+    the area of the leaf corresponding to the distal part up to length (computed with trapeze aera)
+    """
+    if length >= mature_length and form_factor is not None:
+        return length * width_max * form_factor
+    _, _, s, r = leaf
+    sr_b = 1 - float(length) / mature_length
+    return blade_elt_area(s, r, mature_length, width_max, sr_base=sr_b, sr_top=1)
 
 
 def arrange_leaf(leaf, stem_diameter=0, inclination=1, relative=True):
@@ -224,7 +257,7 @@ def arrange_leaf(leaf, stem_diameter=0, inclination=1, relative=True):
 
     """
 
-    x, y, s, r = map(np.array, leaf)
+    x, y, s, r = list(map(np.array, leaf))
     if relative and inclination == 1:
         x1, y1 = x, y
     else:
@@ -244,6 +277,7 @@ def arrange_leaf(leaf, stem_diameter=0, inclination=1, relative=True):
 
         x1 = x[0] + cos_a * x - sin_a * y
         y1 = y[0] + sin_a * x + cos_a * y
+
     leaf = x1 + stem_diameter / 2.0, y1, s, r
 
     return leaf  # noqa: RET504
@@ -251,9 +285,9 @@ def arrange_leaf(leaf, stem_diameter=0, inclination=1, relative=True):
 
 def leaf_mesh(
     leaf,
-    L_shape,
-    Lw_shape,
-    length,
+    L_shape=1,
+    Lw_shape=1,
+    length=1,
     s_base=0,
     s_top=1,
     flipx=False,
@@ -261,7 +295,7 @@ def leaf_mesh(
     volume=0,
     stem_diameter=0,
     inclination=1,
-    relative=False,
+    relative=True,
 ):
     """Compute mesh for a leaf element along a scaled leaf shape
 
@@ -287,22 +321,23 @@ def leaf_mesh(
     """
     shape = arrange_leaf(
         leaf,
-        stem_diameter=float(stem_diameter) / L_shape,
+        stem_diameter=stem_diameter / L_shape,
         inclination=inclination,
         relative=relative,
     )
+
     # flip to position leaves along tiller emitted
     if flipx:
         # to position leaves along tiller emitted
-        shape = (-shape[0],) + shape[1:]
+        shape = (-shape[0],) + shape[1:]  # noqa: RUF005
 
-    mesh = fitting.mesh4(
+    mesh = mesh4(
         shape, L_shape, length, s_base, s_top, Lw_shape, twist=twist, volume=volume
     )
 
     if mesh:
         pts, ind = mesh
-        mesh = None if len(ind) < 1 else fitting.plantgl_shape(pts, ind)
+        mesh = None if len(ind) < 1 else plantgl_shape(pts, ind)
     else:
         if length > 0:
             msg = f"Error : no mesh. s_base = {s_base}, s_top = {s_top}, length = {length}"
@@ -310,3 +345,145 @@ def leaf_mesh(
         mesh = None
 
     return mesh
+
+
+def shape_to_surface(a_leaf, wl):
+    _,_,s,r = a_leaf
+    r = r[::-1]*wl
+    S = cumulative_simpson(x=s, y=r, initial=0)
+    S_norm = S/S[-1]
+    return splrep(x=S_norm, y=s, k=3, task=0)
+
+
+def truncate_leaf(leaf, fraction=0.1):
+    x, y, s, r = leaf
+    st = np.linspace(0, fraction, len(s))
+    xt = interp1d(s, x)(st)
+    yt = interp1d(s, y)(st)
+    rt = interp1d(s, r)(1 - fraction + st)
+    return xt, yt, st / fraction, rt
+
+
+def get_base_width(leaf, visible_length=None):
+    """Get the width at the base a leaf with a given visibility
+
+    Args:
+        leaf:  a x, y, s, r tuple
+        length: (float)
+
+    Returns:
+        the leaf base width
+    """
+    _, _, s, r = leaf
+    s /= max(s)
+    return interp1d(s, r)(1 - visible_length)
+
+
+
+def blade_dimension(
+    area=None, length=None, width=None, ntop=None, form_factor=None, plant=1, wl=0.2
+):
+    """Estimate blade dimension and/or compatibility with leaf shapes form
+    factors
+
+    Args:
+        area: (array) vector of blade area. If None, will be estimated using
+         other args
+        length: (array) vector of blade lengths. If None, will be estimated
+        using other args
+        width: (array) vector of blade widths. If None, will be estimated using
+         other args
+        ntop: (array) vector of leaf position (topmost leaf =1). If None
+        (default), leaf dimensions are assumed to be from top to base.
+        form_factor: (object) The (width * length) / Surface ratio If None
+         (default) the adel default shape will be used
+        plant: (int or array) vector of plant number
+        wl: (float) the width / length ratio used to estimates dimensions in
+        case of incomplete data
+
+    Returns:
+        a dict with estimated blade dimensions
+
+    """
+
+    if area is None and length is None and width is None:
+        area = (15, 20, 30)
+
+    form_factor = np.array(0.75) if form_factor is None else np.array(form_factor)
+
+    wl = np.array(wl)
+
+    if area is None:
+        if length is None:
+            width = np.array(width)
+            length = width / np.array(wl)
+        elif width is None:
+            length = np.array(length)
+            width = length * np.array(wl)
+        else:
+            length = np.array(length)
+            width = np.array(width)
+        ntop = np.arange(1, len(length) + 1) if ntop is None else np.array(ntop)
+        area = form_factor * length * width
+    else:
+        area = np.array(area)
+        ntop = np.arange(1, len(area) + 1) if ntop is None else np.array(ntop)
+        # adjust length/width if one is  None or overwrite width if all are set
+        if length is None:
+            if width is None:
+                length = np.sqrt(area / form_factor / wl) # do with scaled max curvilinear abscissa ?
+                width = length * wl
+            else:
+                width = np.array(width)
+                length = area / form_factor / width
+        else:
+            length = np.array(length)
+            width = area / form_factor / length
+
+    if isinstance(plant, int):
+        plant = [plant] * len(ntop)
+
+    return {
+            "plant": plant,
+            "ntop": ntop,
+            "wl": wl,
+            "L_blade": length,
+            "W_blade": width,
+            "S_blade": area,
+            "form_factor": form_factor,
+            }
+
+
+
+def leaf_as_dict(stem_prop, leaf_prop, rank, wl):
+    """Return a dictionary with leaf properties for a given rank"""
+    return {
+            "label": "Leaf",
+            "rank": rank,
+            "shape": leaf_prop["leaf_shape"][rank-1],
+            "mature_length": leaf_prop["L_blade"][rank-1],
+            "length": leaf_prop["L_blade"][rank-1],
+            "visible_length": leaf_prop["L_blade"][rank-1],
+            "leaf_area": leaf_prop["S_blade"][rank-1],
+            "visible_leaf_area": 0.0,
+            "senescent_area": 0.0,
+            "senescent_length": 0.0,
+            # "form_factor": leaf_prop["form_factor"][rank-1],
+            "wl": wl,
+            "tck": leaf_prop["tck"][rank-1], 
+            "is_green": True,
+            "srb": 0,
+            "srt": 1,
+            "lrolled": 0,
+            "d_rolled": 0,
+            "shape_max_width": leaf_prop["W_blade"][rank-1],
+            "mature_stem_diameter": stem_prop["W_internode"][rank-1],
+            "stem_diameter": stem_prop["W_internode"][rank-1],
+            "grow": False,
+            "dead": False,
+            "age": 0.0,
+            "inclination": 0.0,
+            "leaf_lengths": [0.0],
+            "senescent_lengths": [0.0]
+        }
+

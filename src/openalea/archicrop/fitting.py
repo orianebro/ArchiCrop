@@ -1,17 +1,13 @@
 from __future__ import annotations
 
-import os
+from heapq import *  # noqa: F403
 
 import numpy as np
 from scipy.integrate import simpson, trapezoid
 from scipy.interpolate import splev, splprep
 
 import openalea.plantgl.all as pgl
-
-from .simplification import cost
-
-##### DEBUG
-debug = False
+from openalea.plantgl.all import Vector3
 
 
 def curvilinear_abscisse(x, y, z=None):
@@ -22,80 +18,6 @@ def curvilinear_abscisse(x, y, z=None):
     else:
         s[1:] = np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)
     return s.cumsum()
-
-
-def fit_leaf(x, y, s, r):
-    """
-    x, y: 2d points
-    s: curvilinear abscisse
-    r: leaf radius
-
-    Algo:
-        1.1 fit x, y
-        1.2 discretize the splines (high: 100)
-        1.3 compute curvilinear abscisse
-        1.4 normalize :
-          + compute length and divide x, y by length
-
-        2.1 fit r, s
-        2.2 discretize r, s (high 500)
-        2.3 normalize :
-          + compute max r, s and divide r, s
-        2.4 compute leaf surface
-        2.5 r-t1-> found r(s): interp(s_t1,s_t2, r_t2)
-
-        3. fit x(t1), y(t1), r(t1)
-        4. return (x, y, r) and surface value
-    """
-    global debug
-    # spline parameters
-    smooth = 3.0  # smoothness parameter
-    k = 3  # spline order
-    nest = -1  # estimate of number of knots needed (-1 = maximal)
-
-    if debug:
-        tckp, u = splprep([x, y])
-    else:
-        tckp, u = splprep([x, y], s=smooth, k=k, nest=nest)
-
-    xnew, ynew = splev(np.linspace(0, 1, 100), tckp)
-    snew = curvilinear_abscisse(xnew, ynew)
-    # 1.4
-    snew = snew / snew.max()
-
-    # 2.1
-    if debug:
-        tckp2, v = splprep([s, r])
-    else:
-        tckp2, v = splprep([s, r], s=smooth, k=k, nest=nest)
-    snew2, rnew2 = splev(np.linspace(0, 1, 500), tckp2)
-
-    snew2 = snew2 / snew2.max()
-    rnew2 = rnew2 / rnew2.max()
-
-    # 2.4 leaf surface (integral r ds)
-    leaf_surface = simpson(rnew2, snew2)
-
-    # 2.5 Compute rnew
-    rnew = np.interp(snew, snew2, rnew2)
-    if debug:
-        # plot( s/s.max(), r/r.max())
-        # plot( snew, rnew )
-        pass
-    # radius always positive
-    # rnew = where(rnew>0., rnew, zeros(len(rnew)))
-
-    # 3.
-    if debug:
-        tckp_final, t = splprep([xnew, ynew, rnew])
-        # xf, yf, rf = splev(linspace(0,1,15),tckp_final)
-        # plot(x/x.max(), y/x.max())
-        # plot (xf/xf.max(), yf/xf.max())
-        # plot(xf/xf.max(), rf/xf.max())
-    else:
-        tckp_final, t = splprep([xnew, ynew, rnew], s=smooth, k=k, nest=nest)
-    # xf, yf, rf = splev(linspace(0,1,15),tckp_final)
-    return tckp_final, leaf_surface
 
 
 def fit2(x, y, s, r):
@@ -121,18 +43,12 @@ def fit2(x, y, s, r):
         3. fit x(t1), y(t1), r(t1)
         4. return (x, y, r) and surface value
     """
-    global debug
     # spline parameters
     smooth = len(x) - np.sqrt(2 * len(x))  # smoothness parameter
     smooth = 0.01
 
     k = 3  # spline order
     nest = -1  # estimate of number of knots needed (-1 = maximal)
-
-    # if debug:
-    #    tckp,u = splprep([x,y])
-    # else:
-    #    tckp,u = splprep([x,y],s=smooth,k=k,nest=nest)
 
     try:
         tckp, u = splprep([x, y], s=smooth, k=k, nest=nest)
@@ -190,8 +106,8 @@ def partial_leaf(leaf_spline, nb_polygones, length_max, length, radius_max):
     """
     if length <= 0.0:
         return None
-    if length > length_max:
-        length = length_max
+    
+    length = min(length, length_max)
 
     param = float(length) / length_max
 
@@ -216,81 +132,6 @@ def partial_leaf(leaf_spline, nb_polygones, length_max, length, radius_max):
     indices.append((n - 2, 2 * n - 2, n - 1))
 
     return plantgl_shape(points, indices)
-
-
-def mesh(leaf_spline, nb_polygones, length_max, length, radius_max):
-    if length <= 0.0:
-        return None
-    if length > length_max:
-        length = length_max
-
-    param = float(length) / length_max
-
-    xf, yf, rnull = splev(np.linspace(0, param, nb_polygones), leaf_spline)
-    xnull, ynull, rf = splev(np.linspace(1 - param, 1, nb_polygones), leaf_spline)
-    rf = np.where(rf > 0.0, rf, np.zeros(len(rf)))
-    rf[-1] = 0.0
-    xf *= length_max
-    yf *= length_max
-    rf *= radius_max
-    return leaf_to_mesh(xf, yf, rf)
-
-
-def mesh3(leaf, length_max, length, radius_max, antisens=True):
-    return _mesh(leaf, length_max, length, radius_max, antisens=antisens)
-
-
-def leaf_to_mesh_new(x, y, r, twist=True, nb_twist=1.0, nb_waves=8, **kwds):
-    # twist = True
-    # nb_twist = 1.
-
-    # test sin
-    # 7.64 is the length of a sin arc from 0 to 2pi
-    s = curvilinear_abscisse(x, y)
-    L = s.max()
-    s /= L
-
-    nb_oscillation = nb_waves
-    # diff_length = 2.
-    dt = list(np.arctan2(np.diff(y), np.diff(x)))
-    dt.append(0.0)
-    dt = np.array(dt)
-    angle = 2 * np.pi * nb_twist * s if twist else np.pi * nb_oscillation * s
-    if not twist:
-        waves1_x = 0
-        waves1_y = np.sin(angle) * r / 2.0 * s
-        waves2_x = 0
-        waves2_y = np.sin(angle + np.pi) * r / 2.0 * s
-        waves_z = 1
-    else:
-        scalar = r / 2.0
-        waves1_y = -np.sin(angle)
-        waves1_x = 0 * scalar
-        waves2_x = 0 * scalar
-        waves2_y = np.sin(angle)
-        waves_z = np.cos(angle)
-
-    n = len(x)
-    points = list(zip(x + waves1_x, -r / 2.0 * waves_z, y + waves1_y))
-    points.extend(list(zip(x, np.zeros(n), y)))
-    points.extend(list(zip(x + waves2_x, r / 2.0 * waves_z, y + waves2_y)))
-
-    ind = np.array(range(n - 2))
-    indices = list(zip(ind, ind + n, ind + (n + 1)))
-    indices.extend(list(zip(ind, ind + (n + 1), ind + 1)))
-    indices.extend(list(zip(ind + n, ind + 2 * n, ind + 2 * n + 1)))
-    indices.extend(list(zip(ind + n, ind + 2 * n + 1, ind + n + 1)))
-
-    # add only one triangle at the end !!
-    if r[-1] < 0.001:
-        indices.append((n - 2, 3 * n - 2, 2 * n - 1))
-    else:
-        indices.append((n - 2, 2 * n - 2, 2 * n - 1))
-        indices.append((n - 2, 2 * n - 1, n - 1))
-        indices.append((2 * n - 2, 3 * n - 2, 3 * n - 1))
-        indices.append((2 * n - 2, 3 * n - 1, 2 * n - 1))
-
-    return points, indices
 
 
 def leaf_to_mesh_2d(x, y, r, twist_start=0, twist_end=0):
@@ -410,39 +251,6 @@ def leaf_to_mesh(x, z, w, twist_start=0, twist_end=0, volume=0.1):
     return vertices, faces
 
 
-def _mesh(
-    leaf, length_max, length, radius_max, antisens=True, functor=leaf_to_mesh, **kwds
-):
-    from alinea.adel.leaf.curvature import curvature2xy, curvature_xys
-
-    if length <= 0.0:
-        return None
-    if length > length_max:
-        length = length_max
-
-    x, y, s, r = leaf
-    param = float(length) / length_max
-
-    n = len(x)
-
-    sample_sr = np.linspace(1.0 - param, 1.0, num=n)
-    sample_xy = np.linspace(0, param, num=n) if antisens else sample_sr
-
-    xn = np.interp(sample_xy, s, x) * length_max
-    yn = np.interp(sample_xy, s, y) * length_max
-    if not antisens:
-        p, theta, _s, dtheta = curvature_xys(x, y, s)
-        pn, thetan, sn, dthetan = curvature_xys(xn, yn, sample_xy * length_max)
-        xn, yn = curvature2xy((0, 0), theta, sn, dthetan)
-    rn = np.interp(sample_sr, s, r) * radius_max
-
-    return functor(xn, yn, rn, **kwds)
-
-
-def mesh2(leaf, length_max, length, radius_max, twist=0, volume=0):
-    return mesh4(leaf, length_max, length, 0.0, 1.0, radius_max, twist, volume)
-
-
 def leaf_element(leaf, length_max=1, length=1, s_base=0, s_top=1, radius_max=1):
     def insert_values(a, values):
         l = a.tolist()  # noqa: E741
@@ -454,8 +262,8 @@ def leaf_element(leaf, length_max=1, length=1, s_base=0, s_top=1, radius_max=1):
 
     if length <= 0.0:
         return None
-    if length > length_max:
-        length = length_max
+    
+    length = min(length, length_max)
 
     x, y, s, r = leaf
     # just scale leaf case
@@ -560,14 +368,12 @@ def write_smf(filename, points, indices):
 #faces %d
 #
 
-""" % (len(points), len(indices))
+""" % (len(points), len(indices))  # noqa: UP031
 
-    pts_str = "\n".join(["v %f %f %f" % (pt[0], pt[1], pt[2]) for pt in points])
-    ind_str = "\n".join(
-        ["f %d %d %d" % (ind[0] + 1, ind[1] + 1, ind[2] + 1) for ind in indices]
-    )
+    pts_str = "\n".join(["v %f %f %f" % (pt[0], pt[1], pt[2]) for pt in points])  # noqa: UP031
+    ind_str = "\n".join(["f %d %d %d" % (ind[0] + 1, ind[1] + 1, ind[2] + 1) for ind in indices])  # noqa: UP031
 
-    f = open(filename, "w")
+    f = open(filename, "w")  # noqa: PTH123, SIM115
     f.write(header)
     f.write(pts_str)
     f.write("\n")
@@ -581,19 +387,19 @@ def read_smf(filename):
     Read a smf file containing a mesh.
     Returns the point set and the face set.
     """
-    f = open(filename)
+    f = open(filename)  # noqa: PTH123, SIM115
     points = []
     indices = []
 
-    for l in f:
-        l.strip()
-        if not l:
+    for line in f:
+        line.strip()
+        if not line:
             continue
-        if l[0] == "v":
-            pts = l.split()[1:]
+        if line[0] == "v":
+            pts = line.split()[1:]
             points.append([float(pt) for pt in pts])
-        elif l[0] in ["f", "t"]:
-            ind = l.split()[1:]
+        elif line[0] in ["f", "t"]:
+            ind = line.split()[1:]
             indices.append([int(i) - 1 for i in ind])
         else:
             continue
@@ -608,56 +414,83 @@ def plantgl_shape(points, indices):
     return pgl.TriangleSet(points, indices, normalPerVertex=False)
 
 
-def qslim(nb_triangles, points, indexes):
-    """
-    Deciamte a mesh using the qslim software.
-    Return the new mesh with less triangles.
-    Try to respect angles and end points.
-    """
-
-    file_in = os.tempnam() + ".smf"
-    file_out = os.tempnam() + ".smf"
-
-    write_smf(file_in, points, indexes)
-
-    prog = "qslim"
-    args = " -t %d -W 2 -O 0 -o %s %s" % (nb_triangles, file_out, file_in)
-
-    sts = os.system(prog + args)
-
-    pts, ind = read_smf(file_out)
-
-    os.remove(file_in)
-    os.remove(file_out)
-
-    return pts, ind
-
-
-def leaf_shape(leaf, nb_triangles, length_max, length, radius_max):
-    if length <= 0:
-        return None
-    x, y, s, r = leaf
-    leaf_new, leaf_surface = fit2(x, y, s, r)
-
-    pts, ind = mesh2(leaf_new, length_max, length, radius_max)
-    if len(pts) <= 1.5 * nb_triangles:
-        pts2, ind2 = pts, ind
-    else:
-        pts2, ind2 = qslim(nb_triangles, pts, ind)
-    # pts2, ind2 = pts, ind
-    mesh = plantgl_shape(pts2, ind2)
-
-    sc = pgl.SurfComputer(pgl.Discretizer())
-    mesh.apply(sc)
-    scale_radius = leaf_surface * length_max * radius_max / (sc.surface)
-    mesh.transform(pgl.Scaling((1, scale_radius, 1)))
-    return mesh
-
-
 def fit3(x, y, s, r, nb_points):
     leaf, leaf_surface = fit2(x, y, s, r)  # use here simpson as leaf is a smooth shape
     xn, yn, sn, rn = simplify(leaf, nb_points)
     return xn, yn, sn, rn
+
+
+
+def max_distance(pts, line):
+    d_line = line.__normSquared__()
+    max_dist = 0.0
+    index = 0
+    for i, pt in enumerate(pts):
+        d = (Vector3(pt) ^ line).__normSquared__()
+        if d > max_dist:
+            max_dist = d
+            index = i
+
+    return index, max_dist / d_line
+
+
+def distance(pt, p0, p1):
+    line = p1 - p0
+    length = line.__normSquared__()
+    d = ((pt - p0) ^ line).__normSquared__()
+    d /= length
+    return d
+
+
+def cost(polyline, nb_points):
+    nb_points += 2
+    n = len(polyline)
+    pts = list(polyline)
+    _cost = []
+
+    sibling = [[i - 1, i + 1] for i in range(n)]
+
+    # compute the cost for each points
+    heap_cost = []
+    _cost = {}
+
+    for i in range(1, n - 1):
+        d = distance(polyline[i], polyline[i - 1], polyline[i + 1])
+        _cost[i] = d
+        heappush(heap_cost, [d, i])  # noqa: F405
+
+    while len(heap_cost) > nb_points - 2:
+        d, i = heappop(heap_cost)  # noqa: F405
+
+        assert pts[i] is not None
+        pts[i] = None
+
+        # update i-1 and i+1 distance
+        il, ir = sibling[i]
+
+        if il != 0:
+            sibling[il][1] = ir
+            ill = sibling[il][0]
+            dl = distance(pts[il], pts[ill], pts[ir])
+            old_dl = _cost[il]
+            heap_index = heap_cost.index([old_dl, il])
+            _cost[il] = dl
+            del heap_cost[heap_index]
+            heappush(heap_cost, [dl, il])  # noqa: F405
+        if ir != n - 1:
+            sibling[ir][0] = il
+            irr = sibling[ir][1]
+            dr = distance(pts[ir], pts[il], pts[irr])
+            old_dr = _cost[ir]
+            heap_index = heap_cost.index([old_dr, ir])
+            _cost[ir] = dr
+            del heap_cost[heap_index]
+            heappush(heap_cost, [dr, ir])  # noqa: F405
+    # bug in the algorithm...
+    pts[1] = None
+    pts[-2] = None
+    return pts
+
 
 
 def simplify(leaf, nb_points, scale_radius=True):
@@ -696,64 +529,3 @@ def simplify(leaf, nb_points, scale_radius=True):
 
     return x, y, s, r
 
-
-def leaf_shape2(leaf, nb_triangles, length_max, length, radius_max, twist=0, volume=0):
-    if length <= 0:
-        return None
-
-    x, y, s, r = leaf
-    nb_points = nb_triangles / 2 + 2
-    leaf_new = fit3(x, y, s, r, nb_points)
-
-    pts, ind = mesh2(leaf_new, length_max, length, radius_max, twist, volume)
-    mesh = plantgl_shape(pts, ind)
-
-    return mesh
-
-
-def _fit_element(el, nb_points):
-    leaf = None
-    if isinstance(el, dict):
-        x, y, s, r = el["x"], el["y"], el["s"], el["r"]
-    else:
-        x, y, s, r = el
-    try:
-        leaf = fit3(x, y, s, r, nb_points)
-        # force leaf tip to be s,r = 1,0
-        leaf[2][-1] = 1.0
-        leaf[3][-1] = 0.0
-    except:
-        pass
-    return leaf
-
-
-def fit_leaves(leaves, nb_points, dynamic=False):
-    new_db = {}
-    discarded = {}
-    db = leaves
-
-    for key in db:
-        l = db[key]
-        for i, el in enumerate(l):
-            leaf = None
-
-            if not dynamic:
-                leaf = _fit_element(el, nb_points)
-            else:
-                leaf = {age: _fit_element(v, nb_points) for age, v in el.items()}
-                if any(x is None for x in list(leaf.values())):
-                    leaf = None
-            if leaf is not None:
-                new_db.setdefault(key, []).append(leaf)
-            else:
-                print(
-                    "alinea.adel.fitting->fit_leaves: can't fit leaf shape index %s,"
-                    " Rsub-index %d (python sub-index %d)=> leaf shape discarded"
-                    % (key, i + 1, i)
-                )
-                discarded.setdefault(key, []).append(i + 1)
-
-    return (
-        new_db,
-        discarded,
-    )

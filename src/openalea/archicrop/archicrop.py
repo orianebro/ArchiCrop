@@ -4,8 +4,8 @@ from oawidgets.plantgl import *  # noqa: F403
 
 from openalea.plantgl.all import Color3, Material
 
+from .cereal_generator import cereals
 from .display import build_scene
-from .generator_bis import cereals
 from .growth import (
     init_visible_variables,
     mtg_turtle_time_with_constraint,
@@ -66,6 +66,24 @@ class ArchiCrop:
         :param skem: float, parameter describing the asymmetry of the bell-shaped distribution of leaf lengths along the stem
         :param phyllotactic_angle: float, angle between the midribs of two consecutive leaves around the stem (in °)
         :param phyllotactic_deviation: float, half-amplitude of deviation around phyllotactic angle (in °)
+        :param phyllochron: float, phyllochron, i.e. internode appearance rate (in °C.day/internode)
+        :param plastochron: float, plastochron, i.e. leaf appearance rate (in °C.day/leaf)
+        :param leaf_lifespan: float, leaf lifespan (in °C.day)
+        :param nb_tillers: int, number of tillers
+        :param tiller_delay: int, delay between the appearance of a phytomer and the appearance of a tiller from the lateral meristem (in phyllochron)
+        :param tiller_angle: float, angle of the tiller wrt to tiller of prior order (in °)
+        :param gravitropism_coefficient: float, coefficient of gravitropism (in [0,1])
+        :param plant_orientation: float, orientation of the plant wrt to the North (in °)
+        :param reduction_factor: float, reduction factor for tiller properties
+        :param daily_dynamics: dict, daily dynamics of the plant, with keys as thermal time and values as dict containing:
+            - "Phenology" (str): 'juvenile', 'exponential', or 'repro'.
+            - "Thermal time" (float): thermal time at this stage (in °C.day).
+            - "Plant leaf area" (float): plant leaf area at this thermal time (in cm²).
+            - "Leaf area increment" (float): leaf area increment at this thermal time (in cm²).
+            - "Plant height" (float): plant height at this thermal time (in cm).
+            - "Height increment" (float): height increment at this thermal time (in cm).
+            - "Absorbed PAR" (float): absorbed PAR at this thermal time (in MJ/m²)
+
         """
 
         if daily_dynamics is not None:
