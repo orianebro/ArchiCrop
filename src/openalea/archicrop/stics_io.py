@@ -67,16 +67,18 @@ def read_sti_file(file_sti, density):
         for line in file:
             values = line.strip().split(";")
             values = values[:4] + values[5:]
-            # Extract date values
-            year = int(values[ian_idx])
-            month = int(values[mo_idx])
-            day = int(values[jo_idx])
-            date_str = f"{year:04d}-{month:02d}-{day:02d}"
-            date_list.append(date_str)
             # Convert the values to floats
             row = {col.strip(): float(value) for col, value in zip(stripped_header, values)}
             if row["hauteur"] != 0.0:
                 non_zero_height_encountered = True
+                
+                # Extract date values
+                year = int(values[ian_idx])
+                month = int(values[mo_idx])
+                day = int(values[jo_idx])
+                date_str = f"{year:04d}-{month:02d}-{day:02d}"
+                date_list.append(date_str)
+
                 for col in stripped_header:
                     data_dict[col.strip()].append(row[col.strip()])
             if non_zero_height_encountered and (row["hauteur"] == 0.0):
@@ -87,7 +89,8 @@ def read_sti_file(file_sti, density):
     # density = 10 # density = 20 plants/m2 = 0.002 plants/cm2
 
     # Thermal time
-    thermal_time = list(np.cumsum([float(i) for i in data_dict["tempeff"]]))
+    thermal_time = [float(i) for i in data_dict["somupvtsem"]]
+    # thermal_time = list(np.cumsum([float(i) for i in data_dict["tempeff"]]))
     # thermal_time = list(np.cumsum([float(i) for i in data_dict["tmoy(n)"][:end]]))
 
     # Green LAI
@@ -153,4 +156,4 @@ def get_stics_data(file_tec_xml, file_plt_xml, stics_output_file):
     lifespan = sen_stics['durvieF']
     lifespan_early = sen_stics['ratiodurvieI'] * lifespan
     
-    return tec_stics, stics_output_data, lifespan, lifespan_early
+    return sowing_density, stics_output_data, lifespan, lifespan_early

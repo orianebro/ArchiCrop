@@ -22,7 +22,7 @@ class ArchiCrop:
                  nb_phy,
                  leaf_area,
                  nb_short_phy=4,
-                 short_phy_height=2,
+                 short_phy_height=3,
                  wl=0.1,
                  diam_base=1,
                  diam_top=1,

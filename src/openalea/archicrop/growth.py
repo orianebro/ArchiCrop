@@ -85,7 +85,7 @@ def get_senescing_organs(g, time):
 '''
 
 def distribute_to_potential(growing_organs, increment_to_distribute, distribution_function):
-    "Distribute increment among growing organs up to potential of each organ"
+    """Distribute increment among growing organs up to potential of each organ"""
 
     increment_for_each_organ = dict.fromkeys(growing_organs, 0.0)
 
@@ -165,8 +165,7 @@ def distribute_among_organs(g, time, prev_time, daily_dynamics):
 
 
 def compute_organ_growth(vid, element_node, time, growth, rate=True):
-    """Compute geometry of Adel base elements (LeafElement and StemElement).
-    element_node should be a mtg node proxy."""
+    """Compute the gain or loss in length or area of an organ at a given time."""
 
     n = element_node
 
@@ -204,8 +203,11 @@ def compute_organ_growth(vid, element_node, time, growth, rate=True):
                         update_leaf_senescence_area(n, sen_LA_for_this_leaf)
                     else:
                         n.senescent_lengths.append(n.visible_length)
-                else:
-                    finalize_organ_growth(n)
+                elif n.label.startswith("Leaf"):
+                    n.leaf_lengths.append(n.visible_length)
+                    n.senescent_lengths.append(n.senescent_length)
+                elif n.label.startswith("Stem"):
+                    n.stem_lengths.append(n.visible_length)
 
         # Evolution of organ geometry with age
         # TODO: take tt from stem of same rank for a leaf
@@ -220,6 +222,8 @@ def compute_organ_growth(vid, element_node, time, growth, rate=True):
     return growth
 
 def update_cereal_leaf_growth_area(n, LA_for_this_leaf):
+    """Update the visible leaf area and length of a cereal leaf, 
+    under a potential leaf area."""
     if n.visible_leaf_area + LA_for_this_leaf < n.leaf_area:
         n.visible_leaf_area += LA_for_this_leaf
         relative_visible_area = n.visible_leaf_area / n.leaf_area
@@ -231,14 +235,13 @@ def update_cereal_leaf_growth_area(n, LA_for_this_leaf):
     n.senescent_lengths.append(0.0)
 
 def update_cereal_leaf_growth_rate(n, LA_for_this_leaf, time_increment):
+    """Update the visible leaf area and length of a cereal leaf, 
+    under a potential growth rate."""
     rate = LA_for_this_leaf / time_increment
-    # print(f"rate: {rate}, LA_for_this_leaf: {LA_for_this_leaf}, time_increment: {time_increment}")
-    # print(f"potential_growth_rate: {n.potential_growth_rate}")
     if rate <= n.potential_growth_rate:
         n.visible_leaf_area += LA_for_this_leaf
     else:
         new_LA_for_this_leaf = n.potential_growth_rate * time_increment
-        # print(f"new_LA_for_this_leaf: {new_LA_for_this_leaf}")
         n.visible_leaf_area += new_LA_for_this_leaf
     relative_visible_area = n.visible_leaf_area / n.leaf_area
     n.visible_length = float(splev(x=relative_visible_area, tck=n.tck)) * n.mature_length
@@ -247,6 +250,8 @@ def update_cereal_leaf_growth_rate(n, LA_for_this_leaf, time_increment):
 
 
 def update_stem_growth_height(n, height_for_this_internode):
+    """Update the visible length of a stem internode, 
+    under a potential height."""
     if n.visible_length + height_for_this_internode <= n.mature_length:
         n.visible_length += height_for_this_internode
     else:
@@ -254,6 +259,8 @@ def update_stem_growth_height(n, height_for_this_internode):
     n.stem_lengths.append(n.visible_length)
 
 def update_stem_growth_rate(n, height_for_this_internode, time_increment):
+    """Update the visible length of a stem internode, 
+    under a potential growth rate."""
     rate = height_for_this_internode / time_increment
     if rate <= n.potential_growth_rate:
         n.visible_length += height_for_this_internode
@@ -264,6 +271,8 @@ def update_stem_growth_rate(n, height_for_this_internode, time_increment):
 
 
 def update_leaf_senescence_area(n, sen_LA_for_this_leaf):
+    """Update the senescent area and length of a cereal leaf, 
+    that cannot be greater than the visible leaf area."""
     n.grow = False
     if n.senescent_area + sen_LA_for_this_leaf < n.visible_leaf_area:
         n.senescent_area += sen_LA_for_this_leaf
@@ -275,19 +284,6 @@ def update_leaf_senescence_area(n, sen_LA_for_this_leaf):
         n.senescent_length = n.visible_length
         n.dead = True
     n.senescent_lengths.append(n.senescent_length)
-
-
-def finalize_organ_growth(n):
-    # if n.visible_length < n.mature_length:
-    #     n.visible_length = n.visible_length
-    # else:
-    #     n.visible_length = n.mature_length
-    if n.label.startswith("Leaf"):
-        n.leaf_lengths.append(n.visible_length)
-        n.senescent_lengths.append(n.senescent_length)
-    elif n.label.startswith("Stem"):
-        n.stem_lengths.append(n.visible_length)
-
 
 
 def mtg_turtle_time_with_constraint(g, time, prev_time, daily_dynamics, update_visitor=None):  # noqa: ARG001

@@ -11,7 +11,7 @@ from openalea.plantgl.all import Color3, Material, surface
 # from openalea.archicrop.archi_params import get_archi_params
 
 # Retrieve STICS management and senescence parameters
-tec_stics, stics_output_data, lifespan, lifespan_early = get_stics_data(
+sowing_density, stics_output_data, lifespan, lifespan_early = get_stics_data(
     file_tec_xml='Mais_tec.xml',  # Path to the STICS management XML file
     file_plt_xml='corn_plt.xml',  # Path to the STICS plant XML file
     stics_output_file='mod_smaize.sti'  # Path to the STICS output file

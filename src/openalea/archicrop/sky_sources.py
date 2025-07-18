@@ -11,6 +11,12 @@ from .colormap import jet_colors
 
 # from alinea.astk.sun_and_sky import sky_sources, sun_sky_sources
 
+def meteo_day(filename):
+    names=['station', 'year', 'month', 'day', 'julian', 'min_temp', 'max_temp', 'rad', 'Penman PET', 'rainfall', 'wind', 'pressure', 'CO2']
+    df = pd.read_csv(filename,  header=None, sep='\s+', names=names)
+    df["daydate"] = pd.to_datetime(df[["year", "month", "day"]])
+    return df
+
 
 def cartesian(elevation, azimuth, radius=1):
     """Cartesian coordinates from elevation and azimuth angles"""
