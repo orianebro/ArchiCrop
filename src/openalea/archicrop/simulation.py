@@ -83,6 +83,8 @@ def LHS_param_sampling(archi_params, daily_dynamics, n_samples, seed=42):
         plas = sample[sampled_params.index("plastochron")] if "plastochron" in sampled_params else archi_params["plastochron"]
         nb = sample[sampled_params.index("nb_phy")] if "nb_phy" in sampled_params else archi_params["nb_phy"]
         # print(end_veg/phi-nb)
+
+        # in separate filter function !!!!!!!!!!!!
         if 1 <= end_veg/plas-nb <= 3 and phi < plas:
             sampled_dict = {
                 key: int(value) if key in {"nb_phy", "nb_tillers", "nb_short_phy"} else value
