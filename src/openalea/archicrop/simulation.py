@@ -2,14 +2,12 @@ from __future__ import annotations
 
 from itertools import product
 
-import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
 from scipy.stats import qmc
 
 from .archicrop import ArchiCrop
 from .cereal_leaf import growing_leaf_area
-from .sky_sources import meteo_day
 
 
 def leaf_area_plant(g):
@@ -30,8 +28,20 @@ def dict_ranges_to_all_possible_combinations(d):
     return list(product(*values))
 
 
+def complete_archi_params(archi_params: dict, daily_dynamics: dict, lifespan: float, lifespan_early: float) -> dict:
+    """
+    Complete the architecture parameters with values from daily dynamics.
+    """
+    leaf_area_plant = [value["Plant leaf area"] for value in daily_dynamics.values()]
+    height_canopy = [value["Plant height"] for value in daily_dynamics.values()]
 
-def LHS_param_sampling(archi_params, daily_dynamics, n_samples, seed=42):
+    archi_params["height"] = [1.1*max(height_canopy), 5*max(height_canopy)]
+    archi_params["leaf_area"] = [1.1*max(leaf_area_plant), 5*max(leaf_area_plant)]
+    archi_params["leaf_lifespan"] = [lifespan_early, lifespan]
+    return archi_params
+
+
+def LHS_param_sampling(archi_params, n_samples, seed=42):
     """Generate samples from archi_params dictionary, respecting fixed values."""
     fixed_params = {}
     sampled_params = []
@@ -52,7 +62,6 @@ def LHS_param_sampling(archi_params, daily_dynamics, n_samples, seed=42):
         elif key in {"leaf_lifespan"}:
             fixed_params[key] = value
 
-    
     # Create a Latin Hypercube sampler
     sampler = qmc.LatinHypercube(d=len(l_bounds), seed=seed)  # d = number of parameters
     
@@ -62,64 +71,78 @@ def LHS_param_sampling(archi_params, daily_dynamics, n_samples, seed=42):
     # Scale samples to parameter bounds
     scaled_samples = qmc.scale(lhs_samples, l_bounds=l_bounds, u_bounds=u_bounds)
 
-    # Retrieve phenology
-    for key, value in daily_dynamics.items():
-        if value["Phenology"] == 'juvenile':
-            next_key = key + 1
-            # if next_key in archi_params["daily_dynamics"] and archi_params["daily_dynamics"][next_key]["Phenology"] == 'exponential':
-            #     end_juv = value["Thermal time"]
+    # Create parameter sets
+    param_sets = []
+    for sample in scaled_samples:
+        sampled_dict = {
+            key: int(value) if key in {"nb_phy", "nb_tillers", "nb_short_phy"} else value
+            for key, value in zip(sampled_params, sample)
+        }
+        param_sets.append({**fixed_params, **sampled_dict})
+    
+    return param_sets
 
-        elif value["Phenology"] == 'exponential':
+
+def filter_organ_duration(daily_dynamics, param_sets):
+    """
+    Filter the parameter sets to ensure realistic organ duration.
+    Parameters:
+        daily_dynamics (dict): Dictionary containing daily dynamics data.
+        archi_params (dict): Dictionary containing architecture parameters. 
+        param_sets (list): List of parameter sets to filter.
+    Returns:
+        new_param_sets (list): List of parameter sets that meet the organ duration criteria.
+    """
+    # Get the end of vegetative phase from daily dynamics
+    for key, value in daily_dynamics.items():
+        if value["Phenology"] == 'exponential':
             next_key = key + 1
             if next_key in daily_dynamics and daily_dynamics[next_key]["Phenology"] == 'repro':
                 end_veg = value["Thermal time"]
                 break
 
-    # Create parameter sets
-    param_sets = []
-    for sample in scaled_samples:
-        # Combine fixed parameters with sampled parameters
-        phi = sample[sampled_params.index("phyllochron")] if "phyllochron" in sampled_params else archi_params["phyllochron"]
-        plas = sample[sampled_params.index("plastochron")] if "plastochron" in sampled_params else archi_params["plastochron"]
-        nb = sample[sampled_params.index("nb_phy")] if "nb_phy" in sampled_params else archi_params["nb_phy"]
-        # print(end_veg/phi-nb)
+    # Filter parameter sets to ensure realistic organ duration
+    new_param_sets = []
+    for sample in param_sets:
+        phi = sample["phyllochron"] 
+        plas = sample["plastochron"] 
+        nb = sample["nb_phy"] 
+        leaf_duration = end_veg/plas-nb
+        stem_duration = end_veg/phi-nb
+        if 1 <= leaf_duration <= 3 and 1 <= stem_duration <= 3 and phi < plas:
+            new_param_sets.append(sample)
 
-        # in separate filter function !!!!!!!!!!!!
-        if 1 <= end_veg/plas-nb <= 3 and phi < plas:
-            sampled_dict = {
-                key: int(value) if key in {"nb_phy", "nb_tillers", "nb_short_phy"} else value
-                for key, value in zip(sampled_params, sample)
-            }
-            param_sets.append({**fixed_params, **sampled_dict})
-    
-    return param_sets
+    return new_param_sets
 
 
-def params_for_curve_fit(param_sets, curves, error_LA, error_height):
+def filter_pot_growth(param_sets, daily_dynamics, error_LA, error_height):
     '''
-    Select parameters sets for which the model fits the LAI and the height curves of the crop model, with a given error.
-
-    :param param_sets: list of dicts, sets of parameters for ArchiCrop model
-    :param curves: 
-    :param error_LA: float, error accepted to the LA curve (in cm²)
-    :param error_height: float, error accepted to the height curve (in cm)
-
-    :return: dict of lists of parameters, mtg(t), LA(t), height(t) for curve-fitting simulations
+    Filter the parameter sets based on potential growth curves.
+    Parameters:
+        param_sets (list): List of parameter sets to filter.
+        daily_dynamics (dict): Dictionary containing daily dynamics data.
+        error_LA (float): Acceptable error margin for leaf area.
+        error_height (float): Acceptable error margin for height.
+    Returns:
+        fit_params (list): List of parameter sets that fit the growth curves.
+        non_fit_params (list): List of parameter sets that do not fit the growth curves.
+        pot_la (list): List of potential leaf area for each parameter set.
+        pot_h (list): List of potential height for each parameter set.
     '''
-    thermal_time = [value["Thermal time"] for value in curves.values()]
-    LA_constraint = [value["Plant leaf area"] for value in curves.values()]
-    # sen_LA_constraint = [value["Plant senescent leaf area"] for value in curves.values()]
-    height_constraint = [value["Plant height"] for value in curves.values()]
+    thermal_time = [value["Thermal time"] for value in daily_dynamics.values()]
+    LA_constraint = [value["Plant leaf area"] for value in daily_dynamics.values()]
+    # sen_LA_constraint = [value["Plant senescent leaf area"] for value in daily_dynamics.values()]
+    height_constraint = [value["Plant height"] for value in daily_dynamics.values()]
     
     fit_params = []
     non_fit_params = []
 
-    all_sa = []
-    all_h = []
+    pot_la = []
+    pot_h = []
     
     fit = True
     for params in param_sets:
-        plant = ArchiCrop(daily_dynamics=curves, **params)
+        plant = ArchiCrop(daily_dynamics=daily_dynamics, **params)
         plant.generate_potential_plant()
         g = plant.g
 
@@ -134,9 +157,8 @@ def params_for_curve_fit(param_sets, curves, error_LA, error_height):
         stem_starts_ends.sort(key=lambda x: x[1])  
         leaf_starts_ends.sort(key=lambda x: x[1])
 
-        # fonction sepraree filter curve
         # Verify that potential leaf area is greater than constraint leaf area
-        sa = []
+        la = []
         h = []
         for t in thermal_time:
             sum_area_temp = 0
@@ -145,7 +167,7 @@ def params_for_curve_fit(param_sets, curves, error_LA, error_height):
                     sum_area_temp += (t-s)/(e-s) * g.node(vid).leaf_area
                 elif t >= e:
                     sum_area_temp += g.node(vid).leaf_area
-            sa.append(sum_area_temp)
+            la.append(sum_area_temp)
 
             sum_height_temp = 0
             for (vid, s,e) in stem_starts_ends:
@@ -161,45 +183,23 @@ def params_for_curve_fit(param_sets, curves, error_LA, error_height):
                 break
 
         if fit:
-            all_sa.append(sa)
-            all_h.append(h)
+            pot_la.append(la)
+            pot_h.append(h)
             fit_params.append(params)
 
-        '''
-        growing_plant = plant.grow_plant()
-        growing_plant_mtg = list(growing_plant.values())
+    return fit_params, non_fit_params, pot_la, pot_h
     
-        LA_archicrop = [sum(la - sen 
-                            for la, sen in zip(gp.properties()["visible_leaf_area"].values(), gp.properties()["senescent_area"].values())) 
-                            for gp in growing_plant_mtg]
-        height_archicrop = [sum([vl 
-                                 for vid, vl in gp.properties()["visible_length"].items() 
-                                 if gp.node(vid).label.startswith("Stem")]) 
-                                 for gp in growing_plant_mtg]
-    
-        good = True
-        for i,(la,h) in enumerate(zip(LA_archicrop, height_archicrop)):
-            LA_theo = LA_stics[i] - sen_LA_stics[i]
-            if LA_theo*(1-error_LA) <= la <= LA_theo*(1+error_LA) and height_stics[i]*(1-error_height) <= h <= height_stics[i]*(1+error_height): 
-                good = True
-            else:
-                good = False
-                non_fitting_sim['params'].append(params)
-                non_fitting_sim['LA'].append(LA_archicrop)
-                non_fitting_sim['height'].append(height_archicrop)
-                break
-        if good:
-            fitting_sim['params'].append(params)
-            fitting_sim['mtg'].append(growing_plant_mtg)
-            fitting_sim['LA'].append(LA_archicrop)
-            fitting_sim['height'].append(height_archicrop)
-        '''
-
-    return fit_params, non_fit_params, all_sa, all_h
-
 
 def simulate_fit_params(fit_params, daily_dynamics):
-    """ Simulate the growth of plants using the fit parameters."""
+    """ Simulate the growth of plants using the fit parameters.
+    Parameters:
+        fit_params (list): List of parameter sets.
+        daily_dynamics (dict): Dictionary containing daily dynamics data.
+    Returns:
+        LA_archicrop (list): List of realized leaf area for each parameter set.
+        height_archicrop (list): List of realized height for each parameter set.
+        mtgs (list): List of MTG objects for each parameter set.
+    """
     
     LA_archicrop = []
     height_archicrop = []
@@ -222,6 +222,78 @@ def simulate_fit_params(fit_params, daily_dynamics):
                                 for gp in growing_plant_mtg])
         
     return LA_archicrop, height_archicrop, mtgs
+
+
+
+def filter_realized_growth(param_sets, LA_archicrop, height_archicrop, daily_dynamics, error_LA=0.05, error_height=0.05):
+    '''
+    Filter the parmeters sets based on the deviation of the realized growth from the constraints, within a given error margin.
+    Parameters: 
+        param_sets (list): List of parameter sets to filter.
+        daily_dynamics (dict): Dictionary containing daily dynamics data.
+        error_LA (float): Acceptable error margin for leaf area.
+        error_height (float): Acceptable error margin for height.
+    Returns:
+        fit_params (list): List of parameter sets that fit the growth curves.
+        non_fit_params (list): List of parameter sets that do not fit the growth curves.    
+        realized_la (list): List of realized leaf area for each parameter set.
+        realized_h (list): List of realized height for each parameter set.
+    '''
+    # thermal_time = [value["Thermal time"] for value in daily_dynamics.values()]
+    LA_constraint = [value["Plant leaf area"] for value in daily_dynamics.values()]
+    sen_LA_constraint = [value["Plant senescent leaf area"] for value in daily_dynamics.values()]
+    height_constraint = [value["Plant height"] for value in daily_dynamics.values()]
+
+    fit_params = []
+    non_fit_params = []
+
+    realized_la = []
+    realized_h = []
+    
+    for (params, leaf_areas, heights) in zip(param_sets, LA_archicrop, height_archicrop):
+    
+        fit = True
+        for i,(la,h) in enumerate(zip(leaf_areas, heights)):
+            LA_theo = LA_constraint[i] - sen_LA_constraint[i]
+            if LA_theo*(1-error_LA) <= la <= LA_theo*(1+error_LA) and height_constraint[i]*(1-error_height) <= h <= height_constraint[i]*(1+error_height): 
+                fit = True
+            else:
+                fit = False
+                non_fit_params.append(params)
+                break
+        if fit:
+            fit_params.append(params)
+            realized_la.append(leaf_areas)
+            realized_h.append(heights)
+
+    return fit_params, non_fit_params, realized_la, realized_h
+
+
+def simulate_with_filters(param_sets, daily_dynamics, opt_filter_pot_growth=True, opt_filter_realized_growth=True, error_LA=0.05, error_height=0.05):
+    """
+    Simulate the growth of plants using the parameter sets and filter them based on realized growth.
+    Parameters:
+        param_sets (list): List of parameter sets to simulate.
+        daily_dynamics (dict): Dictionary containing daily dynamics data.
+        error_LA (float): Acceptable error margin for leaf area.
+        error_height (float): Acceptable error margin for height.
+    Returns:
+        fit_params (list): List of parameter sets that fit the growth curves.
+        non_fit_params (list): List of parameter sets that do not fit the growth curves.
+        realized_la (list): List of realized leaf area for each parameter set.
+        realized_h (list): List of realized height for each parameter set.
+    """
+    non_fit_params = []
+    fit_params = filter_organ_duration(daily_dynamics, param_sets)
+    if opt_filter_pot_growth:
+        fit_params, non_fit_params_temp, pot_la, pot_h = filter_pot_growth(fit_params, daily_dynamics, error_LA, error_height)
+        non_fit_params.extend(non_fit_params_temp)
+    realized_la, realized_h, mtgs = simulate_fit_params(fit_params, daily_dynamics)
+    if opt_filter_realized_growth:
+        fit_params, non_fit_params_temp, realized_la, realized_h = filter_realized_growth(fit_params, realized_la, realized_h, daily_dynamics, error_LA, error_height)
+        non_fit_params.extend(non_fit_params_temp)
+
+    return fit_params, non_fit_params, realized_la, realized_h, mtgs
 
 
 def plot_constrainted_vs_realized(thermal_time, LA_archicrop, height_archicrop, leaf_area_plant, sen_leaf_area_plant, height_canopy, sowing_density):
@@ -264,15 +336,3 @@ def plot_constrainted_vs_realized(thermal_time, LA_archicrop, height_archicrop, 
     # Show the plot
     plt.show()
 
-
-    
-def stics_weather_3d(filename, daily_dynamics):
-    """Load the weather data from a file and filter it based on the first and last dates of plant growth."""
-    df = meteo_day(filename)
-
-    # Get the first and last dates from daily_dynamics
-    first_date = list(daily_dynamics.values())[0]["Date"]
-    last_date = list(daily_dynamics.values())[-1]["Date"]
-
-    # Use these dates to filter your DataFrame
-    return df[(df.daydate >= pd.to_datetime(first_date)) & (df.daydate <= pd.to_datetime(last_date))]

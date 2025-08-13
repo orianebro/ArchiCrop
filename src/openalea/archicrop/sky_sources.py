@@ -13,7 +13,7 @@ from .colormap import jet_colors
 
 def meteo_day(filename):
     names=['station', 'year', 'month', 'day', 'julian', 'min_temp', 'max_temp', 'rad', 'Penman PET', 'rainfall', 'wind', 'pressure', 'CO2']
-    df = pd.read_csv(filename,  header=None, sep='\s+', names=names)
+    df = pd.read_csv(filename,  header=None, sep='\s+', names=names)  # noqa: PD901
     df["daydate"] = pd.to_datetime(df[["year", "month", "day"]])
     return df
 
@@ -69,7 +69,7 @@ def read_meteo_mpt(when="winter"):
         path = "incoming_radiation_ZA13.csv"
     else:
         path = "incoming_radiation_ZB13.csv"
-    df = pd.read_csv(
+    df = pd.read_csv(  # noqa: PD901
         path,
         index_col=0,
         parse_dates=True,

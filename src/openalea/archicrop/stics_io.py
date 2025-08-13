@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import xml.etree.ElementTree as ET
 
-import numpy as np
+import pandas as pd
+
+from .sky_sources import meteo_day
 
 
 def read_xml_file(file_xml, params):
@@ -157,3 +159,15 @@ def get_stics_data(file_tec_xml, file_plt_xml, stics_output_file):
     lifespan_early = sen_stics['ratiodurvieI'] * lifespan
     
     return sowing_density, stics_output_data, lifespan, lifespan_early
+
+
+def stics_weather_3d(filename, daily_dynamics):
+    """Load the weather data from a file and filter it based on the first and last dates of plant growth."""
+    df = meteo_day(filename)  # noqa: PD901
+
+    # Get the first and last dates from daily_dynamics
+    first_date = list(daily_dynamics.values())[0]["Date"]  # noqa: RUF015
+    last_date = list(daily_dynamics.values())[-1]["Date"]
+
+    # Use these dates to filter your DataFrame
+    return df[(df.daydate >= pd.to_datetime(first_date)) & (df.daydate <= pd.to_datetime(last_date))]

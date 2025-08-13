@@ -5,9 +5,16 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 from alinea.caribu.CaribuScene import CaribuScene
+from alinea.caribu.light import caribu_light_sources
 
-# from alinea.caribu.data_samples import data_path
-from alinea.caribu.light import light_sources
+from openalea.archicrop.display import build_scene
+from openalea.archicrop.sky_sources import sky_irradiance, sky_sources
+from openalea.archicrop.stand import compute_domain
+from openalea.archicrop.stics_io import stics_weather_3d
+
+# Einc is the total incident energy received on the domain
+# Eabs (float): the surfacic density of energy absorbed (MJ m⁻² s⁻¹)
+# raint (float): from STICS, Photosynthetic Active Radiation intercepted by the canopy 	(MJ m⁻²) --> faPAR !!!
 
 def illuminate(scene, light=None, domain=None, scene_unit='cm', labels=None, direct=True): # north=0):
     """Illuminate scene
@@ -30,10 +37,10 @@ def illuminate(scene, light=None, domain=None, scene_unit='cm', labels=None, dir
     #     light = light_sources(*light, orientation=north)
     cs = CaribuScene(scene, light=light,scene_unit=scene_unit, pattern=domain, soil_mesh=1)
     raw, agg = cs.run(simplify=True, infinite=infinite, direct=direct) # direct=True
-    df = pd.DataFrame(agg)
+    df = pd.DataFrame(agg)  # noqa: PD901
     if labels is not None:
         labs = pd.DataFrame(labels)
-        df = labs.merge(df.reset_index(), left_index=True, right_index=True)
+        df = labs.merge(df.reset_index(), left_index=True, right_index=True)  # noqa: PD901
     return cs, raw['Eabs'], df
 
 
@@ -51,7 +58,7 @@ def toric_canopy_pattern(dx=80, dy=5, density=None):
         elif dy is not None:
             dx = 1. / density / (dy / 100.) * 100
         else:
-            raise ValueError('At least one grid dimension (dx, dy) should be specified')
+            raise ValueError('At least one grid dimension (dx, dy) should be specified')  # noqa: EM101
     return (-0.5 * dx, -0.5 * dy,
              0.5 * dx, 0.5 * dy)
 
@@ -63,7 +70,6 @@ def compute_light_inter(scene, sky, pattern):
     # opts = str(data_path('par_sorghum.opt'))
     # opts = list(map(str, [data_path('par_sorghum.opt'), data_path('nir_sorghum.opt')]))
     materials = {'par': (0.15, 0.06, 0.16, 0.03)}
-    # pattern = (-50, -50, 50, 50)
     
     # complete set of files
     cs = CaribuScene(scene=scene, # give mtg rather than scene
@@ -73,13 +79,9 @@ def compute_light_inter(scene, sky, pattern):
                      soil_mesh=1, # 1
                      opt=materials) 
     
-    # raw,agg=cs.run(simplify=True, infinite=True, sensors={"s1": [(0,0,500),(0,1,500),(1,0,500)]})
     raw,agg=cs.run(simplify=True, infinite=True)
 
     Qi, Qem, Einc = cs.getIncidentEnergy()
-    # print("Qi :", Qi)
-    # print("Qem :", Qem)
-    # print("Einc :", Einc)
     # Qi is the total horizontal irradiance emitted by sources (m-2)
     # Qem is the sum of the normal-to-the-sources irradiance emitted by sources (m-2)
     # Einc is the total incident energy received on the domain
@@ -87,54 +89,96 @@ def compute_light_inter(scene, sky, pattern):
     # Qi_soil, Einc_soil = cs.getSoilEnergy()
     
     scene_eabs,values_eabs = cs.plot(raw['Eabs'],display=False) 
-    scene_ei,values_ei = cs.plot(raw['Ei'],display=False)
-    # values = np.array([a / i if i != 0 else 0 for a, i in zip(values_eabs, values_ei)])
-    # print("area : ", agg['area'])
 
-    # Compute the 99th percentile 
     v99_eabs = np.percentile(values_eabs, 99)
-    v99_ei = np.percentile(values_ei, 99)
-
-    # Convert both lists to numpy arrays
     nvalues_eabs = np.array(values_eabs)
-    nvalues_ei = np.array(values_ei)
-
-    # Apply the truncation to both lists
-    mask_eabs = nvalues_eabs > v99_eabs  # Identify elements greater than the 99th percentile
-    mask_ei = nvalues_ei > v99_ei
-    nvalues_eabs[mask_eabs] = v99_eabs
-    nvalues_ei[mask_ei] = v99_ei  
-
-    # Calculate the sum of both lists 
+    mask_eabs = nvalues_eabs > v99_eabs  
+    nvalues_eabs[mask_eabs] = v99_eabs 
     sum_values_eabs = np.sum(nvalues_eabs)
-    # sum_values_ei = np.sum(nvalues_ei)  
-    # print("Eabs :", sum_values_eabs)
-    # print("Ei :", sum_values_ei)
-
 
     # Division of sums
-    # result = sum_(values_eabs * triangle area) * conv / sum_values_ei if sum_values_ei != 0 else 0
     result = sum_values_eabs / Einc if Einc != 0 else 0 
     # result = (sum_values_ei - Einc_soil) / Einc if Einc != 0 else 0 
 
-    # if result > 1:
-    #     PlantGL(scene_eabs, group_by_color=False, property=values_eabs)
+    return result  # noqa: RET504
 
-    return result, scene_ei, values_ei
-
-# par_caribu, scene_eabs, values_eabs = compute_light_inter(scene, zenith, pattern)
 
 # Viewer.display(scene_eabs, group_by_color=False, property=values_eabs)
-
 # PlantGL(scene, group_by_color=False, property=values)
 
-# Einc is the total incident energy received on the domain
-# Eabs (float): the surfacic density of energy absorbed (µmol m⁻² s⁻¹)
-# raint (float): from STICS, Photosynthetic Active Radiation intercepted by the canopy 	(MJ m⁻²) --> faPAR !!!
-# PAR(MJ m⁻²) = 0.0145 * PAR(µmol m⁻² s⁻¹)
 
-# sum_eabs = 0
-# for t in values:
-#     sum_eabs += t
+location = {  
+    'longitude': 3.87,
+    'latitude': 45,
+    'altitude': 56,
+    'timezone': 'Europe/Paris'}
 
-# print(sum_eabs*0.0145)
+def light_interception(weather_file, daily_dynamics, sowing_density, location, mtgs, zenith=False, save_scenes=False):
+    '''Compute light interception on plants with fitting parameters
+    Args:
+        weather_file: path to the weather file
+        daily_dynamics: daily dynamics from STICS
+        sowing_density: sowing density
+        location: dictionary with location parameters (longitude, latitude, altitude, timezone)
+        mtgs: list of MTGs for each plant
+        zenith: if True, use zenith light sources
+        save_scenes: if True, save the scenes as images
+    Returns:
+        nrj_per_plant: list of energy per plant
+    '''
+    # Read weather data
+    df_weather = stics_weather_3d(filename=weather_file, daily_dynamics=daily_dynamics)
+
+    # Sowing pattern
+    domain = compute_domain(sowing_density)
+
+    # Define incident PAR
+    if zenith:
+        par_incident = [value["Incident PAR"] for value in daily_dynamics.values()]
+    else:
+        par_incident = df_weather.itertuples()
+
+    # Compute light interception for each plant at each time step
+    par_caribu = []
+    # For each plant
+    for mtgs_plant in mtgs:
+        aggs_tmp = []
+        # For each time step
+        for i,(mtg, par) in enumerate(zip(mtgs_plant, par_incident)):
+            if i%1==0:
+                # Compute light sources
+                if zenith:
+                    lights = [(par,(0,0,-1))]
+                else:
+                    irr = sky_irradiance(daydate=par.daydate, day_ghi=par.rad, **location)
+                    sun, sky = sky_sources(sky_type='clear_sky', sky_irradiance=irr, scale='global')
+                    lights = caribu_light_sources(sun, sky)
+                # Build and illuminate scene
+                scene, labels = build_scene(mtg, (0,0,0), senescence=False)
+                cs, raw, agg = illuminate(scene, light=lights, labels=labels, domain=domain, direct=False) # --> cf PARaggregators in caribu scene node
+                aggs_tmp.append(agg)
+                # Save scene if required
+                if save_scenes:
+                    scene_tmp = cs.plot(raw, display=False)[0]
+                    scene_tmp.save(f'scene_{i}.png') # not as images !!!
+
+        par_caribu.append(aggs_tmp)
+
+
+    # Calculate energy per leaf and irradiance per plant
+    nrj_per_leaf = []
+    # irr_per_plant = []
+
+    for case in par_caribu:
+        nrj_tmp = []
+        # irr_tmp = []
+        for df_scene in case:
+            df_mod = mean_leaf_irradiance(df_scene)  # noqa: F841
+            nrj_tmp.append(df_scene.loc[df_scene['label'] == 'Leaf']['Energy'].values)
+            # irr_tmp.append(df_mod['Irradiance'].values[0])  
+        nrj_per_leaf.append(nrj_tmp)
+        # irr_per_plant.append(irr_tmp)
+
+    nrj_per_plant = [[sum(growing_plant) for growing_plant in plant] for plant in nrj_per_leaf]
+
+    return nrj_per_plant  # noqa: RET504

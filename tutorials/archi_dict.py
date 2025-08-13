@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 archi = {
     "nb_phy": [8,22], # number of phytomers on the main stem
     "nb_short_phy": [2,4],

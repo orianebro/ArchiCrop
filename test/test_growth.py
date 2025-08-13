@@ -7,13 +7,13 @@ from openalea.archicrop import growth
 from openalea.archicrop.cereal_plant import cereal
 
 
-def plant(la = 200, h = 100, plastochron = 30, leaf_duration = 2):
+def plant(la = 200, h = 100, phyllochron = 40, plastochron = 30, stem_duration = 2, leaf_duration = 2):
     g = cereal(
         nb_phy=5,
-        phyllochron=40,
+        phyllochron=phyllochron,
         plastochron=plastochron,
-        stem_duration=2,
-        leaf_duration=2,
+        stem_duration=stem_duration,
+        leaf_duration=leaf_duration,
         leaf_lifespan=100,
         end_juv=50,
         nb_tillers=2,
@@ -106,7 +106,7 @@ def test_distribute_among_organs():
     g = growth.init_visible_variables(g)
     time = plastochron - 1
     prev_time = 0
-    vid_first_leaf = [vid for vid in g.vertices(scale=g.max_scale()) if g.node(vid).label.startswith("Leaf")][0]
+    vid_first_leaf = [vid for vid in g.vertices(scale=g.max_scale()) if g.node(vid).label.startswith("Leaf")][0]  # noqa: RUF015
     pot_first_leaf_area = g.node(vid_first_leaf).leaf_area 
     daily_dynamics = {
         "Height increment": 10.0,
@@ -116,7 +116,7 @@ def test_distribute_among_organs():
     result = growth.distribute_among_organs(g, time, prev_time, daily_dynamics)
     assert result["LA_for_each_leaf"][vid_first_leaf] == pytest.approx(pot_first_leaf_area, rel=0.01)
 
-def test_compute_organ_growth():
+def test_compute_leaf_growth():
     plastochron = 30
     leaf_duration = 2
     g = plant(plastochron=plastochron, leaf_duration=leaf_duration)
@@ -126,7 +126,7 @@ def test_compute_organ_growth():
     n = g.node(vid)
     time = plastochron * leaf_duration
     growth_dict = {
-        "LA_to_distribute": 100.0,
+        "LA_to_distribute": n.leaf_area,
         "LA_for_each_leaf": {vid: n.leaf_area},
         "height_to_distribute": 0.0,
         "height_for_each_internode": {},
@@ -134,8 +134,29 @@ def test_compute_organ_growth():
         "sen_LA_for_each_leaf": {},
         "thermal_time_increment": time
     }
-    result = growth.compute_organ_growth(vid, n, time, growth_dict, rate=True)
+    result = growth.compute_organ_growth(vid, n, time, growth_dict, rate=True)  # noqa: F841
     assert n.visible_leaf_area == pytest.approx(n.leaf_area, rel=0.01)
+    assert n.visible_length == pytest.approx(n.mature_length, rel=0.01)
+
+def test_compute_stem_growth():
+    phyllochron = 30
+    stem_duration = 2
+    g = plant(phyllochron=phyllochron, leaf_duration=stem_duration)
+    g = growth.init_visible_variables(g)
+    stem_vids = [vid for vid in g.vertices(scale=g.max_scale()) if g.node(vid).label.startswith("Stem")]
+    vid = stem_vids[0]
+    n = g.node(vid)
+    time = phyllochron * stem_duration
+    growth_dict = {
+        "LA_to_distribute": 0.0,
+        "LA_for_each_leaf": {},
+        "height_to_distribute": n.mature_length,
+        "height_for_each_internode": {vid: n.mature_length},
+        "sen_LA_to_distribute": 0.0,
+        "sen_LA_for_each_leaf": {},
+        "thermal_time_increment": time
+    }
+    result = growth.compute_organ_growth(vid, n, time, growth_dict, rate=True)  # noqa: F841
     assert n.visible_length == pytest.approx(n.mature_length, rel=0.01)
 
 def test_update_cereal_leaf_growth_area():

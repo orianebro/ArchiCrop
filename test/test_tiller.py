@@ -1,4 +1,6 @@
-from openalea.mtg import *
+from __future__ import annotations
+
+from openalea.mtg import *  # noqa: F403
 from openalea.mtg.traversal import pre_order
 from openalea.mtg.turtle import traverse_with_turtle
 
@@ -8,7 +10,7 @@ def main_axis(n=10):
     Create a MTG as an axis.
     """
     # Create a simple MTG
-    g = MTG()
+    g = MTG()  # noqa: F405
 
     vid = g.add_component(complex_id=g.root, label='Plant')
     vid = g.add_component(complex_id=vid, label='Axis')
@@ -31,7 +33,7 @@ def add_tiller(g, vid, start_time, phyllochrone=1, tiller_delay=1):
     # Add a new component to the MTG
 
     tillers = []
-    scale_id = g.scale(vid)
+    scale_id = g.scale(vid)  # noqa: F841
     axis_id = g.complex(vid)
     rank = g.Rank(vid) + 1  # Number of edge from the root of the axis
     n = len(g.Axis(vid))
@@ -143,4 +145,4 @@ def visitor(g, v, turtle):
 def plot(g):
     # Viewer.display(plot(g))
     scene = traverse_with_turtle(g, 3, visitor=visitor, gc=True)
-    return scene
+    return scene  # noqa: RET504

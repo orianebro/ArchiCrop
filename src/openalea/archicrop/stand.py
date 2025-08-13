@@ -108,8 +108,8 @@ def agronomic_plot(
 
     # find a (nrow, plant_per_row) sowing design that best match plot dimension
     inter_plant = 1.0 / inter_row / sowing_density
-    nrow = max(1, int(round(float(width) / inter_row)))
-    plant_per_row = max(1, int(round(float(length) / inter_plant)))
+    nrow = max(1, int(round(float(width) / inter_row)))  # noqa: RUF046
+    plant_per_row = max(1, int(round(float(length) / inter_plant)))  # noqa: RUF046
     positions, domain, domain_area = regular_plot(
         inter_plant,
         inter_row,
@@ -119,7 +119,7 @@ def agronomic_plot(
         convunit=convunit,
         center_scene=center_scene,
     )
-    n_emerged = int(round(len(positions)))
+    n_emerged = int(round(len(positions)))  # noqa: RUF046
     positions = sample(positions, n_emerged)
 
     return n_emerged, positions, domain, domain_area, 1.0 / convunit
@@ -133,7 +133,7 @@ def agronomicplotwithdistributions(
     inter_row,
     mu=0.0,
     kappa=3.0,
-    noise=0,
+    noise=0,  # noqa: ARG001
     convunit=100,
 ):
     """
@@ -173,7 +173,7 @@ def agronomicplotwithdistributions(
             / convunit
         )
     )
-    azimuths = vonmises(mu, kappa, nplants)
+    azimuths = vonmises(mu, kappa, nplants)  # noqa: NPY002
     return n_emerged, positions, azimuths, domain, density
 
 
@@ -208,9 +208,6 @@ def concentric(nb_plants, distance_plant):
     return points
 
 
-def uniform(density, nb_plants):
-    return []
-
 
 def sample_selection(points, gap_fraction):
     """
@@ -241,7 +238,7 @@ def clumping_selection(points, nb_clumps, radius_mu, radius_sigma):
 '''
 
 
-def sample_regular_gaps(points, pattern=[0, 1]):
+def sample_regular_gaps(points, pattern=[0, 1]):  # noqa: B006
     """Sample points along pattern.
     Pattern is replicated to become as long as points and then used as a filter (0= gap) on points
     Returns positions of plants and gaps
