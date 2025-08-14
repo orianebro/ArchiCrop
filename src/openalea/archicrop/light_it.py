@@ -5,12 +5,12 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 from alinea.caribu.CaribuScene import CaribuScene
-from alinea.caribu.light import caribu_light_sources
 
 from openalea.archicrop.display import build_scene
-from openalea.archicrop.sky_sources import sky_irradiance, sky_sources
 from openalea.archicrop.stand import compute_domain
 from openalea.archicrop.stics_io import stics_weather_3d
+from openalea.astk.sky_irradiance import sky_irradiance
+from openalea.astk.sky_sources import caribu_light_sources, sky_sources
 
 # Einc is the total incident energy received on the domain
 # Eabs (float): the surfacic density of energy absorbed (MJ m⁻² s⁻¹)
@@ -113,7 +113,7 @@ location = {
     'altitude': 56,
     'timezone': 'Europe/Paris'}
 
-def light_interception(weather_file, daily_dynamics, sowing_density, location, mtgs, zenith=False, save_scenes=False):
+def light_interception(weather_file, daily_dynamics, sowing_density, location, mtgs, zenith=False, save_scenes=False, inter_row=70):
     '''Compute light interception on plants with fitting parameters
     Args:
         weather_file: path to the weather file
@@ -130,7 +130,7 @@ def light_interception(weather_file, daily_dynamics, sowing_density, location, m
     df_weather = stics_weather_3d(filename=weather_file, daily_dynamics=daily_dynamics)
 
     # Sowing pattern
-    domain = compute_domain(sowing_density)
+    domain = compute_domain(sowing_density, inter_row = inter_row) # cm
 
     # Define incident PAR
     if zenith:
@@ -145,34 +145,33 @@ def light_interception(weather_file, daily_dynamics, sowing_density, location, m
         aggs_tmp = []
         # For each time step
         for i,(mtg, par) in enumerate(zip(mtgs_plant, par_incident)):
-            if i%1==0:
-                # Compute light sources
-                if zenith:
-                    lights = [(par,(0,0,-1))]
-                else:
-                    irr = sky_irradiance(daydate=par.daydate, day_ghi=par.rad, **location)
-                    sun, sky = sky_sources(sky_type='clear_sky', sky_irradiance=irr, scale='global')
-                    lights = caribu_light_sources(sun, sky)
-                # Build and illuminate scene
-                scene, labels = build_scene(mtg, (0,0,0), senescence=False)
-                cs, raw, agg = illuminate(scene, light=lights, labels=labels, domain=domain, direct=False) # --> cf PARaggregators in caribu scene node
-                aggs_tmp.append(agg)
-                # Save scene if required
-                if save_scenes:
-                    scene_tmp = cs.plot(raw, display=False)[0]
-                    scene_tmp.save(f'scene_{i}.png') # not as images !!!
+            # if i%1==0:
+            # Compute light sources
+            if zenith:
+                lights = [(par,(0,0,-1))]
+            else:
+                irr = sky_irradiance(daydate=par.daydate, day_ghi=par.rad, **location)
+                sun, sky = sky_sources(sky_type='clear_sky', sky_irradiance=irr, scale='global')
+                lights = caribu_light_sources(sun, sky)
+            # Build and illuminate scene
+            scene, labels = build_scene(mtg, (0,0,0), senescence=False)
+            cs, raw, agg = illuminate(scene, light=lights, labels=labels, domain=domain, direct=False) # --> cf PARaggregators in caribu scene node
+            aggs_tmp.append(agg)
+            # Save scene if required
+            if save_scenes:
+                scene_tmp = cs.plot(raw, display=False)[0]
+                scene_tmp.save(f'scene_{i}.png') # not as images !!!
 
         par_caribu.append(aggs_tmp)
-
 
     # Calculate energy per leaf and irradiance per plant
     nrj_per_leaf = []
     # irr_per_plant = []
 
-    for case in par_caribu:
+    for illuminated_plant in par_caribu:
         nrj_tmp = []
         # irr_tmp = []
-        for df_scene in case:
+        for df_scene in illuminated_plant:
             df_mod = mean_leaf_irradiance(df_scene)  # noqa: F841
             nrj_tmp.append(df_scene.loc[df_scene['label'] == 'Leaf']['Energy'].values)
             # irr_tmp.append(df_mod['Irradiance'].values[0])  

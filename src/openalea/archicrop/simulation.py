@@ -2,12 +2,15 @@ from __future__ import annotations
 
 from itertools import product
 
+import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
 from scipy.stats import qmc
 
 from .archicrop import ArchiCrop
 from .cereal_leaf import growing_leaf_area
+from .light_it import light_interception
+from .stics_io import get_stics_data
 
 
 def leaf_area_plant(g):
@@ -41,7 +44,7 @@ def complete_archi_params(archi_params: dict, daily_dynamics: dict, lifespan: fl
     return archi_params
 
 
-def LHS_param_sampling(archi_params, n_samples, seed=42):
+def LHS_param_sampling(archi_params, n_samples, seed=42, latin_hypercube=False):
     """Generate samples from archi_params dictionary, respecting fixed values."""
     fixed_params = {}
     sampled_params = []
@@ -49,31 +52,47 @@ def LHS_param_sampling(archi_params, n_samples, seed=42):
     l_bounds = []
     u_bounds = []
 
+    values_lists = []
+
     for key, value in archi_params.items():
         if isinstance(value, (int, float)):  # Fixed parameter
             fixed_params[key] = value
         # Parameter distribution in Latin Hypercube
         elif isinstance(value, list) and key not in {"leaf_lifespan"}:  # Range to sample
-            l_bounds.append(min(value))
-            u_bounds.append(max(value))
-            
+
+            if latin_hypercube:
+                l_bounds.append(min(value))
+                u_bounds.append(max(value))
+            else:
+                # Discretize each parameter
+                value_list = np.linspace(min(value), max(value), n_samples)
+                values_lists.append(value_list)
+
             sampled_params.append(key)
 
         elif key in {"leaf_lifespan"}:
             fixed_params[key] = value
 
-    # Create a Latin Hypercube sampler
-    sampler = qmc.LatinHypercube(d=len(l_bounds), seed=seed)  # d = number of parameters
-    
-    # Generate normalized samples (0 to 1)
-    lhs_samples = sampler.random(n=n_samples)
-    
-    # Scale samples to parameter bounds
-    scaled_samples = qmc.scale(lhs_samples, l_bounds=l_bounds, u_bounds=u_bounds)
+
+    if latin_hypercube:
+        # Create a Latin Hypercube sampler
+        sampler = qmc.LatinHypercube(d=len(l_bounds), seed=seed)  # d = number of parameters
+        
+        # Generate normalized samples (0 to 1)
+        lhs_samples = sampler.random(n=n_samples)
+        
+        # Scale samples to parameter bounds
+        samples = qmc.scale(lhs_samples, l_bounds=l_bounds, u_bounds=u_bounds)
+    else:
+        # Create meshgrid (Cartesian product)
+        mesh = np.meshgrid(*values_lists, indexing="ij")
+
+        # Stack into a (N, D) array
+        samples = np.stack(mesh, axis=-1).reshape(-1, len(values_lists))
 
     # Create parameter sets
     param_sets = []
-    for sample in scaled_samples:
+    for sample in samples:
         sampled_dict = {
             key: int(value) if key in {"nb_phy", "nb_tillers", "nb_short_phy"} else value
             for key, value in zip(sampled_params, sample)
@@ -115,7 +134,7 @@ def filter_organ_duration(daily_dynamics, param_sets):
     return new_param_sets
 
 
-def filter_pot_growth(param_sets, daily_dynamics, error_LA, error_height):
+def filter_pot_growth(param_sets, daily_dynamics, error_LA, error_height, filter=True):
     '''
     Filter the parameter sets based on potential growth curves.
     Parameters:
@@ -182,7 +201,12 @@ def filter_pot_growth(param_sets, daily_dynamics, error_LA, error_height):
                 fit = False
                 break
 
-        if fit:
+        if filter:
+            if fit:
+                pot_la.append(la)
+                pot_h.append(h)
+                fit_params.append(params)
+        else:
             pot_la.append(la)
             pot_h.append(h)
             fit_params.append(params)
@@ -225,7 +249,7 @@ def simulate_fit_params(fit_params, daily_dynamics):
 
 
 
-def filter_realized_growth(param_sets, LA_archicrop, height_archicrop, daily_dynamics, error_LA=0.05, error_height=0.05):
+def filter_realized_growth(param_sets, LA_archicrop, height_archicrop, daily_dynamics, mtgs, error_LA=0.05, error_height=0.05):
     '''
     Filter the parmeters sets based on the deviation of the realized growth from the constraints, within a given error margin.
     Parameters: 
@@ -249,6 +273,7 @@ def filter_realized_growth(param_sets, LA_archicrop, height_archicrop, daily_dyn
 
     realized_la = []
     realized_h = []
+    new_mtgs = []
     
     for (params, leaf_areas, heights) in zip(param_sets, LA_archicrop, height_archicrop):
     
@@ -265,8 +290,9 @@ def filter_realized_growth(param_sets, LA_archicrop, height_archicrop, daily_dyn
             fit_params.append(params)
             realized_la.append(leaf_areas)
             realized_h.append(heights)
+            new_mtgs.append(mtgs[param_sets.index(params)])
 
-    return fit_params, non_fit_params, realized_la, realized_h
+    return fit_params, non_fit_params, realized_la, realized_h, new_mtgs
 
 
 def simulate_with_filters(param_sets, daily_dynamics, opt_filter_pot_growth=True, opt_filter_realized_growth=True, error_LA=0.05, error_height=0.05):
@@ -285,18 +311,64 @@ def simulate_with_filters(param_sets, daily_dynamics, opt_filter_pot_growth=True
     """
     non_fit_params = []
     fit_params = filter_organ_duration(daily_dynamics, param_sets)
-    if opt_filter_pot_growth:
-        fit_params, non_fit_params_temp, pot_la, pot_h = filter_pot_growth(fit_params, daily_dynamics, error_LA, error_height)
-        non_fit_params.extend(non_fit_params_temp)
+    fit_params, non_fit_params_temp, pot_la, pot_h = filter_pot_growth(fit_params, daily_dynamics, error_LA, error_height, filter=opt_filter_pot_growth)
+    non_fit_params.extend(non_fit_params_temp)
     realized_la, realized_h, mtgs = simulate_fit_params(fit_params, daily_dynamics)
     if opt_filter_realized_growth:
-        fit_params, non_fit_params_temp, realized_la, realized_h = filter_realized_growth(fit_params, realized_la, realized_h, daily_dynamics, error_LA, error_height)
+        fit_params, non_fit_params_temp, realized_la, realized_h, mtgs = filter_realized_growth(fit_params, realized_la, realized_h, daily_dynamics, mtgs, error_LA, error_height)
         non_fit_params.extend(non_fit_params_temp)
 
-    return fit_params, non_fit_params, realized_la, realized_h, mtgs
+    return fit_params, non_fit_params, pot_la, pot_h, realized_la, realized_h, mtgs
 
 
-def plot_constrainted_vs_realized(thermal_time, LA_archicrop, height_archicrop, leaf_area_plant, sen_leaf_area_plant, height_canopy, sowing_density):
+def run_simulations(archi_params: dict, 
+             tec_file: str, plant_file: str, dynamics_file: str, weather_file: str, location: dict,
+             n_samples: int = 100, seed: int = 42, latin_hypercube: bool = False, opt_filter_pot_growth: bool = True,
+             opt_filter_realized_growth: bool = True, error_LA: float = 0.05, error_height: float = 0.05,
+             light_inter: bool = True, zenith: bool = False, save_scenes: bool = False):
+
+    # Retrieve STICS management and senescence parameters
+    sowing_density, daily_dynamics, lifespan, lifespan_early = get_stics_data(
+        file_tec_xml=tec_file,  # Path to the STICS management XML file
+        file_plt_xml=plant_file,  # Path to the STICS plant XML file
+        stics_output_file=dynamics_file  # Path to the STICS output file
+    )
+
+    # Complete the architecture parameters with values from daily dynamics.
+    archi_params = complete_archi_params(archi_params=archi_params, daily_dynamics=daily_dynamics, lifespan=lifespan, lifespan_early=lifespan_early)
+    
+    # Sampling parameters using Latin Hypercube Sampling
+    param_sets = LHS_param_sampling(archi_params=archi_params, n_samples=n_samples, seed=seed, latin_hypercube=latin_hypercube)
+
+    # Simulate plant growth with fitting parameters
+    fit_params, non_fit_params, pot_la, pot_h, realized_la, realized_h, mtgs = simulate_with_filters(
+        param_sets=param_sets, 
+        daily_dynamics=daily_dynamics,
+        error_LA=error_LA,
+        error_height=error_height, 
+        opt_filter_pot_growth=opt_filter_pot_growth,
+        opt_filter_realized_growth=opt_filter_realized_growth
+    ) 
+
+    # If light_inter is True, compute light interception on plants with fitting parameters
+    if light_inter:
+        nrj_per_plant = light_interception(
+            weather_file=weather_file, 
+            daily_dynamics=daily_dynamics, 
+            sowing_density=sowing_density, 
+            location=location, 
+            mtgs=mtgs, 
+            zenith=zenith, 
+            save_scenes=save_scenes, 
+            inter_row=70
+        )
+    else:
+        nrj_per_plant = None
+
+    return daily_dynamics, fit_params, non_fit_params, pot_la, pot_h, realized_la, realized_h, nrj_per_plant, mtgs, sowing_density
+
+
+def plot_constrainted_vs_realized(dates, LA_archicrop, height_archicrop, leaf_area_plant, sen_leaf_area_plant, height_canopy, sowing_density, stics_color="orange", archicrop_color="green"):
 
     # conversion factor
     cf_cm = 100
@@ -304,29 +376,31 @@ def plot_constrainted_vs_realized(thermal_time, LA_archicrop, height_archicrop, 
     fig, axes = plt.subplots(2, 1, figsize=(12, 6), sharex=True)  # 1 row, 2 columns
 
     for result in LA_archicrop:
-        axes[0].plot(thermal_time, [r*sowing_density/cf_cm**2 for r in result],  color="green", alpha=0.6)
-    axes[0].plot(thermal_time, [(la-sen)*sowing_density/cf_cm**2 for la, sen in zip(leaf_area_plant, sen_leaf_area_plant)], color="black", alpha=0.9)
+        axes[0].plot(dates, [r*sowing_density/cf_cm**2 for r in result],  color=archicrop_color, alpha=0.6)
+    axes[0].plot(dates, [(la-sen)*sowing_density/cf_cm**2 for la, sen in zip(leaf_area_plant, sen_leaf_area_plant)], color=stics_color, alpha=0.9)
     axes[0].set_ylabel("LAI (m²/m²)", fontsize=16, fontname="Times New Roman")
+    axes[0].set_xticks(np.arange(0, len(dates)+1, (len(dates)+1)/8))
     # axes[0].set_title("Leaf Area: 3D canopy vs. STICS")
     # axes[0].legend(loc=2)
 
     legend_elements_lai = [
-        Line2D([0], [0], color='black', alpha=0.9, lw=2, label='LAI STICS'),
-        Line2D([0], [0], color='green', alpha=0.6, lw=2, label='LAI morphotypes')
+        Line2D([0], [0], color=stics_color, alpha=0.9, lw=2, label='LAI STICS'),
+        Line2D([0], [0], color=archicrop_color, alpha=0.6, lw=2, label='LAI morphotypes')
     ]
     axes[0].legend(handles=legend_elements_lai, loc=2, prop={'family': 'Times New Roman', 'size': 12})
 
 
     for result in height_archicrop:
-        axes[1].plot(thermal_time, [r*0.01 for r in result], color="orange", alpha=0.6)
-    axes[1].plot(thermal_time, [h*0.01 for h in height_canopy], color="black", alpha=0.9)
+        axes[1].plot(dates, [r*0.01 for r in result], color=archicrop_color, alpha=0.6)
+    axes[1].plot(dates, [h*0.01 for h in height_canopy], color=stics_color, alpha=0.9)
     axes[1].set_xlabel("Thermal time (°C.day)", fontsize=16, fontname="Times New Roman")
     axes[1].set_ylabel("Crop height (m)", fontsize=16, fontname="Times New Roman")
+    axes[0].set_xticks(np.arange(0, len(dates)+1, (len(dates)+1)/8))
     # axes[1].set_title("Plant height: 3D canopy vs. STICS")
 
     legend_elements_height = [
-        Line2D([0], [0], color='black', alpha=0.9, lw=2, label='Height STICS'),
-        Line2D([0], [0], color='orange', alpha=0.6, lw=2, label='Height morphotypes')
+        Line2D([0], [0], color=stics_color, alpha=0.9, lw=2, label='Height STICS'),
+        Line2D([0], [0], color=archicrop_color, alpha=0.6, lw=2, label='Height morphotypes')
     ]
     axes[1].legend(handles=legend_elements_height, loc=2, prop={'family': 'Times New Roman', 'size': 12})
 

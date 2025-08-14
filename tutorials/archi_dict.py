@@ -14,7 +14,7 @@ archi = {
     # Leaf area distribution along the stem  
     # "leaf_area":[], # potential plant leaf area
     "rmax": [0.5,0.9], # relative position of largest leaf on the stem
-    "skew": 0.005, # skewness for leaf area distribution along axis
+    "skew": [0.0005,0.001], # skewness for leaf area distribution along axis 
 
     # blade area
     "wl": [0.1,0.13], # leaf blade width-to-length ratio 
@@ -31,8 +31,8 @@ archi = {
     "phyllotactic_deviation": 0, # half-deviation to phyllotactic angle
 
     # Development
-    "phyllochron": [30,60], # phyllochron, i.e. stem element appearance rate
-    "plastochron": [30,60], # plastochron, i.e. leaf blade appearance rate
+    "phyllochron": [20,70], # phyllochron, i.e. stem element appearance rate
+    "plastochron": [20,70], # plastochron, i.e. leaf blade appearance rate
 
     # Senescence 
     # leaf_lifespan = [lifespan_early, lifespan], # leaf lifespan from appearance
