@@ -229,7 +229,7 @@ class ArchiCrop:
         prev_time = 0.0
         for v in self.daily_dynamics.values():
             gtemp = mtg_turtle_time_with_constraint(self.g, v["Thermal time"], prev_time, v)
-            growing_plant[v["Thermal time"]] = gtemp
+            growing_plant[v["Date"]] = gtemp
             self.g = gtemp.copy() # copy
             prev_time = v["Thermal time"]
         

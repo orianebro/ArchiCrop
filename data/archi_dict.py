@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-archi = {
-    "nb_phy": [8,22], # number of phytomers on the main stem
+archi_maize = {
+    "nb_phy": [6,25], # number of phytomers on the main stem
     "nb_short_phy": [2,4],
     "short_phy_height": [2,5],
     
@@ -31,11 +31,11 @@ archi = {
     "phyllotactic_deviation": 0, # half-deviation to phyllotactic angle
 
     # Development
-    "phyllochron": [20,70], # phyllochron, i.e. stem element appearance rate
-    "plastochron": [20,70], # plastochron, i.e. leaf blade appearance rate
+    "phyllochron": [30,60], # phyllochron, i.e. stem element appearance rate
+    "plastochron": [30,60], # plastochron, i.e. leaf blade appearance rate
 
     # Senescence 
-    # leaf_lifespan = [lifespan_early, lifespan], # leaf lifespan from appearance
+    # "leaf_lifespan": [lifespan_early, lifespan], # leaf lifespan from appearance
 
     # Tillering
     "nb_tillers": 0, # number of tillers

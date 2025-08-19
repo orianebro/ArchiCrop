@@ -136,7 +136,7 @@ def light_interception(weather_file, daily_dynamics, sowing_density, location, m
     if zenith:
         par_incident = [value["Incident PAR"] for value in daily_dynamics.values()]
     else:
-        par_incident = df_weather.itertuples()
+        par_incident = list(df_weather.itertuples())
 
     # Compute light interception for each plant at each time step
     par_caribu = []
