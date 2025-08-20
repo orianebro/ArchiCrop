@@ -28,7 +28,7 @@ def minimal_mtg():
         gravitropism_coefficient=0, plant_orientation=0, spiral=True, classic=False
     )
     # 3 time steps, 2 plants
-    return [[g1,g1,g1], [g2,g2,g2]]
+    return {0:[g1,g1,g1], 1:[g2,g2,g2]}
 
 def test_light_interception_real(minimal_mtg):
     # Minimal daily_dynamics for 2 time steps
@@ -58,5 +58,4 @@ def test_light_interception_real(minimal_mtg):
     # Check output shape and type
     assert len(nrj_per_plant) == len(minimal_mtg)  # 2 plants
     assert len(nrj_per_plant[0]) == len(dates)  # 3 time steps
-    assert len(nrj_per_plant[-1]) == len(dates)  # 3 time steps
-    assert nrj_per_plant[-1] != []
+    assert nrj_per_plant[1] != []

@@ -40,7 +40,7 @@ def complete_archi_params(archi_params: dict, daily_dynamics: dict, lifespan: fl
 
     archi_params["height"] = [1.1*max(height_canopy), 2*max(height_canopy)]
     archi_params["leaf_area"] = [1.1*max(leaf_area_plant), 2*max(leaf_area_plant)]
-    archi_params["leaf_lifespan"] = [lifespan_early, lifespan]
+    archi_params["leaf_lifespan"] = lifespan
     return archi_params
 
 
@@ -131,7 +131,8 @@ def filter_organ_duration(daily_dynamics, param_sets, opt_filter_organ_duration=
             leaf_duration = end_veg/plas-nb
             stem_duration = end_veg/phi-nb
             # if 1 <= leaf_duration <= 3 and 1 <= stem_duration <= 3 and phi < plas:
-            if leaf_duration >= 1 and stem_duration >= 1: # and phi < plas:
+            if 0.5 <= leaf_duration <= 5: # and phi < plas:
+                # print(leaf_duration)
                 filters[id] = {'filter_1' : True}
                 # new_param_sets.append(sample)
             else:
@@ -161,9 +162,6 @@ def filter_pot_growth(param_sets, daily_dynamics, filters, error_LA, error_heigh
     LA_constraint = [value["Plant leaf area"] for value in daily_dynamics.values()]
     # sen_LA_constraint = [value["Plant senescent leaf area"] for value in daily_dynamics.values()]
     height_constraint = [value["Plant height"] for value in daily_dynamics.values()]
-    
-    # fit_params = []
-    # non_fit_params = []
 
     pot_la = {}
     pot_h = {}
@@ -207,8 +205,6 @@ def filter_pot_growth(param_sets, daily_dynamics, filters, error_LA, error_heigh
                 h.append(sum_height_temp)
 
                 if sum_area_temp < LA_constraint[thermal_time.index(t)]*(1-error_LA) or sum_height_temp < height_constraint[thermal_time.index(t)]*(1-error_height):  
-                    filters[id]['filter_2'] = False
-                    # non_fit_params.append(params)
                     fit = False
                     if filter:
                         break
@@ -218,13 +214,17 @@ def filter_pot_growth(param_sets, daily_dynamics, filters, error_LA, error_heigh
                     pot_la[id] = la
                     pot_h[id] = h
                     filters[id]['filter_2'] = True
-                    # fit_params.append(params)
+                else: 
+                    filters[id]['filter_2'] = False
+                    pot_la[id] = [None] * len(thermal_time)
+                    pot_h[id] = [None] * len(thermal_time)
             else:
                 pot_la[id] = la
                 pot_h[id] = h
                 filters[id]['filter_2'] = None
-                # fit_params.append(params)
         else:
+            pot_la[id] = [None] * len(thermal_time)
+            pot_h[id] = [None] * len(thermal_time)
             filters[id]['filter_2'] = None
 
     return param_sets, pot_la, pot_h, filters
@@ -261,12 +261,16 @@ def simulate_fit_params(param_sets, daily_dynamics, filters):
                                     for vid, vl in gp.properties()["visible_length"].items() 
                                     if gp.node(vid).label.startswith("Stem")]) 
                                     for gp in growing_plant_mtg]
+        else:
+            realized_la[id] = [None] * len(daily_dynamics)
+            realized_h[id] = [None] * len(daily_dynamics)
+            mtgs[id] = [None] * len(daily_dynamics)
         
     return realized_la, realized_h, mtgs
 
 
 
-def filter_realized_growth(param_sets, realized_la, realized_h, daily_dynamics, mtgs, filters, error_LA=0.05, error_height=0.05):
+def filter_realized_growth(param_sets, realized_la, realized_h, daily_dynamics, mtgs, filters, error_LA=0.05, error_height=0.05, opt_filter_realized_growth=True):
     '''
     Filter the parmeters sets based on the deviation of the realized growth from the constraints, within a given error margin.
     Parameters: 
@@ -285,35 +289,42 @@ def filter_realized_growth(param_sets, realized_la, realized_h, daily_dynamics, 
     sen_LA_constraint = [value["Plant senescent leaf area"] for value in daily_dynamics.values()]
     height_constraint = [value["Plant height"] for value in daily_dynamics.values()]
 
-    # fit_params = []
-    # non_fit_params = []
-
-    realized_la = {}
-    realized_h = {}
+    new_realized_la = {}
+    new_realized_h = {}
     new_mtgs = {}
     
-    for (id, leaf_areas, heights) in zip(param_sets, realized_la, realized_h):
-        if filters[id]['filter_1'] or filters[id]['filter_2']:
-            fit = True
-            for i,(la,h) in enumerate(zip(leaf_areas, heights)):
-                LA_theo = LA_constraint[i] - sen_LA_constraint[i]
-                if LA_theo*(1-error_LA) <= la <= LA_theo*(1+error_LA) and height_constraint[i]*(1-error_height) <= h <= height_constraint[i]*(1+error_height): 
-                    fit = True
-                else:
-                    fit = False
-                    filters[id]['filter_3'] = False
-                    # non_fit_params.append(params)
-                    break
-            if fit:
-                filters[id]['filter_3'] = True
-                # fit_params.append(params)
-                realized_la[id] = leaf_areas
-                realized_h[id] = heights
-                new_mtgs[id] = mtgs[id]
+    for id in param_sets:
+        if opt_filter_realized_growth:
+            if filters[id]['filter_1'] or filters[id]['filter_2']:
+                fit = True
+                for i,(la,h) in enumerate(zip(realized_la[id], realized_h[id])):
+                    LA_theo = LA_constraint[i] - sen_LA_constraint[i]
+                    if LA_theo*(1-error_LA) <= la <= LA_theo*(1+error_LA) and height_constraint[i]*(1-error_height) <= h <= height_constraint[i]*(1+error_height): 
+                        fit = True
+                    else:
+                        fit = False
+                        filters[id]['filter_3'] = False
+                        new_realized_la[id] = [None] * len(daily_dynamics)
+                        new_realized_h[id] = [None] * len(daily_dynamics)
+                        new_mtgs[id] = [None] * len(daily_dynamics)
+                        break
+                if fit:
+                    filters[id]['filter_3'] = True
+                    new_realized_la[id] = realized_la[id]
+                    new_realized_h[id] = realized_h[id]
+                    new_mtgs[id] = mtgs[id]
+            else:
+                filters[id]['filter_3'] = None
+                new_realized_la[id] = [None] * len(daily_dynamics)
+                new_realized_h[id] = [None] * len(daily_dynamics)
+                new_mtgs[id] = [None] * len(daily_dynamics)
         else:
             filters[id]['filter_3'] = None
+            new_realized_la[id] = realized_la[id]
+            new_realized_h[id] = realized_h[id]
+            new_mtgs[id] = mtgs[id]
 
-    return param_sets, realized_la, realized_h, new_mtgs, filters
+    return param_sets, new_realized_la, new_realized_h, new_mtgs, filters
 
 
 def simulate_with_filters(param_sets, daily_dynamics, opt_filter_organ_duration=True, opt_filter_pot_growth=True, opt_filter_realized_growth=True, error_LA=0.05, error_height=0.05):
@@ -330,15 +341,10 @@ def simulate_with_filters(param_sets, daily_dynamics, opt_filter_organ_duration=
         realized_la (list): List of realized leaf area for each parameter set.
         realized_h (list): List of realized height for each parameter set.
     """
-    # non_fit_params = []
     param_sets, filters = filter_organ_duration(daily_dynamics=daily_dynamics, param_sets=param_sets, opt_filter_organ_duration=opt_filter_organ_duration)
     param_sets, pot_la, pot_h, filters = filter_pot_growth(param_sets=param_sets, daily_dynamics=daily_dynamics, filters=filters, error_LA=error_LA, error_height=error_height, filter=opt_filter_pot_growth)
-    # non_fit_params.extend(non_fit_params_temp)
     realized_la, realized_h, mtgs = simulate_fit_params(param_sets=param_sets, daily_dynamics=daily_dynamics, filters=filters)
-    if opt_filter_realized_growth:
-        param_sets, realized_la, realized_h, mtgs, filters = filter_realized_growth(param_sets=param_sets, realized_la=realized_la, realized_h=realized_h, daily_dynamics=daily_dynamics, mtgs=mtgs, filters=filters, error_LA=error_LA, error_height=error_height)
-        # non_fit_params.extend(non_fit_params_temp)
-
+    param_sets, realized_la, realized_h, mtgs, filters = filter_realized_growth(param_sets=param_sets, realized_la=realized_la, realized_h=realized_h, daily_dynamics=daily_dynamics, mtgs=mtgs, filters=filters, error_LA=error_LA, error_height=error_height, opt_filter_realized_growth=opt_filter_realized_growth)
     return param_sets, pot_la, pot_h, realized_la, realized_h, mtgs, filters
 
 
@@ -386,7 +392,7 @@ def run_simulations(archi_params: dict,
             inter_row=inter_row
         )
     else:
-        nrj_per_plant = None
+        nrj_per_plant = {k : [None] * len(realized_la[k]) for k in realized_la}
 
     # Dataframe with id, archi_params (dict to df), bool per filter, times series for h, la, nrj + dates ?
     # or xarray

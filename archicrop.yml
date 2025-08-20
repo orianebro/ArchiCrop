@@ -16,3 +16,4 @@ dependencies:
   - pytest
   - jupyterlab
   - matplotlib
+  - xarray

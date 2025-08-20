@@ -62,10 +62,11 @@ ds = xr.merge([ds, ds_archi])
 
 
 # Save the dataset to a NetCDF file
-ds.to_netcdf("simulation_results.nc")
+ds.to_netcdf("../example/simulation_results.nc")
 
+'''
 # Read the dataset back from the NetCDF file
 ds_read = xr.open_dataset("simulation_results.nc")
 # Print the dataset to verify
 print(ds_read['lai'].values)
-
+'''

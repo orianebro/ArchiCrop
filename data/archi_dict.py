@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 archi_maize = {
-    "nb_phy": [6,25], # number of phytomers on the main stem
+    "nb_phy": [8,25], # number of phytomers on the main stem
     "nb_short_phy": [2,4],
-    "short_phy_height": [2,5],
+    "short_phy_height": 2,
     
     # Stem
     # height=1.2*max(height_canopy), # potential plant height

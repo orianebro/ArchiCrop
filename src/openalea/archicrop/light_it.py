@@ -140,30 +140,41 @@ def light_interception(weather_file, daily_dynamics, sowing_density, location, m
 
     # Compute light interception for each plant at each time step
     par_caribu = []
+    nrj_per_leaf = []
+    nrj_per_plant = {}
     # For each plant
-    for mtgs_plant in mtgs:
-        aggs_tmp = []
-        # For each time step
-        for i,(mtg, par) in enumerate(zip(mtgs_plant, par_incident)):
-            # if i%1==0:
-            # Compute light sources
-            if zenith:
-                lights = [(par,(0,0,-1))]
-            else:
-                irr = sky_irradiance(daydate=par.daydate, day_ghi=par.rad, **location)
-                sun, sky = sky_sources(sky_type='clear_sky', sky_irradiance=irr, scale='global')
-                lights = caribu_light_sources(sun, sky)
-            # Build and illuminate scene
-            scene, labels = build_scene(mtg, (0,0,0), senescence=False)
-            cs, raw, agg = illuminate(scene, light=lights, labels=labels, domain=domain, direct=False) # --> cf PARaggregators in caribu scene node
-            aggs_tmp.append(agg)
-            # Save scene if required
-            if save_scenes:
-                scene_tmp = cs.plot(raw, display=False)[0]
-                scene_tmp.save(f'scene_{i}.png') # not as images !!!
+    for k, mtgs_plant in mtgs.items():
+        if mtgs_plant[0] is None:
+            nrj_per_plant[k] = [None] * len(par_incident)
+        else:
+            # aggs_tmp = []
+            nrj_tmp = []
+            # For each time step
+            for i,(mtg, par) in enumerate(zip(mtgs_plant, par_incident)):
+                # if i%1==0:
+                # Compute light sources
+                if zenith:
+                    lights = [(par,(0,0,-1))]
+                else:
+                    irr = sky_irradiance(daydate=par.daydate, day_ghi=par.rad, **location)
+                    sun, sky = sky_sources(sky_type='clear_sky', sky_irradiance=irr, scale='global')
+                    lights = caribu_light_sources(sun, sky)
+                # Build and illuminate scene
+                scene, labels = build_scene(mtg, (0,0,0), senescence=False)
+                cs, raw, agg = illuminate(scene, light=lights, labels=labels, domain=domain, direct=False) # --> cf PARaggregators in caribu scene node
+                # Compute energy per leaf
+                df_mod = mean_leaf_irradiance(agg)  # noqa: F841
+                nrj_tmp.append(agg.loc[agg['label'] == 'Leaf']['Energy'].values)
+                # aggs_tmp.append(agg)
+                # Save scene if required
+                if save_scenes:
+                    scene_tmp = cs.plot(raw, display=False)[0]
+                    scene_tmp.save(f'scene_{i}.png') # not as images !!!
 
-        par_caribu.append(aggs_tmp)
+            nrj_per_plant[k] = [sum(growing_plant) for growing_plant in nrj_tmp]
+            # par_caribu.append(aggs_tmp)
 
+    '''
     # Calculate energy per leaf and irradiance per plant
     nrj_per_leaf = []
     # irr_per_plant = []
@@ -178,6 +189,7 @@ def light_interception(weather_file, daily_dynamics, sowing_density, location, m
         nrj_per_leaf.append(nrj_tmp)
         # irr_per_plant.append(irr_tmp)
 
-    nrj_per_plant = [[sum(growing_plant) for growing_plant in plant] for plant in nrj_per_leaf]
-
+    nrj_per_plant = [[sum(growing_plant) for growing_plant in plant] for plant in nrj_per_leaf] # to dict !!!!
+    '''
+    
     return nrj_per_plant  # noqa: RET504
