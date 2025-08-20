@@ -95,6 +95,18 @@ def f(n_samples, seed):
     # Save the dataset to a NetCDF file
     ds.to_netcdf(f"results_{seed}.nc")
 
+
+def read_and_merge_netcdf_files(files):
+    ds = xr.Dataset()
+    for file in files:
+        ds_read = xr.open_dataset(file)
+        # Replace ids by id+len(ds)
+        for i in range(len(ds_read['id'].values)):
+            ds_read['id'].values[i] += len(ds['id'].values)
+        ds = xr.merge([ds, ds_read])
+    # TO TEST !!!!
+
+
 if __name__ == '__main__':
 
     n = 4

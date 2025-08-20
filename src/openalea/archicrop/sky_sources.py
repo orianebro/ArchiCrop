@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from alinea.astk.meteorology.sky_irradiance import sun_position
-from alinea.astk.sun_and_sky import sun_sources as ss
+from openalea.astk.sun_position import sun_position
+# from alinea.astk.sun_and_sky import sun_sources as ss
 
 import openalea.plantgl.all as pgl
 
@@ -56,13 +56,13 @@ def add_sources(sun, sky):
     elevation, azimuth, luminance = (list(x) for x in sun)
     return el + elevation, az + azimuth, lum + luminance
 
-
+'''
 def sun_sources(irradiance=1, *args, **kwds):
     irrad = irradiance
     if irradiance == "clear_sky":
         irrad = None
     return ss(irrad, *args, **kwds)
-
+'''
 
 def read_meteo_mpt(when="winter"):
     if when == "winter":
