@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import sys
+
 import pandas as pd
 import xarray as xr
+
+sys.path.append('../data')
 from archi_dict import archi_maize as archi
 
 from openalea.archicrop.simulation import run_simulations

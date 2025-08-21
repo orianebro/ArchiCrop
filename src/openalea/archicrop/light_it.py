@@ -139,8 +139,8 @@ def light_interception(weather_file, daily_dynamics, sowing_density, location, m
         par_incident = list(df_weather.itertuples())
 
     # Compute light interception for each plant at each time step
-    par_caribu = []
-    nrj_per_leaf = []
+    # par_caribu = []
+    # nrj_per_leaf = []
     nrj_per_plant = {}
     # For each plant
     for k, mtgs_plant in mtgs.items():
@@ -191,5 +191,5 @@ def light_interception(weather_file, daily_dynamics, sowing_density, location, m
 
     nrj_per_plant = [[sum(growing_plant) for growing_plant in plant] for plant in nrj_per_leaf] # to dict !!!!
     '''
-    
-    return nrj_per_plant  # noqa: RET504
+
+    return nrj_per_plant 

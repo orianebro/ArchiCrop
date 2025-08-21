@@ -4,7 +4,6 @@ import os
 import sys
 import time as t
 from multiprocessing import Pool
-import datetime
 
 import pandas as pd
 import xarray as xr

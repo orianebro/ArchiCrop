@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from openalea.astk.sun_position import sun_position
-# from alinea.astk.sun_and_sky import sun_sources as ss
 
+# from alinea.astk.sun_and_sky import sun_sources as ss
 import openalea.plantgl.all as pgl
+from openalea.astk.sun_position import sun_position
 
 from .colormap import jet_colors
 
