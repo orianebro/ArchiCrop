@@ -29,14 +29,14 @@ pot_h = {
 }
 
 ds = xr.Dataset(
-    data_vars=dict(
-        STICS_tps_ther = (["time"], daily_dyn["tps_ther"]),
-        STICS_lai = (["time"], daily_dyn["lai"]),
-        pot_lat = (["id", "time"], pd.DataFrame.from_dict(pot_la, orient='index', columns=dates)),
-        pot_h = (["id", "time"], pd.DataFrame.from_dict(pot_h, orient='index', columns=dates)),
-    ),
-    coords=dict(
-        id = [0,1,2],
-        time = dates
-    )
+    data_vars={
+        "STICS_tps_ther": (["time"], daily_dyn["tps_ther"]),
+        "STICS_lai": (["time"], daily_dyn["lai"]),
+        "pot_lat": (["id", "time"], pd.DataFrame.from_dict(pot_la, orient='index', columns=dates)),
+        "pot_h": (["id", "time"], pd.DataFrame.from_dict(pot_h, orient='index', columns=dates)),
+    },
+    coords={
+        "id": [0,1,2],
+        "time": dates
+    }
 )

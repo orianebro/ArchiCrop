@@ -24,9 +24,9 @@ def cereal_stem_properties(nb_phy, nb_short_phy, short_phy_height, height, stem_
     # short_phy_height = 2
     pseudostem_height = nb_short_phy * short_phy_height
 
-    pseudostem = np.array([short_phy_height*i for i in range(1, nb_short_phy+1)])
+    pseudostem = np.array([short_phy_height*i for i in range(1, nb_short_phy+1)]) if nb_short_phy > 0 else np.array([])
     stem = np.array(geometric_dist(height, nb_phy-nb_short_phy, q=stem_q, u0=pseudostem_height))
-    insertion_heights = np.concatenate((pseudostem, stem), axis=0)
+    insertion_heights = np.concatenate((pseudostem, stem), axis=0) if nb_short_phy > 0 else stem
 
     stem_diameters = np.linspace(diam_base, diam_top, nb_phy).tolist()
 
@@ -144,6 +144,7 @@ def add_tiller(g, vid, start_time, phyllochron, plastochron,
     n = len(g.Axis(vid))
     len_tiller  = n - rank  # we remove the parent that do not belong to the tiller 
     nb_phy = len_tiller
+    nb_short_phy = max(nb_short_phy - rank, 0)
 
     ranks = range(1, nb_phy + 1)
     ntop = max(ranks) - np.array(ranks) + 1
@@ -221,6 +222,16 @@ class CerealsVisitor:
             turtle.move(0, 0, 0)
             # initial position to be compatible with canMTG positioning
             turtle.setHead(0, 0, 1, -1, 0, 0)
+
+        # Manage inclination of tiller
+        if g.edge_type(v) == "+" and not n.label.startswith("Leaf"):
+            # axis_id = g.complex(vid); g.property('insertion_angle')
+            # TODO : vary as function of age and species(e.g. rice)
+            # print(n.label, n.visible_length, n.tiller_angle)
+            angle = 2*n.tiller_angle if g.order(v) == 1 else n.tiller_angle 
+            turtle.down(angle)
+            turtle.elasticity = n.gravitropism_coefficient 
+            turtle.tropism = (0, 0, 1)
 
         # incline turtle at the base of stems,
         if n.label.startswith("Stem"):
@@ -317,7 +328,7 @@ def cereal(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration,
     # Dicts instead of a dataframe
     stem_prop = cereal_stem_properties(nb_phy=nb_phy, nb_short_phy=nb_short_phy, short_phy_height=short_phy_height, height=height, 
                                         stem_q=stem_q, diam_top=diam_top, diam_base=diam_base, ntop=ntop)
-    leaf_prop = cereal_leaf_properties(nb_phy=nb_phy, leaf_area=leaf_area, rmax=rmax, skew=skew, insertion_angle=insertion_angle, 
+    leaf_prop = cereal_leaf_properties(nb_phy=nb_phy, leaf_area=1, rmax=rmax, skew=skew, insertion_angle=insertion_angle, 
                                 scurv=scurv, curvature=curvature, klig=klig, swmax=swmax, f1=f1, f2=f2, ntop=ntop, wl=wl, 
                                 phyllotactic_angle=phyllotactic_angle, phyllotactic_deviation=phyllotactic_deviation, 
                                 plant_orientation=plant_orientation, spiral=spiral)
@@ -368,7 +379,7 @@ def cereal(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration,
         new_tillers = add_tiller(g=g, vid=vid, start_time=time, phyllochron=phyllochron, plastochron=plastochron, tiller_delay=tiller_delay, 
                                 stem_duration=stem_duration, leaf_duration=leaf_duration, leaf_lifespan=leaf_lifespan, end_juv=end_juv, 
                                 reduction_factor=reduction_factor, 
-                                height=height, leaf_area=leaf_area, wl=wl, diam_base=diam_base, diam_top=diam_top,
+                                height=height, leaf_area=1, wl=wl, diam_base=diam_base, diam_top=diam_top,
                                 insertion_angle=insertion_angle, scurv=scurv, curvature=curvature,
                                 klig=klig, swmax=swmax, f1=f1, f2=f2,
                                 stem_q=stem_q, rmax=rmax, skew=skew, 
@@ -384,6 +395,50 @@ def cereal(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration,
         tiller_points.sort(key=lambda x: x[1])
         tiller_points = tiller_points[:nb_tillers-i]
 
+
+    # Find number of phytomers and order of each axis 
+    # Determine a ratio of total leaf area to allocate to each axis (with or without reduction factor)
+    # Browse all leaves of all axes and multiply them by total_leaf_area * ratio_axis
+
+    # Find number of phytomers and order of each axis 
+    axes = g.vertices(scale=2)  # scale=2: axes
+    main_axis = axes[0]
+    axis_orders = {axis: g.order(axis) for axis in axes}
+
+    # Compute the number of leaves per axis
+    leaves_per_axis = {
+        axis: 
+        [
+            vid for vid in g.components(axis)
+            if g.node(vid).label.startswith("Leaf")
+        ]
+        for axis in axes
+    }
+    nb_leaves_per_axis = {axis: len(leaves) for axis, leaves in leaves_per_axis.items()}
+    # total_nb_leaves = sum(nb_leaves_per_axis.values())
+
+    # Compute reduction factor for each axis (main axis: 1, tillers: reduction_factor^order)
+    axis_factors = {
+        axis: (1.0 * nb_leaves_per_axis[axis]
+               if axis == main_axis 
+               else (reduction_factor ** axis_orders[axis]) * nb_leaves_per_axis[axis])  
+        for axis in axes
+    }
+    total_factor = sum([axis_factors[axis] for axis in axes])
+
+    # Allocate total leaf area to each axis proportionally
+    for axis in axes:
+        leaves = leaves_per_axis[axis]
+        factor = axis_factors[axis]
+        # Area per leaf for this axis
+        area_per_leaf = leaf_area * factor / total_factor if nb_leaves_per_axis[axis] > 0 else 0
+        for vid in leaves:
+            g.node(vid).leaf_area *= area_per_leaf  # scale the default leaf_area (from bell_shaped_dist)
+            g.node(vid).visible_leaf_area *= area_per_leaf
+            g.node(vid).mature_length = np.sqrt(g.node(vid).leaf_area / 0.75 / wl)
+            g.node(vid).length = np.sqrt(g.node(vid).leaf_area / 0.75 / wl) 
+            g.node(vid).visible_length = np.sqrt(g.node(vid).leaf_area / 0.75 / wl) 
+            g.node(vid).shape_max_width = g.node(vid).length * wl
 
 
     g = fat_mtg(g)

@@ -33,12 +33,12 @@ def geometric_dist(height, nb_phy, q, u0):
     remaining_height = height - u0
 
     # Generate table of heights for geometric distribution
-    table_heights = np.array([i*float(height) / nb_phy if q == 1 else remaining_height * (1 - q**i) / (1 - q**nb_phy) for i in range(1, nb_phy + 1)])
+    heights_without_u0 = np.array([i*float(height) / nb_phy if q == 1 else remaining_height * (1 - q**i) / (1 - q**nb_phy) for i in range(1, nb_phy + 1)])
     
     # Add the offset height (u0) to each leaf's position
-    normalized_heights = u0 + table_heights
+    heights = u0 + heights_without_u0
     
-    return normalized_heights.tolist()
+    return heights.tolist()
 
 
 def collar_heights_kaitaniemi(height, nb_phy):
