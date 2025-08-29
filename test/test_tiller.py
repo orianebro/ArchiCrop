@@ -146,3 +146,45 @@ def plot(g):
     # Viewer.display(plot(g))
     scene = traverse_with_turtle(g, 3, visitor=visitor, gc=True)
     return scene  # noqa: RET504
+
+
+'''
+# Print leaf area of all leaves, axis by axis
+la_per_axis = {}
+i = 0
+for vid in g.vertices(scale=2):  # scale=2 corresponds to axes
+    leaf_areas = []
+    axis_label = g.parent(vid)
+    print(f"Axis {axis_label}: {len(g.components(vid))/2} leaves")
+    for leaf_vid in g.components(vid):
+        if g.label(leaf_vid) == "Leaf":
+            la = g.property("leaf_area")[leaf_vid]
+            # la = g.property("mature_length")[leaf_vid]
+            print(f"  Leaf {leaf_vid}: area = {la}")
+            leaf_areas.append(la)
+    la_per_axis[vid] = leaf_areas
+    i += 1
+
+import matplotlib.pyplot as plt
+total_area = 0.0
+for key, value in la_per_axis.items():
+    total_area += sum(value)
+    plt.plot(range(1,len(value)+1), value, label=f"{key}")
+print(total_area)
+print(leaf_area)
+plt.legend()
+plt.show()
+
+axes = g.vertices(scale=2)
+axis_orders = {axis: g.order(axis) for axis in axes}
+for vid in g.vertices(scale=2):  # scale=2 corresponds to axes
+    axis_label = g.label(vid)
+    print(f"Axis {axis_label}:")
+    for leaf_vid in g.components(vid):
+        if g.label(leaf_vid) == "Leaf":
+            leaf_area = g.property("leaf_area")[leaf_vid]
+            print(f"  Leaf {leaf_vid}: area = {leaf_area}")
+
+import oawidgets.mtg
+oawidgets.mtg.plot(g)
+'''

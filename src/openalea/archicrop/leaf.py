@@ -320,7 +320,7 @@ def leaf_as_dict(stem_prop, leaf_prop, rank, wl):
             "length": leaf_prop["L_blade"][rank-1],
             "visible_length": leaf_prop["L_blade"][rank-1],
             "leaf_area": leaf_prop["S_blade"][rank-1],
-            "visible_leaf_area": leaf_prop["S_blade"][rank-1],
+            "visible_leaf_area": 0.0,
             "senescent_area": 0.0,
             "senescent_length": 0.0,
             # "form_factor": leaf_prop["form_factor"][rank-1],

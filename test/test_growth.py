@@ -209,5 +209,3 @@ def test_update_leaf_senescence_area():
     growth.update_leaf_senescence_area(n, 5)
     assert n.senescent_area > 0 or n.dead
 
-
-

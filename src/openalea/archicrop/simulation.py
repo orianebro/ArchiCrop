@@ -38,8 +38,8 @@ def complete_archi_params(archi_params: dict, daily_dynamics: dict, lifespan: fl
     leaf_area_plant = [value["Plant leaf area"] for value in daily_dynamics.values()]
     height_canopy = [value["Plant height"] for value in daily_dynamics.values()]
 
-    archi_params["height"] = [1.1*max(height_canopy), 2*max(height_canopy)]
-    archi_params["leaf_area"] = [1.1*max(leaf_area_plant), 2*max(leaf_area_plant)]
+    archi_params["height"] = [1*max(height_canopy), 2*max(height_canopy)]
+    archi_params["leaf_area"] = [1*max(leaf_area_plant), 2*max(leaf_area_plant)]
     archi_params["leaf_lifespan"] = lifespan
     return archi_params
 
@@ -130,8 +130,8 @@ def filter_organ_duration(daily_dynamics, param_sets, opt_filter_organ_duration=
             nb = sample["nb_phy"] 
             leaf_duration = end_veg/plas-nb
             stem_duration = end_veg/phi-nb
-            # if 1 <= leaf_duration <= 3 and 1 <= stem_duration <= 3 and phi < plas:
-            if 0.5 <= leaf_duration <= 5: # and phi < plas:
+            # if 0.5 <= leaf_duration <= 3 and 1 <= stem_duration <= 3 and phi < plas:
+            if phi < plas:
                 # print(leaf_duration)
                 filters[id] = {'filter_1' : True}
                 # new_param_sets.append(sample)
@@ -295,7 +295,7 @@ def filter_realized_growth(param_sets, realized_la, realized_h, daily_dynamics, 
     
     for id in param_sets:
         if opt_filter_realized_growth:
-            if filters[id]['filter_1'] or filters[id]['filter_2']:
+            if filters[id]['filter_1'] and filters[id]['filter_2']:
                 fit = True
                 for i,(la,h) in enumerate(zip(realized_la[id], realized_h[id])):
                     LA_theo = LA_constraint[i] - sen_LA_constraint[i]
@@ -327,7 +327,7 @@ def filter_realized_growth(param_sets, realized_la, realized_h, daily_dynamics, 
     return param_sets, new_realized_la, new_realized_h, new_mtgs, filters
 
 
-def simulate_with_filters(param_sets, daily_dynamics, opt_filter_organ_duration=True, opt_filter_pot_growth=True, opt_filter_realized_growth=True, error_LA=0.05, error_height=0.05):
+def simulate_with_filters(param_sets, daily_dynamics, opt_filter_organ_duration=True, opt_filter_pot_growth=True, opt_filter_realized_growth=True, error_LA_pot=1, error_height_pot=1, error_LA_realized=0.05, error_height_realized=0.05):
     """
     Simulate the growth of plants using the parameter sets and filter them based on realized growth.
     Parameters:
@@ -342,9 +342,9 @@ def simulate_with_filters(param_sets, daily_dynamics, opt_filter_organ_duration=
         realized_h (list): List of realized height for each parameter set.
     """
     param_sets, filters = filter_organ_duration(daily_dynamics=daily_dynamics, param_sets=param_sets, opt_filter_organ_duration=opt_filter_organ_duration)
-    param_sets, pot_la, pot_h, filters = filter_pot_growth(param_sets=param_sets, daily_dynamics=daily_dynamics, filters=filters, error_LA=error_LA, error_height=error_height, filter=opt_filter_pot_growth)
+    param_sets, pot_la, pot_h, filters = filter_pot_growth(param_sets=param_sets, daily_dynamics=daily_dynamics, filters=filters, error_LA=error_LA_pot, error_height=error_height_pot, filter=opt_filter_pot_growth)
     realized_la, realized_h, mtgs = simulate_fit_params(param_sets=param_sets, daily_dynamics=daily_dynamics, filters=filters)
-    param_sets, realized_la, realized_h, mtgs, filters = filter_realized_growth(param_sets=param_sets, realized_la=realized_la, realized_h=realized_h, daily_dynamics=daily_dynamics, mtgs=mtgs, filters=filters, error_LA=error_LA, error_height=error_height, opt_filter_realized_growth=opt_filter_realized_growth)
+    param_sets, realized_la, realized_h, mtgs, filters = filter_realized_growth(param_sets=param_sets, realized_la=realized_la, realized_h=realized_h, daily_dynamics=daily_dynamics, mtgs=mtgs, filters=filters, error_LA=error_LA_realized, error_height=error_height_realized, opt_filter_realized_growth=opt_filter_realized_growth)
     return param_sets, pot_la, pot_h, realized_la, realized_h, mtgs, filters
 
 
@@ -352,7 +352,8 @@ def run_simulations(archi_params: dict,
              tec_file: str, plant_file: str, dynamics_file: str, weather_file: str, location: dict,
              n_samples: int = 100, seed: int = 42, latin_hypercube: bool = False, 
              opt_filter_organ_duration: bool = True, opt_filter_pot_growth: bool = True, opt_filter_realized_growth: bool = True, 
-             error_LA: float = 0.05, error_height: float = 0.05, inter_row: float = 70,
+             error_LA_pot: float = 1, error_height_pot: float = 1, error_LA_realized: float = 0.05, error_height_realized: float = 0.05,
+             inter_row: float = 70,
              light_inter: bool = True, zenith: bool = False, save_scenes: bool = False):
 
     # Retrieve STICS management and senescence parameters
@@ -372,8 +373,10 @@ def run_simulations(archi_params: dict,
     param_sets, pot_la, pot_h, realized_la, realized_h, mtgs, filters = simulate_with_filters(
         param_sets=param_sets, 
         daily_dynamics=daily_dynamics,
-        error_LA=error_LA,
-        error_height=error_height, 
+        error_LA_pot=error_LA_pot,
+        error_height_pot=error_height_pot, 
+        error_LA_realized=error_LA_realized,
+        error_height_realized=error_height_realized,
         opt_filter_organ_duration=opt_filter_organ_duration,
         opt_filter_pot_growth=opt_filter_pot_growth,
         opt_filter_realized_growth=opt_filter_realized_growth
@@ -399,6 +402,45 @@ def run_simulations(archi_params: dict,
 
     return daily_dynamics, param_sets, pot_la, pot_h, realized_la, realized_h, nrj_per_plant, mtgs, filters, sowing_density
 
+def plot_constained_vs_pot(dates, pot_la, pot_h, leaf_area_plant, height_canopy, sowing_density, stics_color="orange", archicrop_color="green"):
+    
+    # conversion factor
+    cf_cm = 100
+
+    fig, axes = plt.subplots(2, 1, figsize=(12, 6), sharex=True)  # 1 row, 2 columns
+    for la in pot_la.values():
+        if la[0] is not None:
+            axes[0].plot(dates, [a*sowing_density/cf_cm**2 for a in la]) # , color=archicrop_color, alpha=0.6)
+    axes[0].plot(dates, [a*sowing_density/cf_cm**2 for a in leaf_area_plant], color=stics_color)
+    axes[0].set_xticks(np.arange(0, len(dates)+1, (len(dates)+1)/8))
+    axes[0].set_ylabel("LAI (m²/m²)", fontsize=16, fontname="Times New Roman")
+
+    legend_elements_lai = [
+        Line2D([0], [0], color=stics_color, alpha=0.9, lw=2, label='LAI STICS'),
+        Line2D([0], [0], color=archicrop_color, alpha=0.6, lw=2, label='LAI potential morphotypes')
+    ]
+    axes[0].legend(handles=legend_elements_lai, loc=2, prop={'family': 'Times New Roman', 'size': 12})
+
+    for height in pot_h.values():
+        if height[0] is not None:
+            axes[1].plot(dates, [h/cf_cm for h in height]) #, color=archicrop_color, alpha=0.6)
+    axes[1].plot(dates, [h/cf_cm for h in height_canopy], color=stics_color)
+    axes[1].set_xticks(np.arange(0, len(dates)+1, (len(dates)+1)/8))
+    axes[1].set_xlabel("Date", fontsize=16, fontname="Times New Roman")
+    axes[1].set_ylabel("Crop height (m)", fontsize=16, fontname="Times New Roman")
+
+    legend_elements_height = [
+        Line2D([0], [0], color=stics_color, alpha=0.9, lw=2, label='Height STICS'),
+        Line2D([0], [0], color=archicrop_color, alpha=0.6, lw=2, label='Height potential morphotypes')
+    ]
+    axes[1].legend(handles=legend_elements_height, loc=2, prop={'family': 'Times New Roman', 'size': 12})
+
+    # Adjust layout
+    plt.tight_layout()
+
+    # Show the plot
+    plt.show()
+
 
 def plot_constrainted_vs_realized(dates, LA_archicrop, height_archicrop, leaf_area_plant, sen_leaf_area_plant, height_canopy, sowing_density, stics_color="orange", archicrop_color="green"):
 
@@ -408,7 +450,8 @@ def plot_constrainted_vs_realized(dates, LA_archicrop, height_archicrop, leaf_ar
     fig, axes = plt.subplots(2, 1, figsize=(12, 6), sharex=True)  # 1 row, 2 columns
 
     for result in LA_archicrop.values():
-        axes[0].plot(dates, [r*sowing_density/cf_cm**2 for r in result],  color=archicrop_color, alpha=0.6)
+        if result[0] is not None:
+            axes[0].plot(dates, [r*sowing_density/cf_cm**2 for r in result])  #, color=archicrop_color, alpha=0.6)
     axes[0].plot(dates, [(la-sen)*sowing_density/cf_cm**2 for la, sen in zip(leaf_area_plant, sen_leaf_area_plant)], color=stics_color, alpha=0.9)
     axes[0].set_ylabel("LAI (m²/m²)", fontsize=16, fontname="Times New Roman")
     axes[0].set_xticks(np.arange(0, len(dates)+1, (len(dates)+1)/8))
@@ -423,9 +466,10 @@ def plot_constrainted_vs_realized(dates, LA_archicrop, height_archicrop, leaf_ar
 
 
     for result in height_archicrop.values():
-        axes[1].plot(dates, [r*0.01 for r in result], color=archicrop_color, alpha=0.6)
-    axes[1].plot(dates, [h*0.01 for h in height_canopy], color=stics_color, alpha=0.9)
-    axes[1].set_xlabel("Thermal time (°C.day)", fontsize=16, fontname="Times New Roman")
+        if result[0] is not None:
+            axes[1].plot(dates, [r/cf_cm for r in result]) #, color=archicrop_color, alpha=0.6)
+    axes[1].plot(dates, [h/cf_cm for h in height_canopy], color=stics_color, alpha=0.9)
+    axes[1].set_xlabel("Date", fontsize=16, fontname="Times New Roman")
     axes[1].set_ylabel("Crop height (m)", fontsize=16, fontname="Times New Roman")
     axes[0].set_xticks(np.arange(0, len(dates)+1, (len(dates)+1)/8))
     # axes[1].set_title("Plant height: 3D canopy vs. STICS")
@@ -442,3 +486,28 @@ def plot_constrainted_vs_realized(dates, LA_archicrop, height_archicrop, leaf_ar
     # Show the plot
     plt.show()
 
+
+def plot_nrj_per_plant(dates, nrj_per_plant, par_incident, par_stics, sowing_density, stics_color="orange", archicrop_color="green"):
+    # curves_array = np.array(nrj_per_plant)
+
+    # # Calculate the envelope: min and max values for each time point
+    # min_values = curves_array.min(axis=0)
+    # max_values = curves_array.max(axis=0)
+
+    # Plotting the envelope along with individual curves for context
+    fig, ax = plt.subplots(figsize=(12, 6))
+    for curve in nrj_per_plant.values():
+        ax.plot(dates, [nrj*sowing_density/row.rad for nrj,row in zip(curve, par_incident)], color=archicrop_color, alpha=0.4, label="ArchiCrop x Caribu")
+
+    # ax.fill_between(time_points, min_values, max_values, color="skyblue", alpha=0.4)
+    # ax.plot(time_points, min_values, color="blue", linestyle="--", label="Min 3D")
+    # ax.plot(time_points, max_values, color="red", linestyle="--", label="Max 3D")
+    ax.plot(dates, par_stics, color=stics_color, label="STICS")
+
+    # Labels and legend
+    ax.set_xticks(np.arange(0, len(dates)+1, (len(dates)+1)/8))
+    ax.set_xlabel("Dates") 
+    ax.set_ylabel("Fraction of absorbed PAR")
+    ax.set_title("Fraction of absorbed PAR: 3D canopy vs. STICS")
+    ax.legend()
+    plt.show()

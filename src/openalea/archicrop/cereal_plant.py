@@ -366,7 +366,7 @@ def cereal(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration,
         leaf = leaf_as_dict(stem_prop=stem_prop, leaf_prop=leaf_prop, rank=rank, wl=wl)
         vid_leaf = g.add_child(vid_stem, edge_type="+", **leaf)  
         tt_leaf = add_development(g=g, vid=vid_leaf, tt=tt_leaf, dtt=dtt_leaf, rate=plastochron)
-        compute_potential_growth_rate(g=g, vid=vid_leaf)
+        # compute_potential_growth_rate(g=g, vid=vid_leaf)
         add_leaf_senescence(g=g, vid_leaf=vid_leaf, leaf_lifespan=leaf_lifespan, end_juv=end_juv)
 
 
@@ -433,12 +433,14 @@ def cereal(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration,
         # Area per leaf for this axis
         area_per_leaf = leaf_area * factor / total_factor if nb_leaves_per_axis[axis] > 0 else 0
         for vid in leaves:
-            g.node(vid).leaf_area *= area_per_leaf  # scale the default leaf_area (from bell_shaped_dist)
-            g.node(vid).visible_leaf_area *= area_per_leaf
-            g.node(vid).mature_length = np.sqrt(g.node(vid).leaf_area / 0.75 / wl)
-            g.node(vid).length = np.sqrt(g.node(vid).leaf_area / 0.75 / wl) 
-            g.node(vid).visible_length = np.sqrt(g.node(vid).leaf_area / 0.75 / wl) 
+            scaled_leaf_area = g.node(vid).leaf_area * area_per_leaf
+            g.node(vid).leaf_area = scaled_leaf_area  
+            # g.node(vid).visible_leaf_area *= area_per_leaf
+            g.node(vid).mature_length = np.sqrt(scaled_leaf_area / 0.75 / wl)
+            g.node(vid).length = np.sqrt(scaled_leaf_area / 0.75 / wl) 
+            g.node(vid).visible_length = np.sqrt(scaled_leaf_area / 0.75 / wl) 
             g.node(vid).shape_max_width = g.node(vid).length * wl
+            compute_potential_growth_rate(g=g, vid=vid)
 
 
     g = fat_mtg(g)

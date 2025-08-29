@@ -14,6 +14,8 @@ def init_visible_variables(g):
 
     for k in g.properties()["visible_length"]:
         g.properties()["visible_length"][k] = 0.0
+    # for k in g.properties()["visible_leaf_area"]:
+    #     g.properties()["visible_leaf_area"][k] = 0.0
     for k in g.properties()["stem_diameter"]:
         g.properties()["stem_diameter"][k] = 0.0
 
@@ -111,6 +113,7 @@ def distribute_to_potential(growing_organs, increment_to_distribute, distributio
         growing_organs = {vid: {"potential": values["potential"], "visible": values["visible"]} 
                           for vid, values in growing_organs.items() 
                           if values["visible"] < values["potential"]}
+        
 
     return increment_for_each_organ
 
