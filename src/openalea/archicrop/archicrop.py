@@ -110,7 +110,7 @@ class ArchiCrop:
         else:
 
             end_juv = 0
-            end_veg = 0
+            end_veg = 1000
             
 
         self.nb_phy = math.ceil((end_veg-(leaf_duration*plastochron))/plastochron) # nb_phy

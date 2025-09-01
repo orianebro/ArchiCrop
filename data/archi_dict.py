@@ -79,7 +79,7 @@ archi_sorghum = {
     "leaf_duration": 1.6,
 
     # Tillering
-    "nb_tillers": [0,2], # number of tillers : [0,6] (Lafarge et al., 2002)
+    "nb_tillers": [0,6], # number of tillers : [0,6] (Lafarge et al., 2002)
     "tiller_angle": 20,
     "tiller_delay": 1, # delay, as factor of phyllochron, between the appearance of a phytomer and the appearance of its tiller : [] ()
     "reduction_factor": [0.8,1] # reduction factor between tillers of consecutive order : [] ()

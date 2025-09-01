@@ -42,12 +42,21 @@ def complete_archi_params(archi_params: dict, daily_dynamics: dict, lifespan: fl
     """
     Complete the architecture parameters with values from daily dynamics.
     """
-    leaf_area_plant = [value["Plant leaf area"] for value in daily_dynamics.values()]
-    height_canopy = [value["Plant height"] for value in daily_dynamics.values()]
+    if daily_dynamics is not None:
+        leaf_area_plant = [value["Plant leaf area"] for value in daily_dynamics.values()]
+        height_canopy = [value["Plant height"] for value in daily_dynamics.values()]
 
-    archi_params["height"] = 2*max(height_canopy) # [1*max(height_canopy), 2*max(height_canopy)]
-    archi_params["leaf_area"] = 2*max(leaf_area_plant) # [1*max(leaf_area_plant), 2*max(leaf_area_plant)]
-    archi_params["leaf_lifespan"] = lifespan
+        archi_params["height"] = 2*max(height_canopy) # [1*max(height_canopy), 2*max(height_canopy)]
+        archi_params["leaf_area"] = 2*max(leaf_area_plant) # [1*max(leaf_area_plant), 2*max(leaf_area_plant)]
+    else: # cf literature
+        archi_params["height"] = [50,400] # for sorghum !!
+        archi_params["leaf_area"] = [1000,20000] # for sorghum !!!!!!!
+
+    if lifespan is not None:
+        archi_params["leaf_lifespan"] = lifespan
+    else:
+        archi_params["leaf_lifespan"] = 1e4
+
     return archi_params
 
 
@@ -409,6 +418,99 @@ def run_simulations(archi_params: dict,
     # or xarray
 
     return daily_dynamics, param_sets, pot_la, pot_h, realized_la, realized_h, nrj_per_plant, mtgs, filters, sowing_density
+
+
+
+def morphospace(archi_params: dict, 
+             n_samples: int = 100, seed: int = 42, latin_hypercube: bool = False):
+
+
+    # Complete the architecture parameters with values from daily dynamics.
+    archi_params = complete_archi_params(archi_params=archi_params, daily_dynamics=None, lifespan=None, lifespan_early=None)
+    
+    # Sampling parameters using Latin Hypercube Sampling
+    param_sets = LHS_param_sampling(archi_params=archi_params, n_samples=n_samples, seed=seed, latin_hypercube=latin_hypercube)
+
+    thermal_time = range(0,1000,20)
+    pot_la = {}
+    pot_h = {}
+    mtgs = {}
+    
+    for id, params in param_sets.items():
+        plant = ArchiCrop(daily_dynamics=None, **params)
+        plant.generate_potential_plant()
+        g = plant.g
+        mtgs[id] = g
+
+        stem_starts_ends = []
+        leaf_starts_ends = []
+        for vid in g.properties()["start_tt"]:
+            if g.node(vid).label.startswith("Stem"):
+                stem_starts_ends.append((vid, g.node(vid).start_tt, g.node(vid).end_tt))
+            elif g.node(vid).label.startswith("Leaf"):
+                leaf_starts_ends.append((vid, g.node(vid).start_tt, g.node(vid).end_tt))
+        # Order by start time
+        stem_starts_ends.sort(key=lambda x: x[1])  
+        leaf_starts_ends.sort(key=lambda x: x[1])
+
+        la = []
+        h = []
+        for t in thermal_time:
+            sum_area_temp = 0
+            for (vid, s,e) in leaf_starts_ends:
+                if s <= t < e:
+                    sum_area_temp += (t-s)/(e-s) * g.node(vid).leaf_area
+                elif t >= e:
+                    sum_area_temp += g.node(vid).leaf_area
+            la.append(sum_area_temp)
+
+            sum_height_temp = 0
+            for (vid, s,e) in stem_starts_ends:
+                if s <= t < e:
+                    sum_height_temp += (t-s)/(e-s) * g.node(vid).mature_length
+                elif t >= e:
+                    sum_height_temp += g.node(vid).mature_length
+            h.append(sum_height_temp)
+        
+        pot_la[id] = la
+        pot_h[id] = h
+
+    return thermal_time, param_sets, pot_la, pot_h, mtgs
+
+
+def write_morphospace_as_netcdf(thermal_time, params_sets, pot_la, pot_h, mtgs, seed):
+
+    df_archi = pd.DataFrame.from_dict(params_sets, orient='index')
+    ds_archi = df_archi.to_xarray().rename({'index':'id'})
+
+    # mtgs_string = {k: [write_mtg(g) for g in mtg] for k, mtg in mtgs.items()} 
+    # potential growth !!
+    mtgs_string = {k: write_mtg(g) for k,g in mtgs.items()} 
+    # df_mtg = pd.DataFrame.from_dict(mtgs_string, orient='index')
+    # ds_mtg = df_mtg.to_xarray().rename({'index':'id'})
+
+    # Create the xarray Dataset
+    ds = xr.Dataset(
+        data_vars=dict(  # noqa: C408
+            pot_la = (["id", "time"], pd.DataFrame.from_dict(pot_la, orient='index', columns=thermal_time)),
+            pot_h = (["id", "time"], pd.DataFrame.from_dict(pot_h, orient='index', columns=thermal_time)),
+            mtgs = (["id"], list(mtgs_string.values())) #, columns=thermal_time)) 
+        ),
+        coords=dict(  # noqa: C408
+            id = range(len(params_sets)),
+            time = thermal_time
+        )
+    )
+
+    ds = xr.merge([ds, ds_archi])
+
+    # Save the dataset to a NetCDF file
+    today_str = date.today().strftime("%Y-%m-%d")
+    os.makedirs(f"D:/PhD_Oriane/simulations_ArchiCrop/{today_str}", exist_ok=True)  # noqa: PTH103
+    ds.to_netcdf(f"D:/PhD_Oriane/simulations_ArchiCrop/{today_str}/morphospace_{seed}.nc")
+
+
+
 
 def plot_constained_vs_pot(dates, pot_la, pot_h, leaf_area_plant, height_canopy, sowing_density, stics_color="orange", archicrop_color="green"):
     
