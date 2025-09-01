@@ -1,11 +1,17 @@
 from __future__ import annotations
 
+import os
+from datetime import date
 from itertools import product
 
 import numpy as np
+import pandas as pd
+import xarray as xr
 from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
 from scipy.stats import qmc
+
+from openalea.mtg.io import write_mtg
 
 from .archicrop import ArchiCrop
 from .cereal_leaf import growing_leaf_area
@@ -38,8 +44,8 @@ def complete_archi_params(archi_params: dict, daily_dynamics: dict, lifespan: fl
     leaf_area_plant = [value["Plant leaf area"] for value in daily_dynamics.values()]
     height_canopy = [value["Plant height"] for value in daily_dynamics.values()]
 
-    archi_params["height"] = [1*max(height_canopy), 2*max(height_canopy)]
-    archi_params["leaf_area"] = [1*max(leaf_area_plant), 2*max(leaf_area_plant)]
+    archi_params["height"] = 2*max(height_canopy) # [1*max(height_canopy), 2*max(height_canopy)]
+    archi_params["leaf_area"] = 2*max(leaf_area_plant) # [1*max(leaf_area_plant), 2*max(leaf_area_plant)]
     archi_params["leaf_lifespan"] = lifespan
     return archi_params
 
@@ -354,7 +360,7 @@ def run_simulations(archi_params: dict,
              opt_filter_organ_duration: bool = True, opt_filter_pot_growth: bool = True, opt_filter_realized_growth: bool = True, 
              error_LA_pot: float = 1, error_height_pot: float = 1, error_LA_realized: float = 0.05, error_height_realized: float = 0.05,
              inter_row: float = 70,
-             light_inter: bool = True, zenith: bool = False, save_scenes: bool = False):
+             light_inter: bool = True, zenith: bool = False, direct : bool = False, save_scenes: bool = False):
 
     # Retrieve STICS management and senescence parameters
     sowing_density, daily_dynamics, lifespan, lifespan_early = get_stics_data(
@@ -391,6 +397,7 @@ def run_simulations(archi_params: dict,
             location=location, 
             mtgs=mtgs, 
             zenith=zenith, 
+            direct=direct,
             save_scenes=save_scenes, 
             inter_row=inter_row
         )
@@ -438,6 +445,11 @@ def plot_constained_vs_pot(dates, pot_la, pot_h, leaf_area_plant, height_canopy,
     # Adjust layout
     plt.tight_layout()
 
+    # Save figure
+    today_str = date.today().strftime("%Y-%m-%d")
+    os.makedirs(f"D:/PhD_Oriane/simulations_ArchiCrop/{today_str}", exist_ok=True)  # noqa: PTH103
+    plt.savefig(f"D:/PhD_Oriane/simulations_ArchiCrop/{today_str}/plot_constrained_vs_pot.png")
+
     # Show the plot
     plt.show()
 
@@ -483,11 +495,16 @@ def plot_constrainted_vs_realized(dates, LA_archicrop, height_archicrop, leaf_ar
     # Adjust layout
     plt.tight_layout()
 
+    # Save figure
+    today_str = date.today().strftime("%Y-%m-%d")
+    os.makedirs(f"D:/PhD_Oriane/simulations_ArchiCrop/{today_str}", exist_ok=True)  # noqa: PTH103
+    plt.savefig(f"D:/PhD_Oriane/simulations_ArchiCrop/{today_str}/plot_constrainted_vs_realized.png")
+
     # Show the plot
     plt.show()
 
 
-def plot_nrj_per_plant(dates, nrj_per_plant, par_incident, par_stics, sowing_density, stics_color="orange", archicrop_color="green"):
+def plot_faPAR(dates, nrj_per_plant, par_incident, par_stics, sowing_density, stics_color="orange", archicrop_color="green"):
     # curves_array = np.array(nrj_per_plant)
 
     # # Calculate the envelope: min and max values for each time point
@@ -497,7 +514,9 @@ def plot_nrj_per_plant(dates, nrj_per_plant, par_incident, par_stics, sowing_den
     # Plotting the envelope along with individual curves for context
     fig, ax = plt.subplots(figsize=(12, 6))
     for curve in nrj_per_plant.values():
-        ax.plot(dates, [nrj*sowing_density/row.rad for nrj,row in zip(curve, par_incident)], color=archicrop_color, alpha=0.4, label="ArchiCrop x Caribu")
+        # ax.plot(dates, [nrj*sowing_density/par for nrj,par in zip(curve, par_incident)]) #, color=archicrop_color, alpha=0.4, label="ArchiCrop x Caribu")
+        ax.plot(dates, [nrj/par for nrj,par in zip(curve, par_incident)]) #, color=archicrop_color, alpha=0.4, label="ArchiCrop x Caribu")
+        # ????????????????
 
     # ax.fill_between(time_points, min_values, max_values, color="skyblue", alpha=0.4)
     # ax.plot(time_points, min_values, color="blue", linestyle="--", label="Min 3D")
@@ -510,4 +529,92 @@ def plot_nrj_per_plant(dates, nrj_per_plant, par_incident, par_stics, sowing_den
     ax.set_ylabel("Fraction of absorbed PAR")
     ax.set_title("Fraction of absorbed PAR: 3D canopy vs. STICS")
     ax.legend()
+
+    # Save figure
+    today_str = date.today().strftime("%Y-%m-%d")
+    os.makedirs(f"D:/PhD_Oriane/simulations_ArchiCrop/{today_str}", exist_ok=True)  # noqa: PTH103
+    plt.savefig(f"D:/PhD_Oriane/simulations_ArchiCrop/{today_str}/plot_faPAR.png")
+
     plt.show()
+
+
+def plot_PAR(dates, nrj_per_plant, par_incident, par_stics, sowing_density, stics_color="orange", archicrop_color="green"):
+    # curves_array = np.array(nrj_per_plant)
+
+    # # Calculate the envelope: min and max values for each time point
+    # min_values = curves_array.min(axis=0)
+    # max_values = curves_array.max(axis=0)
+
+    # Plotting the envelope along with individual curves for context
+    fig, ax = plt.subplots(figsize=(12, 6))
+    for curve in nrj_per_plant.values():
+        # ax.plot(dates, [nrj*sowing_density for nrj in curve]) #, color=archicrop_color, alpha=0.4, label="ArchiCrop x Caribu")
+        ax.plot(dates, [nrj for nrj in curve]) #, color=archicrop_color, alpha=0.4, label="ArchiCrop x Caribu")
+        # ????????????????
+
+    # ax.fill_between(time_points, min_values, max_values, color="skyblue", alpha=0.4)
+    # ax.plot(time_points, min_values, color="blue", linestyle="--", label="Min 3D")
+    # ax.plot(time_points, max_values, color="red", linestyle="--", label="Max 3D")
+    ax.plot(dates, [abs*inc for abs,inc in zip(par_stics, par_incident)], color=stics_color, label="STICS")
+
+    # Labels and legend
+    ax.set_xticks(np.arange(0, len(dates)+1, (len(dates)+1)/8))
+    ax.set_xlabel("Dates") 
+    ax.set_ylabel("Absorbed PAR")
+    ax.set_title("Absorbed PAR: 3D canopy vs. STICS")
+    ax.legend()
+
+    # Save figure
+    today_str = date.today().strftime("%Y-%m-%d")
+    os.makedirs(f"D:/PhD_Oriane/simulations_ArchiCrop/{today_str}", exist_ok=True)  # noqa: PTH103
+    plt.savefig(f"D:/PhD_Oriane/simulations_ArchiCrop/{today_str}/plot_PAR.png")
+
+    plt.show()
+
+
+def write_netcdf(daily_dynamics, params_sets, pot_la, pot_h, realized_la, realized_h, nrj_per_plant, mtgs, filters, sowing_density, seed):
+    # Prepare the data for xarray Dataset
+    daily_dyn = {}
+    for key in daily_dynamics[1]:
+        daily_dyn[key] = [v[key] for v in daily_dynamics.values()]
+    dates = pd.to_datetime(daily_dyn['Date'])
+
+
+    df_archi = pd.DataFrame.from_dict(params_sets, orient='index')
+    ds_archi = df_archi.to_xarray().rename({'index':'id'})
+
+    columns_filters = [f"filter_{i}" for i in [1,2,3]]
+    df_filters = pd.DataFrame.from_dict(filters, orient='index', columns=columns_filters)
+    ds_filters = df_filters.to_xarray().rename({'index':'id'})
+
+    mtgs_string = {k: [write_mtg(g) for g in mtg] for k, mtg in mtgs.items()}
+
+    # Create the xarray Dataset
+    ds = xr.Dataset(
+        data_vars=dict(  # noqa: C408
+            thermal_time = (["time"], daily_dyn["Thermal time"]),
+            lai_stics = (["time"], daily_dyn["Plant leaf area"]),
+            sen_lai_stics = (["time"], daily_dyn["Plant senescent leaf area"]),
+            height_stics = (["time"], daily_dyn["Plant height"]),
+            inc_par = (["time"], daily_dyn["Incident PAR"]),
+            abs_par_stics = (["time"], daily_dyn["Absorbed PAR"]),
+            sowing_density = sowing_density,
+            realized_la = (["id", "time"], pd.DataFrame.from_dict(realized_la, orient='index', columns=dates)),
+            realized_h = (["id", "time"], pd.DataFrame.from_dict(realized_h, orient='index', columns=dates)),
+            pot_la = (["id", "time"], pd.DataFrame.from_dict(pot_la, orient='index', columns=dates)),
+            pot_h = (["id", "time"], pd.DataFrame.from_dict(pot_h, orient='index', columns=dates)),
+            nrj_per_plant = (["id", "time"], pd.DataFrame.from_dict(nrj_per_plant, orient='index', columns=dates)),
+            mtgs = (["id", "time"], pd.DataFrame.from_dict(mtgs_string, orient='index', columns=dates)) 
+        ),
+        coords=dict(  # noqa: C408
+            id = range(len(realized_la)),
+            time = dates
+        )
+    )
+
+    ds = xr.merge([ds, ds_archi, ds_filters])
+
+    # Save the dataset to a NetCDF file
+    today_str = date.today().strftime("%Y-%m-%d")
+    os.makedirs(f"D:/PhD_Oriane/simulations_ArchiCrop/{today_str}", exist_ok=True)  # noqa: PTH103
+    ds.to_netcdf(f"D:/PhD_Oriane/simulations_ArchiCrop/{today_str}/results_{seed}.nc")

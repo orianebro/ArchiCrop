@@ -107,13 +107,13 @@ def compute_light_inter(scene, sky, pattern):
 # PlantGL(scene, group_by_color=False, property=values)
 
 
-location = {  
-    'longitude': 3.87,
-    'latitude': 45,
-    'altitude': 56,
-    'timezone': 'Europe/Paris'}
+# location = {  
+#     'longitude': 3.87,
+#     'latitude': 45,
+#     'altitude': 56,
+#     'timezone': 'Europe/Paris'}
 
-def light_interception(weather_file, daily_dynamics, sowing_density, location, mtgs, zenith=False, save_scenes=False, inter_row=70):
+def light_interception(weather_file, daily_dynamics, sowing_density, location, mtgs, zenith=False, direct=False, save_scenes=False, inter_row=70):
     '''Compute light interception on plants with fitting parameters
     Args:
         weather_file: path to the weather file
@@ -130,7 +130,7 @@ def light_interception(weather_file, daily_dynamics, sowing_density, location, m
     df_weather = stics_weather_3d(filename=weather_file, daily_dynamics=daily_dynamics)
 
     # Sowing pattern
-    domain = compute_domain(sowing_density, inter_row = inter_row) # cm
+    domain = compute_domain(sowing_density = sowing_density, inter_row = inter_row) # cm
 
     # Define incident PAR
     if zenith:
@@ -139,19 +139,15 @@ def light_interception(weather_file, daily_dynamics, sowing_density, location, m
         par_incident = list(df_weather.itertuples())
 
     # Compute light interception for each plant at each time step
-    # par_caribu = []
-    # nrj_per_leaf = []
     nrj_per_plant = {}
     # For each plant
     for k, mtgs_plant in mtgs.items():
         if mtgs_plant[0] is None:
             nrj_per_plant[k] = [None] * len(par_incident)
         else:
-            # aggs_tmp = []
-            nrj_tmp = []
+            nrj_per_leaf = []
             # For each time step
             for i,(mtg, par) in enumerate(zip(mtgs_plant, par_incident)):
-                # if i%1==0:
                 # Compute light sources
                 if zenith:
                     lights = [(par,(0,0,-1))]
@@ -160,19 +156,17 @@ def light_interception(weather_file, daily_dynamics, sowing_density, location, m
                     sun, sky = sky_sources(sky_type='clear_sky', sky_irradiance=irr, scale='global')
                     lights = caribu_light_sources(sun, sky)
                 # Build and illuminate scene
-                scene, labels = build_scene(mtg, (0,0,0), senescence=False)
-                cs, raw, agg = illuminate(scene, light=lights, labels=labels, domain=domain, direct=False) # --> cf PARaggregators in caribu scene node
+                scene, labels = build_scene(mtg, senescence=False)
+                cs, raw, agg = illuminate(scene=scene, light=lights, labels=labels, domain=domain, direct=direct) # --> cf PARaggregators in caribu scene node
                 # Compute energy per leaf
                 df_mod = mean_leaf_irradiance(agg)  # noqa: F841
-                nrj_tmp.append(agg.loc[agg['label'] == 'Leaf']['Energy'].values)
-                # aggs_tmp.append(agg)
+                nrj_per_leaf.append(agg.loc[agg['label'] == 'Leaf']['Energy'].values)
                 # Save scene if required
                 if save_scenes:
                     scene_tmp = cs.plot(raw, display=False)[0]
                     scene_tmp.save(f'scene_{i}.png') # not as images !!!
 
-            nrj_per_plant[k] = [sum(growing_plant) for growing_plant in nrj_tmp]
-            # par_caribu.append(aggs_tmp)
+            nrj_per_plant[k] = [sum(nrj) for nrj in nrj_per_leaf]
 
     '''
     # Calculate energy per leaf and irradiance per plant

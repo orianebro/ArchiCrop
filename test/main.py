@@ -9,7 +9,7 @@ import pandas as pd
 import xarray as xr
 
 sys.path.append('../data')
-from archi_dict import archi_maize as archi
+from archi_dict import archi_sorghum_angles as archi
 
 from openalea.archicrop.simulation import run_simulations
 from openalea.mtg.io import write_mtg

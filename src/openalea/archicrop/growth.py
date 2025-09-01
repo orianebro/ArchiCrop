@@ -50,7 +50,7 @@ def get_growing_and_senescing_organs_potential_visible(g, time, prev_time):
 
     for vid, ml in g.property("mature_length").items(): 
         n = g.node(vid)
-        if n.label.startswith("Stem") and (n.start_tt <= time < n.end_tt or prev_time < n.end_tt < time):
+        if n.label.startswith("Stem") and (n.start_tt <= time <= n.end_tt or prev_time < n.end_tt < time):
             growing_internodes[vid] = {"potential": ml, "visible": n.visible_length}
 
     return growing_internodes, growing_leaves, senescing_leaves
@@ -91,7 +91,7 @@ def distribute_to_potential(growing_organs, increment_to_distribute, distributio
 
     increment_for_each_organ = dict.fromkeys(growing_organs, 0.0)
 
-    while len(growing_organs) > 0 and increment_to_distribute > 1e-4: 
+    while len(growing_organs) > 0 and increment_to_distribute > 1e-5: 
         incr_temp = distribution_function(increment_to_distribute, growing_organs)
         increment_to_distribute = 0.0
 
@@ -402,7 +402,7 @@ class CerealsVisitorGrowth(CerealsVisitor):
             # if n.length > 0:
             # print(v)
             # nb_of_growing_internodes, nb_of_growing_leaves = growing_organs(g, time)
-            growth = compute_organ_growth(v, n, time, growth)
+            growth = compute_organ_growth(v, n, time, growth, rate=True)
             mesh = compute_growing_organ_geometry(n, self.classic)
             if mesh:  # To DO : reset to None if calculated so ?
                 n.geometry = turtle.transform(mesh)

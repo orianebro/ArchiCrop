@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 from oawidgets.plantgl import *  # noqa: F403
 
 from openalea.plantgl.all import Color3, Material
@@ -19,7 +21,7 @@ class ArchiCrop:
 
     def __init__(self, 
                  height,
-                 nb_phy,
+                #  nb_phy,
                  leaf_area,
                  nb_short_phy=4,
                  short_phy_height=3,
@@ -40,6 +42,8 @@ class ArchiCrop:
                  phyllotactic_deviation=0,
                  phyllochron=40,
                  plastochron=30,
+                 stem_duration=1.6,
+                 leaf_duration=1.6,
                  leaf_lifespan=300,
                  nb_tillers=0,
                  tiller_delay=1,
@@ -92,12 +96,12 @@ class ArchiCrop:
                 if value["Phenology"] == 'juvenile':
                     next_key = key + 1
                     if next_key in daily_dynamics and daily_dynamics[next_key]["Phenology"] == 'exponential':
-                        end_juv = value["Thermal time"]
+                        end_juv = value["Thermal time"] + daily_dynamics[1]["Thermal time"]
 
                 elif value["Phenology"] == 'exponential':
                     next_key = key + 1
                     if next_key in daily_dynamics and daily_dynamics[next_key]["Phenology"] == 'repro':
-                        end_veg = value["Thermal time"]
+                        end_veg = value["Thermal time"] + daily_dynamics[1]["Thermal time"]
                         break
                 
                 else:
@@ -109,7 +113,7 @@ class ArchiCrop:
             end_veg = 0
             
 
-        self.nb_phy = nb_phy
+        self.nb_phy = math.ceil((end_veg-(leaf_duration*plastochron))/plastochron) # nb_phy
         self.height = height
         self.leaf_area = leaf_area
         self.nb_short_phy = nb_short_phy
@@ -132,8 +136,8 @@ class ArchiCrop:
         self.phyllotactic_deviation = phyllotactic_deviation
         self.phyllochron = phyllochron
         self.plastochron = plastochron
-        self.leaf_duration = end_veg/phyllochron-nb_phy 
-        self.stem_duration = end_veg/phyllochron-nb_phy
+        self.leaf_duration = leaf_duration # end_veg/phyllochron-nb_phy 
+        self.stem_duration = stem_duration # end_veg/plastochron-nb_phy
         self.leaf_lifespan = leaf_lifespan
         self.nb_tillers = nb_tillers
         self.tiller_delay = tiller_delay

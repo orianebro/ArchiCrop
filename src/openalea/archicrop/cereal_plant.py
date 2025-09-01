@@ -25,7 +25,8 @@ def cereal_stem_properties(nb_phy, nb_short_phy, short_phy_height, height, stem_
     pseudostem_height = nb_short_phy * short_phy_height
 
     pseudostem = np.array([short_phy_height*i for i in range(1, nb_short_phy+1)]) if nb_short_phy > 0 else np.array([])
-    stem = np.array(geometric_dist(height, nb_phy-nb_short_phy, q=stem_q, u0=pseudostem_height))
+    stem = np.array(geometric_dist(height-pseudostem_height, nb_phy-nb_short_phy, q=stem_q, u0=short_phy_height))
+    stem = np.array([h+pseudostem_height for h in stem])
     insertion_heights = np.concatenate((pseudostem, stem), axis=0) if nb_short_phy > 0 else stem
 
     stem_diameters = np.linspace(diam_base, diam_top, nb_phy).tolist()
