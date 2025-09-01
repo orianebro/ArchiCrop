@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import os
 from datetime import date
 from itertools import product
@@ -618,3 +619,34 @@ def write_netcdf(daily_dynamics, params_sets, pot_la, pot_h, realized_la, realiz
     today_str = date.today().strftime("%Y-%m-%d")
     os.makedirs(f"D:/PhD_Oriane/simulations_ArchiCrop/{today_str}", exist_ok=True)  # noqa: PTH103
     ds.to_netcdf(f"D:/PhD_Oriane/simulations_ArchiCrop/{today_str}/results_{seed}.nc")
+
+
+def compute_extinction_coef(nrj_per_plant, par_incident, leaf_area_plant, sowing_density):
+    extinP_list = []
+    for nrj_time_series in nrj_per_plant.values():
+        extinP_per_sim = []
+        for i,(nrj,par) in enumerate(zip(nrj_time_series, par_incident)):
+            ratio_par_abs = nrj/par
+            if ratio_par_abs <= 1:
+                lai = leaf_area_plant[i]*sowing_density/10000 
+                extinP = -1/lai * math.log(1-ratio_par_abs)
+            else:
+                extinP = 1
+            extinP_per_sim.append(extinP)
+        extinP_list.append(extinP_per_sim)
+    return extinP_list
+
+def plot_extinction_coef(extinP_stics, extinP_list, dates):
+    fig, ax = plt.subplots(figsize=(12, 6))
+    for curve in extinP_list:
+        ax.plot(dates, curve)
+    ax.plot(dates, [extinP_stics]*len(dates), color="black", label="STICS")
+    ax.set_xticks(np.arange(0, len(dates)+1, (len(dates)+1)/8))
+    ax.set_xlabel("Dates") 
+    ax.set_ylabel("Extinction coefficient")
+    ax.legend()
+    # Save figure
+    today_str = date.today().strftime("%Y-%m-%d")
+    os.makedirs(f"D:/PhD_Oriane/simulations_ArchiCrop/{today_str}", exist_ok=True)  # noqa: PTH103
+    plt.savefig(f"D:/PhD_Oriane/simulations_ArchiCrop/{today_str}/plot_extin_coef.png")
+    plt.show()
