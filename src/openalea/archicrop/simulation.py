@@ -675,7 +675,7 @@ def plot_PAR(dates, nrj_per_plant, par_incident, par_stics, sowing_density, stic
     plt.show()
 
 
-def write_netcdf(daily_dynamics, params_sets, pot_la, pot_h, realized_la, realized_h, nrj_per_plant, mtgs, filters, sowing_density, seed):
+def write_netcdf(filename, daily_dynamics, params_sets, pot_la, pot_h, realized_la, realized_h, nrj_per_plant, mtgs, filters, sowing_density, seed):
     # Prepare the data for xarray Dataset
     daily_dyn = {}
     for key in daily_dynamics[1]:
@@ -690,7 +690,7 @@ def write_netcdf(daily_dynamics, params_sets, pot_la, pot_h, realized_la, realiz
     df_filters = pd.DataFrame.from_dict(filters, orient='index', columns=columns_filters)
     ds_filters = df_filters.to_xarray().rename({'index':'id'})
 
-    mtgs_string = {k: [write_mtg(g) for g in mtg] for k, mtg in mtgs.items()}
+    mtgs_string = {k: [write_mtg(g) if g is not None else None for g in mtg] for k, mtg in mtgs.items()}
 
     # Create the xarray Dataset
     ds = xr.Dataset(
@@ -720,7 +720,7 @@ def write_netcdf(daily_dynamics, params_sets, pot_la, pot_h, realized_la, realiz
     # Save the dataset to a NetCDF file
     today_str = date.today().strftime("%Y-%m-%d")
     os.makedirs(f"D:/PhD_Oriane/simulations_ArchiCrop/{today_str}", exist_ok=True)  # noqa: PTH103
-    ds.to_netcdf(f"D:/PhD_Oriane/simulations_ArchiCrop/{today_str}/results_{seed}.nc")
+    ds.to_netcdf(f"D:/PhD_Oriane/simulations_ArchiCrop/{today_str}/{filename}_{seed}.nc")
 
 
 def compute_extinction_coef(nrj_per_plant, par_incident, leaf_area_plant, sowing_density):

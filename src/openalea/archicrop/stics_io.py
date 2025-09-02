@@ -68,7 +68,8 @@ def read_sti_file(file_sti, density):
         # Read the rest of the lines (data rows)
         for line in file:
             values = line.strip().split(";")
-            values = values[:4] + values[5:]
+            if 'pla' in header:
+                values = values[:4] + values[5:]
             # Convert the values to floats
             row = {col.strip(): float(value) for col, value in zip(stripped_header, values)}
             if row["hauteur"] != 0.0:

@@ -112,8 +112,9 @@ class ArchiCrop:
             end_juv = 0
             end_veg = 1000
             
+        thermal_time = [value["Thermal time"] for value in daily_dynamics.values()]
 
-        self.nb_phy = math.ceil((end_veg-(leaf_duration*plastochron))/plastochron) # nb_phy
+        self.nb_phy = math.ceil((end_veg-thermal_time[0]-(leaf_duration*plastochron))/plastochron) # nb_phy
         self.height = height
         self.leaf_area = leaf_area
         self.nb_short_phy = nb_short_phy
