@@ -41,7 +41,7 @@ class ArchiCrop:
                  phyllotactic_angle=137.5,
                  phyllotactic_deviation=0,
                  phyllochron=40,
-                 plastochron=30,
+                #  plastochron=30,
                  stem_duration=1.6,
                  leaf_duration=1.6,
                  leaf_lifespan=300,
@@ -114,7 +114,7 @@ class ArchiCrop:
             
         thermal_time = [value["Thermal time"] for value in daily_dynamics.values()]
 
-        self.nb_phy = math.ceil((end_veg-thermal_time[0]-(leaf_duration*plastochron))/plastochron) # nb_phy
+        self.nb_phy = math.ceil((end_veg-thermal_time[0]-(leaf_duration*phyllochron))/phyllochron) # nb_phy
         self.height = height
         self.leaf_area = leaf_area
         self.nb_short_phy = nb_short_phy
@@ -136,7 +136,7 @@ class ArchiCrop:
         self.phyllotactic_angle = phyllotactic_angle
         self.phyllotactic_deviation = phyllotactic_deviation
         self.phyllochron = phyllochron
-        self.plastochron = plastochron
+        self.plastochron = phyllochron
         self.leaf_duration = leaf_duration # end_veg/phyllochron-nb_phy 
         self.stem_duration = stem_duration # end_veg/plastochron-nb_phy
         self.leaf_lifespan = leaf_lifespan

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import xml.etree.ElementTree as ET
 
+import numpy as np
 import pandas as pd
 
 from .sky_sources import meteo_day
@@ -93,12 +94,16 @@ def read_sti_file(file_sti, density):
 
     # Thermal time
     thermal_time = [float(i) for i in data_dict["somupvtsem"]]
+    thermal_time_incr = [thermal_time[0]] + [thermal_time[i+1]-thermal_time[i] for i in range(len(thermal_time[1:]))]
+    # print(thermal_time)
+    # print(np.diff(thermal_time, prepend=0))
     # thermal_time = list(np.cumsum([float(i) for i in data_dict["tempeff"]]))
     # thermal_time = list(np.cumsum([float(i) for i in data_dict["tmoy(n)"][:end]]))
 
     # Green LAI
     plant_leaf_area = [10000*float(i)/density for i in data_dict["laimax"]] # from m2/m2 to cm2/plant
     leaf_area_incr = [plant_leaf_area[0]] + [plant_leaf_area[i+1]-plant_leaf_area[i] for i in range(len(plant_leaf_area[1:]))]
+    # print(leaf_area_incr)
 
     # Senescent LAI
     sen_leaf_area = [10000*float(i)/density for i in data_dict["laisen(n)"]] # from m2/m2 to cm2/plant
@@ -121,6 +126,7 @@ def read_sti_file(file_sti, density):
     return {
         i+1: {"Date": date_list[i],
             "Thermal time": round(thermal_time[i],4),
+            "Thermal time increment": round(thermal_time_incr[i],4),
             "Phenology": 'germination' if i+1 < emergence else 'juvenile' if emergence <= i+1 < end_juv else 'exponential' if end_juv <= i+1 < max_lai else 'repro',
             "Plant leaf area": round(plant_leaf_area[i],4), 
             "Leaf area increment": round(leaf_area_incr[i],4), 

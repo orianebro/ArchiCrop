@@ -482,7 +482,7 @@
         <formalismev nom="leaves">
           <param format="real" max="0.0" min="-2.0" nom="adens">0</param>
           <param format="real" max="200.0" min="1.0" nom="bdens">6</param>
-          <param format="real" max="2.0" min="0.1" nom="hautbase">0.5</param>
+          <param format="real" max="2.0" min="0.1" nom="hautbase">0</param>
           <param format="real" max="5.0" min="0.1" nom="hautmax">2</param>
           <param format="real" max="2.0" min="0.2" nom="khaut">0.7</param>
           <param format="real" max="500.0" min="10.0" nom="durvieF">420</param>
@@ -574,7 +574,7 @@
         <formalismev nom="leaves">
           <param format="real" max="0.0" min="-2.0" nom="adens">-0.5</param>
           <param format="real" max="200.0" min="1.0" nom="bdens">6</param>
-          <param format="real" max="2.0" min="0.1" nom="hautbase">0.5</param>
+          <param format="real" max="2.0" min="0.1" nom="hautbase">0</param>
           <param format="real" max="5.0" min="0.1" nom="hautmax">2</param>
           <param format="real" max="2.0" min="0.2" nom="khaut">0.7</param>
           <param format="real" max="500.0" min="10.0" nom="durvieF">280</param>

@@ -50,13 +50,13 @@ archi_sorghum = {
     "short_phy_height": [2,5],
 
     # Stem
-    "stem_q": [0.95,1.12], # parameter for ligule height distribution along axis : [1.1] (Kaitaniemi et al., 1999) 
+    "stem_q": [0.9,1.1], # parameter for ligule height distribution along axis : [1.1] (Kaitaniemi et al., 1999) 
     "diam_base": 2.2, # stem base diameter : [2.2] (Ndiaye et al., 2021)
     "diam_top": 1.2, # stem top diameter: [1.2] (Ndiaye et al., 2021)
 
     # Leaf area distribution along the stem
-    "rmax": 0.8, # parameter for leaf area distribution along axis : [0.6,0.8] (Kaitaniemi et al., 1999; Welcker et al., )
-    "skew": 0.01, # parameter for leaf area distribution along axis : [0.0005,0.1] (Kaitaniemi et al., 1999; Welcker et al., )
+    "rmax": [0.5,0.9], # parameter for leaf area distribution along axis : [0.6,0.8] (Kaitaniemi et al., 1999; Welcker et al., )
+    "skew": [0.0001,0.001], # parameter for leaf area distribution along axis : [0.0005,0.1] (Kaitaniemi et al., 1999; Welcker et al., )
     
     # blade area 
     "wl": [0.1,0.12], # leaf blade width-to-length ratio : [0.1, 0.12] ()
@@ -73,16 +73,16 @@ archi_sorghum = {
     "phyllotactic_deviation": 10, # half-deviation to phyllotactic angle : [0,90] (Davis et al., 2024)
 
     # Development
-    "phyllochron": [34,46], # phyllochron, i.e. stem element appearance rate : [40,65 then x1.6-2.5] (Clerget, 2008)
-    "plastochron": [40,65], # plastochron, i.e. leaf blade appearance rate : [34,46 then 80-93] (Rami Kumar et al., 2009)
-    "stem_duration": 1.6,
-    "leaf_duration": 1.6,
+    "phyllochron": [20,70], # phyllochron, i.e. stem element appearance rate : [40,65 then x1.6-2.5] (Clerget, 2008)
+    # "plastochron": [40,65], # plastochron, i.e. leaf blade appearance rate : [34,46 then 80-93] (Rami Kumar et al., 2009)
+    "stem_duration": [1.6,1.8],
+    "leaf_duration": [1.6,1.8],
 
     # Tillering
-    "nb_tillers": [0,6], # number of tillers : [0,6] (Lafarge et al., 2002)
+    "nb_tillers": 0, # number of tillers : [0,6] (Lafarge et al., 2002)
     "tiller_angle": 20,
     "tiller_delay": 1, # delay, as factor of phyllochron, between the appearance of a phytomer and the appearance of its tiller : [] ()
-    "reduction_factor": [0.8,1] # reduction factor between tillers of consecutive order : [] ()
+    "reduction_factor": 1 # reduction factor between tillers of consecutive order : [0.8,1] ()
 }
 
 
