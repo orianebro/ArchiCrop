@@ -165,5 +165,5 @@ def stem_as_dict(stem_prop, leaf_prop, rank):
             "grow": False,
             "potential_growth_rate": 0.0,
             "age": 0.0,
-            "stem_lengths": []
+            "stem_lengths": [0.0]
         }

@@ -339,6 +339,7 @@ def leaf_as_dict(stem_prop, leaf_prop, rank, wl):
             "dead": False,
             "age": 0.0,
             "inclination": 0.0,
+            "leaf_areas": [0.0],
             "leaf_lengths": [0.0],
             "senescent_lengths": [0.0]
         }
