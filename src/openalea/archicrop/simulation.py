@@ -46,8 +46,8 @@ def complete_archi_params(archi_params: dict, daily_dynamics: dict, lifespan: fl
         leaf_area_plant = [value["Plant leaf area"] for value in daily_dynamics.values()]
         height_canopy = [value["Plant height"] for value in daily_dynamics.values()]
 
-        archi_params["height"] = 2*max(height_canopy) # [1*max(height_canopy), 2*max(height_canopy)]
-        archi_params["leaf_area"] = 2*max(leaf_area_plant) # [1*max(leaf_area_plant), 2*max(leaf_area_plant)]
+        archi_params["height"] = 1.5*max(height_canopy) # [1*max(height_canopy), 2*max(height_canopy)]
+        archi_params["leaf_area"] = 1.5*max(leaf_area_plant) # [1*max(leaf_area_plant), 2*max(leaf_area_plant)]
     else: # cf literature
         archi_params["height"] = [50,400] # for sorghum !!
         archi_params["leaf_area"] = [1000,20000] # for sorghum !!!!!!!
@@ -564,10 +564,10 @@ def plot_constrainted_vs_realized(dates, LA_archicrop, height_archicrop, leaf_ar
 
     fig, axes = plt.subplots(2, 1, figsize=(12, 6), sharex=True)  # 1 row, 2 columns
 
+    axes[0].plot(dates, [(la-sen)*sowing_density/cf_cm**2 for la, sen in zip(leaf_area_plant, sen_leaf_area_plant)], color=stics_color, linewidth=5)
     for result in LA_archicrop.values():
         if result[0] is not None:
             axes[0].plot(dates, [r*sowing_density/cf_cm**2 for r in result])  #, color=archicrop_color, alpha=0.6)
-    axes[0].plot(dates, [(la-sen)*sowing_density/cf_cm**2 for la, sen in zip(leaf_area_plant, sen_leaf_area_plant)], color=stics_color, alpha=0.9)
     axes[0].set_ylabel("LAI (m²/m²)", fontsize=16, fontname="Times New Roman")
     axes[0].set_xticks(np.arange(0, len(dates)+1, (len(dates)+1)/8))
     # axes[0].set_title("Leaf Area: 3D canopy vs. STICS")
@@ -580,10 +580,10 @@ def plot_constrainted_vs_realized(dates, LA_archicrop, height_archicrop, leaf_ar
     axes[0].legend(handles=legend_elements_lai, loc=2, prop={'family': 'Times New Roman', 'size': 12})
 
 
+    axes[1].plot(dates, [h/cf_cm for h in height_canopy], color=stics_color, linewidth=5)
     for result in height_archicrop.values():
         if result[0] is not None:
             axes[1].plot(dates, [r/cf_cm for r in result]) #, color=archicrop_color, alpha=0.6)
-    axes[1].plot(dates, [h/cf_cm for h in height_canopy], color=stics_color, alpha=0.9)
     axes[1].set_xlabel("Date", fontsize=16, fontname="Times New Roman")
     axes[1].set_ylabel("Crop height (m)", fontsize=16, fontname="Times New Roman")
     axes[0].set_xticks(np.arange(0, len(dates)+1, (len(dates)+1)/8))
