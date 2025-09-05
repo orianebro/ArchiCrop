@@ -135,7 +135,7 @@ class ArchiCrop:
         self.skew = skew
         self.phyllotactic_angle = phyllotactic_angle
         self.phyllotactic_deviation = phyllotactic_deviation
-        self.phyllochron = phyllochron
+        self.phyllochron = phyllochron # (end_veg-thermal_time[0])/(leaf_duration+nb_phy)
         self.plastochron = phyllochron
         self.leaf_duration = leaf_duration # end_veg/phyllochron-nb_phy 
         self.stem_duration = stem_duration # end_veg/plastochron-nb_phy
