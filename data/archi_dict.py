@@ -11,6 +11,7 @@ archi_maize = {
     "diam_top": 1.2, # stem top diameter cm
 
     # Leaf area distribution along the stem  
+    "leaf_area": [1000,20000],
     "rmax": [0.5,0.9], # relative position of largest leaf on the stem
     "skew": [0.0001,0.01], # skewness for leaf area distribution along axis 
 
@@ -55,6 +56,7 @@ archi_sorghum = {
     "diam_top": 1.2, # stem top diameter: [1.2] (Ndiaye et al., 2021)
 
     # Leaf area distribution along the stem
+    "leaf_area": [1000,20000],
     "rmax": [0.5,0.9], # parameter for leaf area distribution along axis : [0.6,0.8] (Kaitaniemi et al., 1999; Welcker et al., )
     "skew": [0.0001,0.001], # parameter for leaf area distribution along axis : [0.0005,0.1] (Kaitaniemi et al., 1999; Welcker et al., )
     
@@ -88,15 +90,17 @@ archi_sorghum = {
 
 archi_sorghum_angles = {
     # "nb_phy": 12, # number of phytomers on the main stem : [10,40] (Ndiaye et al., 2021; Lafarge and Tardieu, 2002; Clerget, 2008; Ganeme et al., 2022)
-    "nb_short_phy": 4,
+    "nb_short_phy": 5,
     "short_phy_height": 3,
 
     # Stem
+    "height": [50,400],
     "stem_q": 0.9, # parameter for ligule height distribution along axis : [1.1] (Kaitaniemi et al., 1999) 
     "diam_base": 2.2, # stem base diameter : [2.2] (Ndiaye et al., 2021)
     "diam_top": 1.2, # stem top diameter: [1.2] (Ndiaye et al., 2021)
 
     # Leaf area distribution along the stem
+    "leaf_area": [1000,20000],
     "rmax": 0.67, # parameter for leaf area distribution along axis : [0.6,0.8] (Kaitaniemi et al., 1999; Welcker et al., )
     "skew": 0.0001, # parameter for leaf area distribution along axis : [0.0005,0.1] (Kaitaniemi et al., 1999; Welcker et al., )
     

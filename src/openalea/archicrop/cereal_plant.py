@@ -327,7 +327,7 @@ def cereal(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration,
     ranks = range(1, nb_phy + 1)
     ntop = max(ranks) - np.array(ranks) + 1
     # Dicts instead of a dataframe
-    stem_prop = cereal_stem_properties(nb_phy=nb_phy, nb_short_phy=nb_short_phy, short_phy_height=short_phy_height, height=height, 
+    stem_prop = cereal_stem_properties(nb_phy=nb_phy, nb_short_phy=nb_short_phy, short_phy_height=0.01, height=1, 
                                         stem_q=stem_q, diam_top=diam_top, diam_base=diam_base, ntop=ntop)
     leaf_prop = cereal_leaf_properties(nb_phy=nb_phy, leaf_area=1, rmax=rmax, skew=skew, insertion_angle=insertion_angle, 
                                 scurv=scurv, curvature=curvature, klig=klig, swmax=swmax, f1=f1, f2=f2, ntop=ntop, wl=wl, 
@@ -361,7 +361,7 @@ def cereal(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration,
         else:
             vid_stem = g.add_child(vid_stem, edge_type="<", **stem)
         tt_stem = add_development(g=g, vid=vid_stem, tt=tt_stem, dtt=dtt_stem, rate=phyllochron)
-        compute_potential_growth_rate(g=g, vid=vid_stem)
+        # compute_potential_growth_rate(g=g, vid=vid_stem)
         tiller_points.append((vid_stem, tt_stem + tiller_delay))
 
         leaf = leaf_as_dict(stem_prop=stem_prop, leaf_prop=leaf_prop, rank=rank, wl=wl)
@@ -380,7 +380,7 @@ def cereal(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration,
         new_tillers = add_tiller(g=g, vid=vid, start_time=time, phyllochron=phyllochron, plastochron=plastochron, tiller_delay=tiller_delay, 
                                 stem_duration=stem_duration, leaf_duration=leaf_duration, leaf_lifespan=leaf_lifespan, end_juv=end_juv, 
                                 reduction_factor=reduction_factor, 
-                                height=height, leaf_area=1, wl=wl, diam_base=diam_base, diam_top=diam_top,
+                                height=1, leaf_area=1, wl=wl, diam_base=diam_base, diam_top=diam_top,
                                 insertion_angle=insertion_angle, scurv=scurv, curvature=curvature,
                                 klig=klig, swmax=swmax, f1=f1, f2=f2,
                                 stem_q=stem_q, rmax=rmax, skew=skew, 
@@ -389,7 +389,7 @@ def cereal(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration,
                                 plant_orientation=plant_orientation,
                                 spiral=True,
                                 nb_short_phy=nb_short_phy,
-                                short_phy_height=short_phy_height) 
+                                short_phy_height=0.01) 
 
         tiller_points.extend(new_tillers)
         # Here we consider that the list is sorted by the time
@@ -416,6 +416,15 @@ def cereal(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration,
         for axis in axes
     }
     nb_leaves_per_axis = {axis: len(leaves) for axis, leaves in leaves_per_axis.items()}
+
+    stem_elements_per_axis = {
+        axis: 
+        [
+            vid for vid in g.components(axis)
+            if g.node(vid).label.startswith("Stem")
+        ]
+        for axis in axes
+    }
     # total_nb_leaves = sum(nb_leaves_per_axis.values())
 
     # Compute reduction factor for each axis (main axis: 1, tillers: reduction_factor^order)
@@ -430,9 +439,11 @@ def cereal(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration,
     # Allocate total leaf area to each axis proportionally
     for axis in axes:
         leaves = leaves_per_axis[axis]
+        stem = stem_elements_per_axis[axis]
         factor = axis_factors[axis]
         # Area per leaf for this axis
         area_per_leaf = leaf_area * factor / total_factor if nb_leaves_per_axis[axis] > 0 else 0
+        height_per_axis = height * factor / total_factor if nb_leaves_per_axis[axis] > 0 else 0
         for vid in leaves:
             scaled_leaf_area = g.node(vid).leaf_area * area_per_leaf
             g.node(vid).leaf_area = scaled_leaf_area  
@@ -442,6 +453,11 @@ def cereal(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration,
             g.node(vid).visible_length = np.sqrt(scaled_leaf_area / 0.75 / wl) 
             g.node(vid).shape_max_width = g.node(vid).length * wl
             compute_potential_growth_rate(g=g, vid=vid)
+        for vid in stem:
+            g.node(vid).mature_length *= height_per_axis
+            g.node(vid).length *= height_per_axis
+            g.node(vid).visible_length *= height_per_axis
+            compute_potential_growth_rate(g=g, vid=vid_stem)
 
 
     g = fat_mtg(g)

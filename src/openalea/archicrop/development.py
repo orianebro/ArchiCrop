@@ -13,7 +13,7 @@ def add_development(g, vid, tt, dtt, rate):
 
     :return: tt
     """
-    g.node(vid).start_tt = tt
+    g.node(vid).start_tt = tt # + tt[0] !!!!!!!!!!
     g.node(vid).end_tt = tt + dtt
     tt += rate
     return tt

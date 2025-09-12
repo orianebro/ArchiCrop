@@ -7,14 +7,17 @@ from itertools import product
 
 import numpy as np
 import pandas as pd
+import sympy as sp
 import xarray as xr
 from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
+from scipy.interpolate import splev, splrep
 from scipy.stats import qmc
 
 from openalea.mtg.io import write_mtg
 
 from .archicrop import ArchiCrop
+from .cereal_axis import bell_shaped_dist, geometric_dist
 from .cereal_leaf import growing_leaf_area
 from .light_it import light_interception
 from .stics_io import get_stics_data
@@ -38,7 +41,7 @@ def dict_ranges_to_all_possible_combinations(d):
     return list(product(*values))
 
 
-def complete_archi_params(archi_params: dict, daily_dynamics: dict, lifespan: float, lifespan_early: float) -> dict:
+def constrain_archi_params(archi_params: dict, daily_dynamics: dict, lifespan: float, lifespan_early: float) -> dict:
     """
     Complete the architecture parameters with values from daily dynamics.
     """
@@ -46,21 +49,120 @@ def complete_archi_params(archi_params: dict, daily_dynamics: dict, lifespan: fl
         leaf_area_plant = [value["Plant leaf area"] for value in daily_dynamics.values()]
         height_canopy = [value["Plant height"] for value in daily_dynamics.values()]
 
-        archi_params["height"] = 1.5*max(height_canopy) # [1*max(height_canopy), 2*max(height_canopy)]
-        archi_params["leaf_area"] = 1.5*max(leaf_area_plant) # [1*max(leaf_area_plant), 2*max(leaf_area_plant)]
-    else: # cf literature
-        archi_params["height"] = [50,400] # for sorghum !!
-        archi_params["leaf_area"] = [1000,20000] # for sorghum !!!!!!!
+        archi_params["height"] = [1*max(height_canopy), 1.5*max(height_canopy)] # [1*max(height_canopy), 2*max(height_canopy)]
+        archi_params["leaf_area"] = [1*max(leaf_area_plant), 1.5*max(leaf_area_plant)] # [1*max(leaf_area_plant), 2*max(leaf_area_plant)]
 
     if lifespan is not None:
         archi_params["leaf_lifespan"] = lifespan
-    else:
-        archi_params["leaf_lifespan"] = 1e4
+        # archi_params["leaf_lifespan_early"] = lifespan_early
 
     return archi_params
 
 
-def LHS_param_sampling(archi_params, n_samples, seed=42, latin_hypercube=False):
+def resolve_organ_growth(N, ligul_factor, la_ends):
+    
+    A = np.zeros((N, N))
+    B = np.zeros(N)
+
+    # First equation (x=1)
+    A[0, 0] = 1
+    A[0, 1] = (ligul_factor - 1) / ligul_factor
+    B[0] = la_ends[0]
+
+    # Eauqtions for 1 < x < N
+    for x in range(1, N-1):
+        A[x, x] = 1
+        A[x, x+1] = (ligul_factor - 1) / ligul_factor
+        for i in range(x):
+            A[x, i] = 1
+        B[x] = la_ends[x]
+
+    # Last equation (x=N)
+    A[N-1, N-1] = 1
+    for i in range(N-1):
+        A[N-1, i] = 1
+    B[N-1] = la_ends[N-1]
+    
+
+    # Resolution
+    S = np.linalg.solve(A, B)
+    return S
+
+def get_end_veg(daily_dynamics: dict):
+    thermal_time = [value["Thermal time"] for value in daily_dynamics.values()]
+
+    for key, value in daily_dynamics.items():
+        if value["Phenology"] == 'exponential':
+            next_key = key + 1
+            if next_key in daily_dynamics and daily_dynamics[next_key]["Phenology"] == 'repro':
+                index_end_veg = key-1
+                end_veg = thermal_time[index_end_veg] + thermal_time[0]
+                break
+    
+    return index_end_veg, end_veg
+
+
+def reduce_morphospace(archi_params: dict, daily_dynamics: dict) -> dict:
+    """
+    Analytical resolution of intervals of solution wrt the dynamic constraint of LAI and height. 
+    """
+
+    # Dynamics of vegetative phase
+    index_end_veg, end_veg = get_end_veg(daily_dynamics)
+    thermal_time = [value["Thermal time"] for value in daily_dynamics.values()][:index_end_veg+2]
+    leaf_area_plant = [value["Plant leaf area"] for value in daily_dynamics.values()][:index_end_veg+2]
+    
+    # Value intervals for parameters
+    # leaf_duration = archi_params["leaf_duration"]
+    # phyllochron = archi_params["phyllochron"]
+    # rmax = archi_params["rmax"]
+    # skew = archi_params["skew"]
+    rmax = sp.Symbol('rmax', real=True, positive=True)
+    skew = sp.Symbol('skew', real=True, positive=True)
+    phyllochron = sp.Symbol('phyllochron', real=True, positive=True)
+    leaf_duration = sp.Symbol('leaf_duration', real=True, positive=True)
+    nb_phy = math.ceil((end_veg-thermal_time[0]-phyllochron * leaf_duration)/phyllochron) # compute with floats !!
+
+    # Compute organ development
+    starts = [i * phyllochron + thermal_time[0] for i in range(nb_phy)]
+    ends = [start + phyllochron * leaf_duration for start in starts]
+
+
+    # Interpolate growth dynamics and compute it at given points (instead of daily)
+    spl = splrep(thermal_time, leaf_area_plant)
+    # la_starts = splev(starts, spl)
+    # la_ends = splev(ends, spl)
+    la_ends = splev([float(sp.N(e)) for e in ends], spl)  # Use numeric values for interpolation
+
+
+    # Reduce value intervals for parameters to make sure the bell shape is always above organ growth dynamics (how?)
+    # bell_shape_leaf_la = bell_shaped_dist(leaf_area_plant[-1], nb_phy, rmax, skew) # bell shape
+    # constrained_leaf_la = resolve_organ_growth(nb_phy, leaf_duration, la_ends) # organ growth dynamics
+    # we want new intervals phyllochron, leaf_duration, rmax, skew, such that:
+    # bell_shape_leaf_la > constrained_leaf_la
+
+    # Numeric solution for constrained growth
+    constrained_leaf_la = resolve_organ_growth(nb_phy, float(sp.N(leaf_duration)), la_ends)
+
+    # Symbolic bell shape formula (example, adapt to your real formula)
+    bell_shape_leaf_la = [leaf_area_plant * sp.exp(-skew * (i - rmax * nb_phy)**2) for i in range(nb_phy)]
+
+
+    # For each organ, solve bell_shape_leaf_la[i] > constrained_leaf_la[i]
+    intervals = []
+    for i in range(nb_phy):
+        bell = bell_shape_leaf_la[i]
+        constrained = constrained_leaf_la[i]  # numeric value
+        # Solve for rmax, skew, phyllochron, leaf_duration
+        sol = sp.solve(bell > constrained, (rmax, skew, phyllochron, leaf_duration))
+        intervals.append(sol)
+
+    return intervals    
+    # return archi_params
+
+
+
+def LHS_param_sampling(archi_params: dict, n_samples: int, seed: int = 42, latin_hypercube: bool = False) -> dict:
     """Generate samples from archi_params dictionary, respecting fixed values."""
     fixed_params = {}
     sampled_params = []
@@ -118,7 +220,7 @@ def LHS_param_sampling(archi_params, n_samples, seed=42, latin_hypercube=False):
     return param_sets
 
 
-def filter_organ_duration(daily_dynamics, param_sets, opt_filter_organ_duration=True):
+def filter_organ_duration(daily_dynamics: dict, param_sets: dict, opt_filter_organ_duration: bool = True):
     """
     Filter the parameter sets to ensure realistic organ duration.
     Parameters:
@@ -160,7 +262,7 @@ def filter_organ_duration(daily_dynamics, param_sets, opt_filter_organ_duration=
     return param_sets, filters
 
 
-def filter_pot_growth(param_sets, daily_dynamics, filters, error_LA, error_height, filter=True):
+def filter_pot_growth(param_sets: dict, daily_dynamics: dict, filters: dict, error_LA: float, error_height: float, filter: bool = True):
     '''
     Filter the parameter sets based on potential growth curves.
     Parameters:
@@ -246,7 +348,7 @@ def filter_pot_growth(param_sets, daily_dynamics, filters, error_LA, error_heigh
     return param_sets, pot_la, pot_h, filters
     
 
-def simulate_fit_params(param_sets, daily_dynamics, filters):
+def simulate_fit_params(param_sets: dict, daily_dynamics: dict, filters: dict):
     """ Simulate the growth of plants using the fit parameters.
     Parameters:
         fit_params (list): List of parameter sets.
@@ -286,7 +388,8 @@ def simulate_fit_params(param_sets, daily_dynamics, filters):
 
 
 
-def filter_realized_growth(param_sets, realized_la, realized_h, daily_dynamics, mtgs, filters, error_LA=0.05, error_height=0.05, opt_filter_realized_growth=True):
+def filter_realized_growth(param_sets: dict, realized_la: dict, realized_h: dict, daily_dynamics: dict, mtgs: dict, 
+                           filters: dict, error_LA: float = 0.05, error_height: float = 0.05, opt_filter_realized_growth: bool = True):
     '''
     Filter the parmeters sets based on the deviation of the realized growth from the constraints, within a given error margin.
     Parameters: 
@@ -343,7 +446,10 @@ def filter_realized_growth(param_sets, realized_la, realized_h, daily_dynamics, 
     return param_sets, new_realized_la, new_realized_h, new_mtgs, filters
 
 
-def simulate_with_filters(param_sets, daily_dynamics, opt_filter_organ_duration=True, opt_filter_pot_growth=True, opt_filter_realized_growth=True, error_LA_pot=1, error_height_pot=1, error_LA_realized=0.05, error_height_realized=0.05):
+def simulate_with_filters(param_sets: dict, daily_dynamics: dict, 
+                          opt_filter_organ_duration: bool = True, opt_filter_pot_growth: bool = True, 
+                          opt_filter_realized_growth: bool = True, error_LA_pot: float = 1, error_height_pot: float = 1, 
+                          error_LA_realized: float = 0.05, error_height_realized: float = 0.05):
     """
     Simulate the growth of plants using the parameter sets and filter them based on realized growth.
     Parameters:
@@ -380,7 +486,7 @@ def run_simulations(archi_params: dict,
     )
 
     # Complete the architecture parameters with values from daily dynamics.
-    archi_params = complete_archi_params(archi_params=archi_params, daily_dynamics=daily_dynamics, lifespan=lifespan, lifespan_early=lifespan_early)
+    archi_params = constrain_archi_params(archi_params=archi_params, daily_dynamics=daily_dynamics, lifespan=lifespan, lifespan_early=lifespan_early)
     
     # Sampling parameters using Latin Hypercube Sampling
     param_sets = LHS_param_sampling(archi_params=archi_params, n_samples=n_samples, seed=seed, latin_hypercube=latin_hypercube)
@@ -424,10 +530,6 @@ def run_simulations(archi_params: dict,
 def morphospace(archi_params: dict, 
              n_samples: int = 100, seed: int = 42, latin_hypercube: bool = False):
 
-
-    # Complete the architecture parameters with values from daily dynamics.
-    archi_params = complete_archi_params(archi_params=archi_params, daily_dynamics=None, lifespan=None, lifespan_early=None)
-    
     # Sampling parameters using Latin Hypercube Sampling
     param_sets = LHS_param_sampling(archi_params=archi_params, n_samples=n_samples, seed=seed, latin_hypercube=latin_hypercube)
 
@@ -478,7 +580,7 @@ def morphospace(archi_params: dict,
     return thermal_time, param_sets, pot_la, pot_h, mtgs
 
 
-def write_morphospace_as_netcdf(thermal_time, params_sets, pot_la, pot_h, mtgs, seed):
+def write_morphospace_as_netcdf(thermal_time: list, params_sets: dict, pot_la: dict, pot_h: dict, mtgs: dict, seed: int):
 
     df_archi = pd.DataFrame.from_dict(params_sets, orient='index')
     ds_archi = df_archi.to_xarray().rename({'index':'id'})
