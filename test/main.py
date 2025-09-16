@@ -108,8 +108,8 @@ def f_2(id_sim, daily_dynamics, param_sets, sowing_density):
 
     # Save the dataset to a NetCDF file
     today_str = date.today().strftime("%Y-%m-%d")
-    os.makedirs(f"D:/PhD_Oriane/simulations_ArchiCrop/{today_str}", exist_ok=True)  # noqa: PTH103
-    ds.to_netcdf(f"D:/PhD_Oriane/simulations_ArchiCrop/{today_str}/results_{id_sim}.nc")
+    os.makedirs(f"{today_str}", exist_ok=True)  # noqa: PTH103
+    ds.to_netcdf(f"{today_str}/results_{id_sim}.nc")
 
     # ds.to_netcdf(f"results_{id_sim}.nc")
     
