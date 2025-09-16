@@ -203,7 +203,7 @@ if __name__ == '__main__':
 
     n = 3
     n_samples = [1]*n
-    n_cpu = 6
+    n_cpu = 13
     id_sim = list(range(1, n_cpu+1))
 
     daily_dynamics, param_sets, sowing_density = f_1(n)
