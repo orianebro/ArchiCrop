@@ -442,8 +442,8 @@ def cereal(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration,
         stem = stem_elements_per_axis[axis]
         factor = axis_factors[axis]
         # Area per leaf for this axis
-        area_per_leaf = leaf_area * factor / total_factor if nb_leaves_per_axis[axis] > 0 else 0
-        height_per_axis = height * factor / total_factor if nb_leaves_per_axis[axis] > 0 else 0
+        area_per_leaf = leaf_area * factor / total_factor # if nb_leaves_per_axis[axis] > 0 else 0
+        height_per_axis = height * factor / total_factor # if nb_leaves_per_axis[axis] > 0 else 0
         for vid in leaves:
             scaled_leaf_area = g.node(vid).leaf_area * area_per_leaf
             g.node(vid).leaf_area = scaled_leaf_area  
@@ -454,10 +454,11 @@ def cereal(nb_phy, phyllochron, plastochron, stem_duration, leaf_duration,
             g.node(vid).shape_max_width = g.node(vid).length * wl
             compute_potential_growth_rate(g=g, vid=vid)
         for vid in stem:
-            g.node(vid).mature_length *= height_per_axis
-            g.node(vid).length *= height_per_axis
-            g.node(vid).visible_length *= height_per_axis
-            compute_potential_growth_rate(g=g, vid=vid_stem)
+            scaled_stem_length = g.node(vid).mature_length * height_per_axis
+            g.node(vid).mature_length = scaled_stem_length
+            g.node(vid).length = scaled_stem_length
+            g.node(vid).visible_length = scaled_stem_length
+            compute_potential_growth_rate(g=g, vid=vid)
 
 
     g = fat_mtg(g)

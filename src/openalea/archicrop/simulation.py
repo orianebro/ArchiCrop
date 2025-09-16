@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import itertools
 import math
 import os
 from datetime import date
-from itertools import product
 
 import numpy as np
 import pandas as pd
@@ -38,7 +38,7 @@ def dict_ranges_to_all_possible_combinations(d):
     ]
     
     # Generate all combinations
-    return list(product(*values))
+    return list(itertools.product(*values))
 
 
 def constrain_archi_params(archi_params: dict, daily_dynamics: dict, lifespan: float, lifespan_early: float) -> dict:
@@ -49,8 +49,8 @@ def constrain_archi_params(archi_params: dict, daily_dynamics: dict, lifespan: f
         leaf_area_plant = [value["Plant leaf area"] for value in daily_dynamics.values()]
         height_canopy = [value["Plant height"] for value in daily_dynamics.values()]
 
-        archi_params["height"] = [1*max(height_canopy), 1.5*max(height_canopy)] # [1*max(height_canopy), 2*max(height_canopy)]
-        archi_params["leaf_area"] = [1*max(leaf_area_plant), 1.5*max(leaf_area_plant)] # [1*max(leaf_area_plant), 2*max(leaf_area_plant)]
+        archi_params["height"] = 1.2*max(height_canopy) # [1*max(height_canopy), 1.5*max(height_canopy)] # [1*max(height_canopy), 2*max(height_canopy)]
+        archi_params["leaf_area"] = 1.2*max(leaf_area_plant) # [1*max(leaf_area_plant), 1.5*max(leaf_area_plant)] # [1*max(leaf_area_plant), 2*max(leaf_area_plant)]
 
     if lifespan is not None:
         archi_params["leaf_lifespan"] = lifespan
@@ -202,11 +202,8 @@ def LHS_param_sampling(archi_params: dict, n_samples: int, seed: int = 42, latin
         # Scale samples to parameter bounds
         samples = qmc.scale(lhs_samples, l_bounds=l_bounds, u_bounds=u_bounds)
     else:
-        # Create meshgrid (Cartesian product)
-        mesh = np.meshgrid(*values_lists, indexing="ij")
 
-        # Stack into a (N, D) array
-        samples = np.stack(mesh, axis=-1).reshape(-1, len(values_lists))
+        samples = list(itertools.product(*values_lists))
 
     # Create parameter sets
     param_sets = {}
@@ -490,6 +487,70 @@ def run_simulations(archi_params: dict,
     
     # Sampling parameters using Latin Hypercube Sampling
     param_sets = LHS_param_sampling(archi_params=archi_params, n_samples=n_samples, seed=seed, latin_hypercube=latin_hypercube)
+
+    # Simulate plant growth with fitting parameters
+    param_sets, pot_la, pot_h, realized_la, realized_h, mtgs, filters = simulate_with_filters(
+        param_sets=param_sets, 
+        daily_dynamics=daily_dynamics,
+        error_LA_pot=error_LA_pot,
+        error_height_pot=error_height_pot, 
+        error_LA_realized=error_LA_realized,
+        error_height_realized=error_height_realized,
+        opt_filter_organ_duration=opt_filter_organ_duration,
+        opt_filter_pot_growth=opt_filter_pot_growth,
+        opt_filter_realized_growth=opt_filter_realized_growth
+    ) 
+
+    # If light_inter is True, compute light interception on plants with fitting parameters
+    if light_inter:
+        nrj_per_plant = light_interception(
+            weather_file=weather_file, 
+            daily_dynamics=daily_dynamics, 
+            sowing_density=sowing_density, 
+            location=location, 
+            mtgs=mtgs, 
+            zenith=zenith, 
+            direct=direct,
+            save_scenes=save_scenes, 
+            inter_row=inter_row
+        )
+    else:
+        nrj_per_plant = {k : [None] * len(realized_la[k]) for k in realized_la}
+
+    # Dataframe with id, archi_params (dict to df), bool per filter, times series for h, la, nrj + dates ?
+    # or xarray
+
+    return daily_dynamics, param_sets, pot_la, pot_h, realized_la, realized_h, nrj_per_plant, mtgs, filters, sowing_density
+
+
+
+def run_simulations_1(archi_params: dict, 
+             tec_file: str, plant_file: str, dynamics_file: str,
+             n_samples: int = 100, seed: int = 42, latin_hypercube: bool = False):
+
+    # Retrieve STICS management and senescence parameters
+    sowing_density, daily_dynamics, lifespan, lifespan_early = get_stics_data(
+        file_tec_xml=tec_file,  # Path to the STICS management XML file
+        file_plt_xml=plant_file,  # Path to the STICS plant XML file
+        stics_output_file=dynamics_file  # Path to the STICS output file
+    )
+
+    # Complete the architecture parameters with values from daily dynamics.
+    archi_params = constrain_archi_params(archi_params=archi_params, daily_dynamics=daily_dynamics, lifespan=lifespan, lifespan_early=lifespan_early)
+    
+    # Sampling parameters using Latin Hypercube Sampling
+    param_sets = LHS_param_sampling(archi_params=archi_params, n_samples=n_samples, seed=seed, latin_hypercube=latin_hypercube)
+
+    return daily_dynamics, param_sets, sowing_density
+
+
+def run_simulations_2(param_sets: dict, daily_dynamics: dict, sowing_density: float,
+             weather_file: str, location: dict,
+             opt_filter_organ_duration: bool = True, opt_filter_pot_growth: bool = True, opt_filter_realized_growth: bool = True, 
+             error_LA_pot: float = 1, error_height_pot: float = 1, error_LA_realized: float = 0.05, error_height_realized: float = 0.05,
+             inter_row: float = 70,
+             light_inter: bool = True, zenith: bool = False, direct : bool = False, save_scenes: bool = False):
+
 
     # Simulate plant growth with fitting parameters
     param_sets, pot_la, pot_h, realized_la, realized_h, mtgs, filters = simulate_with_filters(
