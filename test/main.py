@@ -27,9 +27,9 @@ from openalea.mtg.io import write_mtg
 #     print('process id:', os.getpid())
 
 def f_1(n_samples):
-    tec_file_xml='D:/ArchiCrop/data/Mais_tec.xml'
-    plt_file_xml='D:/ArchiCrop/data/corn_plt.xml'
-    stics_output_file='D:/ArchiCrop/data/mod_smaize.sti'
+    tec_file_xml='../data/02NT18SorgV2D1_tec.xml'
+    plt_file_xml='../data/sorgho_imp_M_v10_plt.xml'
+    stics_output_file='../data/mod_s02NT18SorgV2D1.sti'
 
     # Run the simulation
     daily_dynamics, param_sets, sowing_density = run_simulations_1(
@@ -45,10 +45,10 @@ def f_1(n_samples):
 def f_2(id_sim, daily_dynamics, param_sets, sowing_density):
     # print(f"Running simulation with seed {seed}")
     # Define the inputs for the simulation
-    weather_file = 'D:/ArchiCrop/data/climaisj.meteo'
+    weather_file = '../data/ntarla_corr.2018'
     location = {  
     'longitude': 3.87,
-    'latitude': 45,
+    'latitude': 12.58,
     'altitude': 800,
     'timezone': 'Europe/Paris'}
 
