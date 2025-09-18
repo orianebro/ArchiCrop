@@ -201,22 +201,22 @@ def read_and_merge_netcdf_files(files):
 
 if __name__ == '__main__':
 
-    n = 3
+    n = 5
     n_samples = [1]*n
-    n_cpu = 13
+    n_cpu = 6
     id_sim = list(range(1, n_cpu+1))
 
     daily_dynamics, param_sets, sowing_density = f_1(n)
 
     params_sets_split = {}
-    for i in range(n_cpu):
-        params_sets_split[i] = {k: v for j, (k, v) in enumerate(param_sets.items()) if j % n_cpu == i}
+    for i in id_sim:
+        params_sets_split[i] = {k: v for k, v in param_sets.items() if k % n_cpu == i}
 
     with Pool(n_cpu) as p:
         # info('main line')
         # print(f"Running with {i} CPU")
         start_time = t.time()
-        p.starmap_async(f, [(id, daily_dynamics, sample, sowing_density) for sample, id in zip(params_sets_split, id_sim)]).get()
+        p.starmap_async(f_2, [(id, daily_dynamics, params_sets_split[id], sowing_density) for id in id_sim]).get()
         # p.starmap_async(f, [(sample, seed) for sample, seed in zip(n_samples, seeds)]).get()
         # p.map(slow_prime_finder, [i*1000000 for i in range(1, 11)])
         end_time = t.time()
