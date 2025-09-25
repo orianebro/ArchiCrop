@@ -62,7 +62,7 @@ def f_2(id_sim, daily_dynamics, param_sets, sowing_density):
         opt_filter_organ_duration=False,
         opt_filter_pot_growth=False,
         opt_filter_realized_growth=False,
-        light_inter=False)
+        light_inter=True)
     
 
     # Prepare the data for xarray Dataset
@@ -193,8 +193,8 @@ def read_and_merge_netcdf_files(files):
     for file in files:
         ds_read = xr.open_dataset(file)
         # Replace ids by id+len(ds)
-        for i in range(len(ds_read['id'].values)):
-            ds_read['id'].values[i] += len(ds['id'].values)
+        for i in range(len(ds_read.id.values)):
+            ds_read.id.values[i] += len(ds.id.values)
         ds = xr.merge([ds, ds_read])
     # TO TEST !!!!
 

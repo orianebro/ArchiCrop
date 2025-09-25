@@ -86,6 +86,7 @@ def resolve_organ_growth(N, ligul_factor, la_ends):
 
     # Resolution
     S = np.linalg.solve(A, B)
+
     return S
 
 def get_end_veg(daily_dynamics: dict):
@@ -101,6 +102,8 @@ def get_end_veg(daily_dynamics: dict):
     
     return index_end_veg, end_veg
 
+def compute_skew(rank, nb_phy, rmax, leaf_areas):
+    return math.exp(math.log(leaf_areas[rank-1])/(2*(rank/nb_phy - rmax)**2 + (rank/nb_phy - rmax)**3))
 
 def reduce_morphospace(archi_params: dict, daily_dynamics: dict) -> dict:
     """
@@ -111,54 +114,53 @@ def reduce_morphospace(archi_params: dict, daily_dynamics: dict) -> dict:
     index_end_veg, end_veg = get_end_veg(daily_dynamics)
     thermal_time = [value["Thermal time"] for value in daily_dynamics.values()][:index_end_veg+2]
     leaf_area_plant = [value["Plant leaf area"] for value in daily_dynamics.values()][:index_end_veg+2]
-    
+    height_plant = [value["Plant height"] for value in daily_dynamics.values()][:index_end_veg+2]
+
     # Value intervals for parameters
-    # leaf_duration = archi_params["leaf_duration"]
-    # phyllochron = archi_params["phyllochron"]
-    # rmax = archi_params["rmax"]
-    # skew = archi_params["skew"]
-    rmax = sp.Symbol('rmax', real=True, positive=True)
-    skew = sp.Symbol('skew', real=True, positive=True)
-    phyllochron = sp.Symbol('phyllochron', real=True, positive=True)
-    leaf_duration = sp.Symbol('leaf_duration', real=True, positive=True)
+    leaf_duration = archi_params["leaf_duration"]
+    phyllochron = archi_params["phyllochron"]
     nb_phy = math.ceil((end_veg-thermal_time[0]-phyllochron * leaf_duration)/phyllochron) # compute with floats !!
+    archi_params["nb_phy"] = nb_phy
 
     # Compute organ development
     starts = [i * phyllochron + thermal_time[0] for i in range(nb_phy)]
     ends = [start + phyllochron * leaf_duration for start in starts]
 
-
     # Interpolate growth dynamics and compute it at given points (instead of daily)
-    spl = splrep(thermal_time, leaf_area_plant)
-    # la_starts = splev(starts, spl)
-    # la_ends = splev(ends, spl)
-    la_ends = splev([float(sp.N(e)) for e in ends], spl)  # Use numeric values for interpolation
+    spl_la = splrep(thermal_time, leaf_area_plant)
+    # la_starts = splev(starts, spl_la)
+    la_ends = splev(ends, spl_la)
 
-
-    # Reduce value intervals for parameters to make sure the bell shape is always above organ growth dynamics (how?)
-    # bell_shape_leaf_la = bell_shaped_dist(leaf_area_plant[-1], nb_phy, rmax, skew) # bell shape
-    # constrained_leaf_la = resolve_organ_growth(nb_phy, leaf_duration, la_ends) # organ growth dynamics
-    # we want new intervals phyllochron, leaf_duration, rmax, skew, such that:
-    # bell_shape_leaf_la > constrained_leaf_la
+    spl_h = splrep(thermal_time, height_plant)
+    # h_starts = splev(starts, spl_h)
+    h_ends = splev(ends, spl_h)
 
     # Numeric solution for constrained growth
-    constrained_leaf_la = resolve_organ_growth(nb_phy, float(sp.N(leaf_duration)), la_ends)
+    # Leaves
+    constrained_leaf_areas = resolve_organ_growth(nb_phy, leaf_duration, la_ends)
 
-    # Symbolic bell shape formula (example, adapt to your real formula)
-    bell_shape_leaf_la = [leaf_area_plant * sp.exp(-skew * (i - rmax * nb_phy)**2) for i in range(nb_phy)]
+    for i,la in enumerate(constrained_leaf_areas):
+        if la == max(constrained_leaf_areas):
+            rmax = (i+1)/nb_phy
+            rmax_int = [max(0,rmax-1/nb_phy), min(1,rmax+1/nb_phy)]
+            archi_params["rmax"] = rmax_int
+            break
 
+    # skew must be computed from unscaled leaf aeras !!!!!!!
+    skews = []
+    for rank in range(1, nb_phy+1):
+        skew_min = min(compute_skew(rank=rank, nb_phy=nb_phy, rmax=rmax_int[0], leaf_areas=constrained_leaf_areas), compute_skew(rank=rank, nb_phy=nb_phy, rmax=rmax_int[1], leaf_areas=constrained_leaf_areas))
+        skew_max = max(compute_skew(rank=rank, nb_phy=nb_phy, rmax=rmax_int[0], leaf_areas=constrained_leaf_areas), compute_skew(rank=rank, nb_phy=nb_phy, rmax=rmax_int[1], leaf_areas=constrained_leaf_areas))
+        skews.append(skew_min)
+        skews.append(skew_max)
 
-    # For each organ, solve bell_shape_leaf_la[i] > constrained_leaf_la[i]
-    intervals = []
-    for i in range(nb_phy):
-        bell = bell_shape_leaf_la[i]
-        constrained = constrained_leaf_la[i]  # numeric value
-        # Solve for rmax, skew, phyllochron, leaf_duration
-        sol = sp.solve(bell > constrained, (rmax, skew, phyllochron, leaf_duration))
-        intervals.append(sol)
+    archi_params["skew"] = [np.median(skews), max(skews)*1.3]
 
-    return intervals    
-    # return archi_params
+    # Stem
+    constrained_stem_lengths = resolve_organ_growth(nb_phy, leaf_duration, h_ends)
+
+   
+    return archi_params
 
 
 
@@ -589,7 +591,7 @@ def run_simulations_2(param_sets: dict, daily_dynamics: dict, sowing_density: fl
 
 
 def morphospace(archi_params: dict, 
-             n_samples: int = 100, seed: int = 42, latin_hypercube: bool = False):
+             n_samples: int = 6, seed: int = 42, latin_hypercube: bool = False):
 
     # Sampling parameters using Latin Hypercube Sampling
     param_sets = LHS_param_sampling(archi_params=archi_params, n_samples=n_samples, seed=seed, latin_hypercube=latin_hypercube)
@@ -727,34 +729,34 @@ def plot_constrainted_vs_realized(dates, LA_archicrop, height_archicrop, leaf_ar
 
     fig, axes = plt.subplots(2, 1, figsize=(12, 6), sharex=True)  # 1 row, 2 columns
 
-    axes[0].plot(dates, [(la-sen)*sowing_density/cf_cm**2 for la, sen in zip(leaf_area_plant, sen_leaf_area_plant)], color=stics_color, linewidth=5)
+    axes[0].plot(dates, [(la-sen)*sowing_density/cf_cm**2 for la, sen in zip(leaf_area_plant, sen_leaf_area_plant)], color=stics_color, linewidth=6)
     for result in LA_archicrop.values():
         if result[0] is not None:
             axes[0].plot(dates, [r*sowing_density/cf_cm**2 for r in result])  #, color=archicrop_color, alpha=0.6)
     axes[0].set_ylabel("LAI (m²/m²)", fontsize=16, fontname="Times New Roman")
-    axes[0].set_xticks(np.arange(0, len(dates)+1, (len(dates)+1)/8))
+    axes[0].set_xticks(np.arange(0, len(dates)+1, (len(dates)+1)/9))
     # axes[0].set_title("Leaf Area: 3D canopy vs. STICS")
     # axes[0].legend(loc=2)
 
     legend_elements_lai = [
-        Line2D([0], [0], color=stics_color, alpha=0.9, lw=2, label='LAI STICS'),
-        Line2D([0], [0], color=archicrop_color, alpha=0.6, lw=2, label='LAI morphotypes')
+        Line2D([0], [0], color=stics_color, alpha=0.9, lw=6, label='STICS'),
+        Line2D([0], [0], color=archicrop_color, alpha=0.6, lw=2, label='ArchiCrop morphotypes')
     ]
     axes[0].legend(handles=legend_elements_lai, loc=2, prop={'family': 'Times New Roman', 'size': 12})
 
 
-    axes[1].plot(dates, [h/cf_cm for h in height_canopy], color=stics_color, linewidth=5)
+    axes[1].plot(dates, [h/cf_cm for h in height_canopy], color=stics_color, linewidth=6)
     for result in height_archicrop.values():
         if result[0] is not None:
             axes[1].plot(dates, [r/cf_cm for r in result]) #, color=archicrop_color, alpha=0.6)
     axes[1].set_xlabel("Date", fontsize=16, fontname="Times New Roman")
     axes[1].set_ylabel("Crop height (m)", fontsize=16, fontname="Times New Roman")
-    axes[0].set_xticks(np.arange(0, len(dates)+1, (len(dates)+1)/8))
+    axes[0].set_xticks(np.arange(0, len(dates)+1, (len(dates)+1)/9))
     # axes[1].set_title("Plant height: 3D canopy vs. STICS")
 
     legend_elements_height = [
-        Line2D([0], [0], color=stics_color, alpha=0.9, lw=2, label='Height STICS'),
-        Line2D([0], [0], color=archicrop_color, alpha=0.6, lw=2, label='Height morphotypes')
+        Line2D([0], [0], color=stics_color, alpha=0.9, lw=6, label='STICS'),
+        Line2D([0], [0], color=archicrop_color, alpha=0.6, lw=2, label='ArchiCrop morphotypes')
     ]
     axes[1].legend(handles=legend_elements_height, loc=2, prop={'family': 'Times New Roman', 'size': 12})
 
@@ -791,9 +793,9 @@ def plot_faPAR(dates, nrj_per_plant, par_incident, par_stics, sowing_density, st
 
     # Labels and legend
     ax.set_xticks(np.arange(0, len(dates)+1, (len(dates)+1)/8))
-    ax.set_xlabel("Dates") 
-    ax.set_ylabel("Fraction of absorbed PAR")
-    ax.set_title("Fraction of absorbed PAR: 3D canopy vs. STICS")
+    ax.set_xlabel("Dates", fontsize=16, fontname="Times New Roman") 
+    ax.set_ylabel("Fraction of absorbed PAR", fontsize=16, fontname="Times New Roman")
+    ax.set_title("Fraction of absorbed PAR: 3D canopy vs. STICS", fontsize=16, fontname="Times New Roman")
     ax.legend()
 
     # Save figure
@@ -825,9 +827,9 @@ def plot_PAR(dates, nrj_per_plant, par_incident, par_stics, sowing_density, stic
 
     # Labels and legend
     ax.set_xticks(np.arange(0, len(dates)+1, (len(dates)+1)/8))
-    ax.set_xlabel("Dates") 
-    ax.set_ylabel("Absorbed PAR")
-    ax.set_title("Absorbed PAR: 3D canopy vs. STICS")
+    ax.set_xlabel("Dates", fontsize=16, fontname="Times New Roman") 
+    ax.set_ylabel("Absorbed PAR", fontsize=16, fontname="Times New Roman")
+    ax.set_title("Absorbed PAR: 3D canopy vs. STICS", fontsize=16, fontname="Times New Roman")
     ax.legend()
 
     # Save figure
@@ -907,8 +909,8 @@ def plot_extinction_coef(extinP_stics, extinP_list, dates):
         ax.plot(dates, curve)
     ax.plot(dates, [extinP_stics]*len(dates), color="black", label="STICS")
     ax.set_xticks(np.arange(0, len(dates)+1, (len(dates)+1)/8))
-    ax.set_xlabel("Dates") 
-    ax.set_ylabel("Extinction coefficient")
+    ax.set_xlabel("Dates", fontsize=16, fontname="Times New Roman") 
+    ax.set_ylabel("Extinction coefficient", fontsize=16, fontname="Times New Roman")
     ax.legend()
     # Save figure
     today_str = date.today().strftime("%Y-%m-%d")
