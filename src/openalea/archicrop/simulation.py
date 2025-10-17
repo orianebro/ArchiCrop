@@ -102,65 +102,106 @@ def get_end_veg(daily_dynamics: dict):
     
     return index_end_veg, end_veg
 
-def compute_skew(rank, nb_phy, rmax, leaf_areas):
-    return math.exp(math.log(leaf_areas[rank-1])/(2*(rank/nb_phy - rmax)**2 + (rank/nb_phy - rmax)**3))
+def compute_skew(leaf_areas, rank, nb_phy, rmax):
+    # return math.exp(math.log(leaf_areas[rank-1])/(2*(rank/nb_phy - rmax)**2 + (rank/nb_phy - rmax)**3))
+    return math.exp(math.log(leaf_areas[rank-1]/max(leaf_areas))/(2*(rank/nb_phy - rmax)**2 + (rank/nb_phy - rmax)**3))
 
-def reduce_morphospace(archi_params: dict, daily_dynamics: dict) -> dict:
+def constraint_satisfaction(params_sets: dict, daily_dynamics: dict, pot_factor: float = 1.5) -> dict:
     """
     Analytical resolution of intervals of solution wrt the dynamic constraint of LAI and height. 
     """
 
     # Dynamics of vegetative phase
     index_end_veg, end_veg = get_end_veg(daily_dynamics)
-    thermal_time = [value["Thermal time"] for value in daily_dynamics.values()][:index_end_veg+2]
-    leaf_area_plant = [value["Plant leaf area"] for value in daily_dynamics.values()][:index_end_veg+2]
-    height_plant = [value["Plant height"] for value in daily_dynamics.values()][:index_end_veg+2]
+    thermal_time = [value["Thermal time"] for value in daily_dynamics.values()][:index_end_veg+1]
+    leaf_area_plant = [value["Plant leaf area"] for value in daily_dynamics.values()][:index_end_veg+1]
+    height_plant = [value["Plant height"] for value in daily_dynamics.values()][:index_end_veg+1]
 
+    new_params_sets = {}
+    
     # Value intervals for parameters
-    leaf_duration = archi_params["leaf_duration"]
-    phyllochron = archi_params["phyllochron"]
-    nb_phy = math.ceil((end_veg-thermal_time[0]-phyllochron * leaf_duration)/phyllochron) # compute with floats !!
-    archi_params["nb_phy"] = nb_phy
+    for id,params in params_sets.items(): 
+        leaf_duration = params["leaf_duration"]
+        phyllochron = params["phyllochron"]
+        nb_phy = math.floor((end_veg-thermal_time[0]-phyllochron * leaf_duration)/phyllochron) # compute with floats !!
+        params_sets[id]["nb_phy"] = nb_phy
 
-    # Compute organ development
-    starts = [i * phyllochron + thermal_time[0] for i in range(nb_phy)]
-    ends = [start + phyllochron * leaf_duration for start in starts]
+        # Compute organ development
+        starts = [i * phyllochron + thermal_time[0] for i in range(nb_phy)]
+        ends = [start + phyllochron * leaf_duration for start in starts]
 
-    # Interpolate growth dynamics and compute it at given points (instead of daily)
-    spl_la = splrep(thermal_time, leaf_area_plant)
-    # la_starts = splev(starts, spl_la)
-    la_ends = splev(ends, spl_la)
+        # Interpolate growth dynamics and compute it at given points (instead of daily)
+        spl_la = splrep(thermal_time, leaf_area_plant)
+        # la_starts = splev(starts, spl_la)
+        la_ends = splev(ends, spl_la)
 
-    spl_h = splrep(thermal_time, height_plant)
-    # h_starts = splev(starts, spl_h)
-    h_ends = splev(ends, spl_h)
+        spl_h = splrep(thermal_time, height_plant)
+        # h_starts = splev(starts, spl_h)
+        h_ends = splev(ends, spl_h)
 
-    # Numeric solution for constrained growth
-    # Leaves
-    constrained_leaf_areas = resolve_organ_growth(nb_phy, leaf_duration, la_ends)
+        # Numeric solution for constrained growth
+        # Leaves
+        constrained_leaf_areas = resolve_organ_growth(nb_phy, leaf_duration, la_ends)
 
-    for i,la in enumerate(constrained_leaf_areas):
-        if la == max(constrained_leaf_areas):
-            rmax = (i+1)/nb_phy
-            rmax_int = [max(0,rmax-1/nb_phy), min(1,rmax+1/nb_phy)]
-            archi_params["rmax"] = rmax_int
-            break
+        range_tt = range(round(thermal_time[0]), round(thermal_time[-1]))
+        interp_la = splev(range_tt, spl_la)
+        rates_la = [interp_la[i]-interp_la[i-1] if i > 0 else 0 for i in range(len(interp_la))]
 
-    # skew must be computed from unscaled leaf aeras !!!!!!!
-    skews = []
-    for rank in range(1, nb_phy+1):
-        skew_min = min(compute_skew(rank=rank, nb_phy=nb_phy, rmax=rmax_int[0], leaf_areas=constrained_leaf_areas), compute_skew(rank=rank, nb_phy=nb_phy, rmax=rmax_int[1], leaf_areas=constrained_leaf_areas))
-        skew_max = max(compute_skew(rank=rank, nb_phy=nb_phy, rmax=rmax_int[0], leaf_areas=constrained_leaf_areas), compute_skew(rank=rank, nb_phy=nb_phy, rmax=rmax_int[1], leaf_areas=constrained_leaf_areas))
-        skews.append(skew_min)
-        skews.append(skew_max)
 
-    archi_params["skew"] = [np.median(skews), max(skews)*1.3]
+        for i, la in enumerate(constrained_leaf_areas):
+            if la == max(constrained_leaf_areas):
+                id_max = i+1
+                # rmax_int = [max(0,(id_max-1)/nb_phy), min(1,(id_max+1)/nb_phy)]
+                # archi_params["rmax"] = rmax_int
+                break
+
+        rmax_int = np.linspace(max(0,(id_max-2)/nb_phy), min(1,(id_max+2)/nb_phy), 10)
+    
+        leaf_areas_norm = [la/max(constrained_leaf_areas) for la in constrained_leaf_areas]
+        
+        skews_rmax = []
+        for rank in range(1, nb_phy+1):
+            for rmax in rmax_int:
+                if rmax != rank/nb_phy and constrained_leaf_areas[rank-1] > 0:
+                    skew = compute_skew(rank=rank, nb_phy=nb_phy, rmax=rmax, leaf_areas=leaf_areas_norm)
+                    if 1e-10 < skew < 1.0:
+                        skews_rmax.append((skew, rmax))
+
+        skews_rmax_ok = []
+        for skew,rmax in skews_rmax:
+            ok = True
+            bell_shaped_leaf_areas = bell_shaped_dist(leaf_area_plant[-1]*pot_factor, nb_phy, rmax, skew)
+            for i,bs in enumerate(bell_shaped_leaf_areas):
+                if bs <= constrained_leaf_areas[i]: #-(0.05*max(constrained_leaf_areas)):
+                    ok = False
+                    break
+            if ok:
+                skews_rmax_ok.append((skew, rmax))
+                
+        for (s,r) in skews_rmax_ok:
+            # Build new parameter set with updated 'skew' and 'rmax'
+            new_param = {}
+            for key, value in params.items():
+                if key == "skew":
+                    new_param[key] = s
+                elif key == "rmax":
+                    new_param[key] = r
+                else:
+                    new_param[key] = value
+            new_params_sets[len(new_params_sets)+1] = new_param
+
+    # print(len(new_params_sets))
+    # print(len(skews_rmax_ok))
+    # for id, params in new_params_sets.items():
+    #     # print(id, id % len(skews_rmax_ok))
+    #     new_params_sets[id]["skew"] = skews_rmax_ok[id % len(skews_rmax_ok)][0]
+    #     new_params_sets[id]["rmax"] = skews_rmax_ok[id % len(skews_rmax_ok)][1]
+
+    # archi_params["skew"] = [min(skew_int), max(skew_int)]
 
     # Stem
-    constrained_stem_lengths = resolve_organ_growth(nb_phy, leaf_duration, h_ends)
-
-   
-    return archi_params
+    # constrained_stem_lengths = resolve_organ_growth(nb_phy, leaf_duration, h_ends)
+    return new_params_sets
 
 
 
@@ -177,6 +218,7 @@ def LHS_param_sampling(archi_params: dict, n_samples: int, seed: int = 42, latin
     for key, value in archi_params.items():
         if isinstance(value, (int, float)):  # Fixed parameter
             fixed_params[key] = value
+        # elif key in {"weibull"}:
         # Parameter distribution in Latin Hypercube
         elif isinstance(value, list) and key not in {"leaf_lifespan"}:  # Range to sample
 
@@ -472,6 +514,7 @@ def simulate_with_filters(param_sets: dict, daily_dynamics: dict,
 def run_simulations(archi_params: dict, 
              tec_file: str, plant_file: str, dynamics_file: str, weather_file: str, location: dict,
              n_samples: int = 100, seed: int = 42, latin_hypercube: bool = False, 
+             pot_factor: float = 1.05,
              opt_filter_organ_duration: bool = True, opt_filter_pot_growth: bool = True, opt_filter_realized_growth: bool = True, 
              error_LA_pot: float = 1, error_height_pot: float = 1, error_LA_realized: float = 0.05, error_height_realized: float = 0.05,
              inter_row: float = 70,
@@ -489,6 +532,11 @@ def run_simulations(archi_params: dict,
     
     # Sampling parameters using Latin Hypercube Sampling
     param_sets = LHS_param_sampling(archi_params=archi_params, n_samples=n_samples, seed=seed, latin_hypercube=latin_hypercube)
+
+    param_sets = constraint_satisfaction(
+        params_sets=param_sets, 
+        daily_dynamics=daily_dynamics, 
+        pot_factor=pot_factor)
 
     # Simulate plant growth with fitting parameters
     param_sets, pot_la, pot_h, realized_la, realized_h, mtgs, filters = simulate_with_filters(
@@ -528,7 +576,8 @@ def run_simulations(archi_params: dict,
 
 def run_simulations_1(archi_params: dict, 
              tec_file: str, plant_file: str, dynamics_file: str,
-             n_samples: int = 100, seed: int = 42, latin_hypercube: bool = False):
+             n_samples: int = 100, seed: int = 42, latin_hypercube: bool = False,
+             pot_factor: float = 1.05):
 
     # Retrieve STICS management and senescence parameters
     sowing_density, daily_dynamics, lifespan, lifespan_early = get_stics_data(
@@ -542,6 +591,8 @@ def run_simulations_1(archi_params: dict,
     
     # Sampling parameters using Latin Hypercube Sampling
     param_sets = LHS_param_sampling(archi_params=archi_params, n_samples=n_samples, seed=seed, latin_hypercube=latin_hypercube)
+
+    param_sets = constraint_satisfaction(params_sets=param_sets, daily_dynamics=daily_dynamics, pot_factor=pot_factor, nb_sampled_values=n_samples)
 
     return daily_dynamics, param_sets, sowing_density
 
@@ -732,7 +783,7 @@ def plot_constrainted_vs_realized(dates, LA_archicrop, height_archicrop, leaf_ar
     axes[0].plot(dates, [(la-sen)*sowing_density/cf_cm**2 for la, sen in zip(leaf_area_plant, sen_leaf_area_plant)], color=stics_color, linewidth=6)
     for result in LA_archicrop.values():
         if result[0] is not None:
-            axes[0].plot(dates, [r*sowing_density/cf_cm**2 for r in result])  #, color=archicrop_color, alpha=0.6)
+            axes[0].plot(dates, [r*sowing_density/cf_cm**2 for r in result], color=archicrop_color) #, alpha=0.6)
     axes[0].set_ylabel("LAI (m²/m²)", fontsize=16, fontname="Times New Roman")
     axes[0].set_xticks(np.arange(0, len(dates)+1, (len(dates)+1)/9))
     # axes[0].set_title("Leaf Area: 3D canopy vs. STICS")
@@ -748,7 +799,7 @@ def plot_constrainted_vs_realized(dates, LA_archicrop, height_archicrop, leaf_ar
     axes[1].plot(dates, [h/cf_cm for h in height_canopy], color=stics_color, linewidth=6)
     for result in height_archicrop.values():
         if result[0] is not None:
-            axes[1].plot(dates, [r/cf_cm for r in result]) #, color=archicrop_color, alpha=0.6)
+            axes[1].plot(dates, [r/cf_cm for r in result], color=archicrop_color) #, alpha=0.6)
     axes[1].set_xlabel("Date", fontsize=16, fontname="Times New Roman")
     axes[1].set_ylabel("Crop height (m)", fontsize=16, fontname="Times New Roman")
     axes[0].set_xticks(np.arange(0, len(dates)+1, (len(dates)+1)/9))

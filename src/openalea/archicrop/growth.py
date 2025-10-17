@@ -39,6 +39,12 @@ def demand_dist(increment, growing_organs):
     return {vid: increment*values["potential"]/sum_growing_organs 
             for vid, values in growing_organs.items()}
 
+def age_dist(increment, senescing_organs):
+    '''return distribution of increment per organ proportionnal to age'''
+    sum_senescing_organs = sum([value["age"] for value in senescing_organs.values()])
+    return {vid: increment*values["age"]/sum_senescing_organs 
+            for vid, values in senescing_organs.items()}
+
 
 def get_growing_and_senescing_organs_potential_visible(g, time, prev_time):
     """Identify growing organs and their potential at a given time"""
@@ -50,9 +56,9 @@ def get_growing_and_senescing_organs_potential_visible(g, time, prev_time):
     for vid, la in g.property("leaf_area").items(): 
         n = g.node(vid)
         if n.start_tt <= time <= n.end_tt or prev_time < n.end_tt < time:
-            growing_leaves[vid] = {"potential": la, "visible": n.visible_leaf_area}
+            growing_leaves[vid] = {"potential": la, "visible": n.visible_leaf_area, "age": n.age}
         if n.senescence <= time and n.visible_leaf_area > n.senescent_area: # not n.dead: # and n.srt > 0: 
-            senescing_leaves[vid] = {"potential": n.visible_leaf_area, "visible": n.senescent_area}
+            senescing_leaves[vid] = {"potential": n.visible_leaf_area, "visible": n.senescent_area, "age": n.age}
         # print(n.senescence <= time)
         # print(n.visible_leaf_area > n.senescent_area)
         # print(senescing_leaves)
@@ -60,7 +66,7 @@ def get_growing_and_senescing_organs_potential_visible(g, time, prev_time):
     for vid, ml in g.property("mature_length").items(): 
         n = g.node(vid)
         if n.label.startswith("Stem") and (n.start_tt <= time <= n.end_tt or prev_time < n.end_tt < time):
-            growing_internodes[vid] = {"potential": ml, "visible": n.visible_length}
+            growing_internodes[vid] = {"potential": ml, "visible": n.visible_length, "age": n.age}
 
     return growing_internodes, growing_leaves, senescing_leaves
 
@@ -131,13 +137,14 @@ def distribute_to_potential(g, growing_organs, day, time, time_increment, increm
                 # growing_organs[vid]["visible"] += increment_for_each_organ[vid] # and added here
 
         # filter growing_organs
-        growing_organs = {vid: {"potential": values["potential"], "visible": values["visible"]} 
+        growing_organs = {vid: {"potential": values["potential"], "visible": values["visible"], "age": values["age"]} 
                           for vid, values in growing_organs.items() 
                           if values["visible"] < values["potential"]}
         
     for vid, incr in increment_for_each_organ.items():
         n = g.node(vid)
         n.grow = True
+        n.age = time - n.start_tt
         grow_function(n, incr, day, time_increment)
 
         n_stem = n.parent() if n.label.startswith("Leaf") else n
@@ -224,7 +231,7 @@ def distribute_among_organs(g, day, daily_dynamics, rate=True):
                                 time=time,
                                 time_increment=thermal_time_incr,
                                 increment_to_distribute=daily_dynamics["Senescent leaf area increment"], 
-                                distribution_function=equal_dist,
+                                distribution_function=age_dist,
                                 grow_function=update_leaf_senescence_area)
 
     # else:

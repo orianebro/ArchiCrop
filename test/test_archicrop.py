@@ -12,12 +12,13 @@ from openalea.plantgl.all import Color3, Material, surface
 
 # Retrieve STICS management and senescence parameters
 sowing_density, stics_output_data, lifespan, lifespan_early = get_stics_data(
-    file_tec_xml='Mais_tec.xml',  # Path to the STICS management XML file
-    file_plt_xml='corn_plt.xml',  # Path to the STICS plant XML file
-    stics_output_file='mod_smaize.sti'  # Path to the STICS output file
+    file_tec_xml='../data/02NT18SorgV2D1_tec.xml',  # Path to the STICS management XML file
+    file_plt_xml='../data/sorgho_imp_M_v10_plt.xml',  # Path to the STICS plant XML file
+    stics_output_file='../data/mod_s02NT18SorgV2D1.sti'  # Path to the STICS output file
 )
 
 # Retrieve STICS growth and senescence dynamics
+dates = [value["Date"] for value in stics_output_data.values()]
 time = [value["Thermal time"] for value in stics_output_data.values()]
 LA_stics = [value["Plant leaf area"] for value in stics_output_data.values()]
 sen_LA_stics = [value["Plant senescent leaf area"] for value in stics_output_data.values()]
@@ -46,7 +47,7 @@ archi = {
         'phyllotactic_angle': 180,
         'phyllotactic_deviation': 10,
         'phyllochron': 30,
-        'plastochron': 40,
+        # 'plastochron': 40,
         'leaf_lifespan': [lifespan_early, lifespan],
         'nb_tillers': 0,
         'tiller_delay': 1,
@@ -77,11 +78,11 @@ display_scene(scene)
 
 
 ### Plot leaf lengths
-for l in range(len(growing_plant[time[-1]].properties()["leaf_lengths"].values())):  # noqa: E741
+for l in range(len(growing_plant[dates[-1]].properties()["leaf_lengths"].values())):  # noqa: E741
     # print(list(growing_plant[time[1]].properties()["leaf_lengths"].values()))
     # print(list(growing_plant[time[-1]].properties()["leaf_lengths"].values()))
     plt.plot(time[1:], 
-             [list(growing_plant[t].properties()["leaf_lengths"].values())[l][-1] - list(growing_plant[t].properties()["senescent_lengths"].values())[l][-1] for t in time[1:]], 
+             [list(growing_plant[t].properties()["leaf_lengths"].values())[l][-1] - list(growing_plant[t].properties()["senescent_lengths"].values())[l][-1] for t in dates[1:]], 
              color="green")
 
 plt.xlabel("Thermal time")
@@ -96,10 +97,10 @@ fig, ax = plt.subplots(2)
 
 # only works if nb_tillers = 0
 ax[0].plot(range(1,plant.nb_phy+1), 
-           growing_plant[time[-1]].properties()["visible_leaf_area"].values(), 
+           growing_plant[dates[-1]].properties()["visible_leaf_area"].values(), 
            color="green", label="Realised") 
 ax[1].plot(time, 
-           [sum(growing_plant[t].properties()["visible_leaf_area"].values()) - sum(growing_plant[t].properties()["senescent_area"].values()) for t in time], 
+           [sum(growing_plant[t].properties()["visible_leaf_area"].values()) - sum(growing_plant[t].properties()["senescent_area"].values()) for t in dates], 
            color="green", label="Realised") 
 
 ax[0].plot(range(1,plant.nb_phy+1), 
@@ -119,13 +120,13 @@ fig.tight_layout()
 
 plt.show()
 
-print("LA in :", max(LA_stics))  # noqa: T201
-print("LA out theo:", sum(growing_plant[plant.end_veg].properties()["visible_leaf_area"].values())) # noqa: T201
-print("LA out 3D :", sum( # noqa: T201
-    [surface(geom) 
-     for vid, geom in growing_plant[plant.end_veg].properties()["geometry"].items() 
-     if vid in growing_plant[plant.end_veg].properties()["visible_leaf_area"]]
-     )) 
+# print("LA in :", max(LA_stics))  # noqa: T201
+# print("LA out theo:", sum(growing_plant[plant.end_veg].properties()["visible_leaf_area"].values())) # noqa: T201
+# print("LA out 3D :", sum( # noqa: T201
+#     [surface(geom) 
+#      for vid, geom in growing_plant[plant.end_veg].properties()["geometry"].items() 
+#      if vid in growing_plant[plant.end_veg].properties()["visible_leaf_area"]]
+#      )) 
 # LA theo =/= real !!!
 
 # %gui qt

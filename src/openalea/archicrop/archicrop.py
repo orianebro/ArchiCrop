@@ -109,15 +109,15 @@ class ArchiCrop:
                 # else:
                 #     end_veg = 0
             
-            self.nb_phy = math.ceil((end_veg-thermal_time[0]-(leaf_duration*phyllochron))/phyllochron) # nb_phy
-
+            # self.nb_phy = math.ceil((end_veg-thermal_time[0]-(leaf_duration*phyllochron))/phyllochron) # nb_phy
 
 
         else:
-            self.nb_phy = nb_phy
+            # self.nb_phy = nb_phy
             end_juv = 0
             end_veg = 1000
             
+        self.nb_phy = nb_phy
         self.height = height
         self.leaf_area = leaf_area
         self.nb_short_phy = nb_short_phy
