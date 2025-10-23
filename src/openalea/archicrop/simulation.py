@@ -155,7 +155,7 @@ def constraint_satisfaction(params_sets: dict, daily_dynamics: dict, pot_factor:
                 # archi_params["rmax"] = rmax_int
                 break
 
-        rmax_int = np.linspace(max(0,(id_max-2)/nb_phy), min(1,(id_max+2)/nb_phy), 10)
+        rmax_int = np.linspace(max(0,max((id_max-2)/nb_phy, params['rmax'][0])), min(1,min((id_max+2)/nb_phy, params['rmax'][1])), 10)
     
         leaf_areas_norm = [la/max(constrained_leaf_areas) for la in constrained_leaf_areas]
         
@@ -220,7 +220,7 @@ def LHS_param_sampling(archi_params: dict, n_samples: int, seed: int = 42, latin
             fixed_params[key] = value
         # elif key in {"weibull"}:
         # Parameter distribution in Latin Hypercube
-        elif isinstance(value, list) and key not in {"leaf_lifespan"}:  # Range to sample
+        elif isinstance(value, list) and key not in ["leaf_lifespan", "rmax"]:  # Range to sample
 
             if latin_hypercube:
                 l_bounds.append(min(value))
@@ -232,7 +232,7 @@ def LHS_param_sampling(archi_params: dict, n_samples: int, seed: int = 42, latin
 
             sampled_params.append(key)
 
-        elif key in {"leaf_lifespan"}:
+        elif key in ["leaf_lifespan", "rmax"]:
             fixed_params[key] = value
 
 

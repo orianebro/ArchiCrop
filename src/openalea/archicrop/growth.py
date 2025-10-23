@@ -428,7 +428,7 @@ def mtg_turtle_time_with_constraint(g, day, daily_dynamics, update_visitor=None)
 
     time = daily_dynamics["Thermal time"]
 
-    distribute_among_organs(g, day, daily_dynamics)
+    distribute_among_organs(g, day, daily_dynamics, rate=True)
     # print("sen len", g.properties()["senescent_length"].values())
 
     # to remove
