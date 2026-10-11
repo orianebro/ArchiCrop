@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from openalea.archicrop.simulation import read_xml_file
+from openalea.archicrop.stics_io import read_xml_file
 
 file_xml = '../data/sorgho_tec.xml'
 params = ['densitesem', 'interrang']
